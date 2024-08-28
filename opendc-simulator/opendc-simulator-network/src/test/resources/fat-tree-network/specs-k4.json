@@ -1,0 +1,13 @@
+
+{
+    "name": "example-fat-tree-topology-1",
+    "type": "fat-tree-specs",
+    "switchSpecs": {
+        "numOfPorts": 4,
+        "portSpeed": "1000 Kbps"
+    },
+    "hostNodeSpecs": {
+        "numOfPorts": 1,
+        "portSpeed": "1Gbps"
+    }
+}

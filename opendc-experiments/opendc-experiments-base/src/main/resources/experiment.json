@@ -1,0 +1,13 @@
+{
+    "runs": 5,
+    "topologies": [{
+        "pathToFile": "resources/env/single.json"
+    }],
+    "workloads": [{
+        "pathToFile": "resources/bitbrains-small",
+        "type": "ComputeWorkload"
+    }],
+    "allocationPolicies": [{
+        "policyType": "Mem"
+    }]
+}

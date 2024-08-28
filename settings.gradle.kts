@@ -1,3 +1,6 @@
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.0"
+}
 /*
  * Copyright (c) 2017 AtLarge Research
  *
@@ -35,6 +38,7 @@ include(":opendc-faas:opendc-faas-api")
 include(":opendc-faas:opendc-faas-service")
 include(":opendc-faas:opendc-faas-simulator")
 include(":opendc-experiments:opendc-experiments-base")
+include(":opendc-experiments:opendc-experiments-network")
 include(":opendc-experiments:opendc-experiments-workflow")
 include(":opendc-experiments:opendc-experiments-faas")
 include(":opendc-experiments:opendc-experiments-scenario")
@@ -52,6 +56,7 @@ include(":opendc-web:opendc-web-runner-quarkus-deployment")
 include(":opendc-simulator:opendc-simulator-core")
 include(":opendc-simulator:opendc-simulator-flow")
 include(":opendc-simulator:opendc-simulator-compute")
+include(":opendc-simulator:opendc-simulator-network")
 include(":opendc-trace:opendc-trace-api")
 include(":opendc-trace:opendc-trace-calcite")
 include(":opendc-trace:opendc-trace-parquet")
@@ -60,3 +65,5 @@ include(":opendc-trace:opendc-trace-failure")
 include(":opendc-trace:opendc-trace-tools")
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+include("opendc-experiments:opendc-experiments-network")
+findProject(":opendc-experiments:opendc-experiments-network")?.name = "opendc-experiments-network"

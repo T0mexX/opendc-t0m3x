@@ -43,6 +43,8 @@ internal class ResourceStateRecordMaterializer(schema: MessageType) : RecordMate
     private var localDuration = Duration.ZERO
     private var localCpuCount = 0
     private var localCpuUsage = 0.0
+    private var localNetTx: Double = .0
+    private var localNetRx: Double = .0
 
     /**
      * Root converter for the record.
@@ -91,6 +93,18 @@ internal class ResourceStateRecordMaterializer(schema: MessageType) : RecordMate
                                     // Ignore to support v1 format
                                 }
                             }
+                        "net_tx" ->
+                            object : PrimitiveConverter() {
+                                override fun addDouble(value: Double) {
+                                    localNetTx = value
+                                }
+                            }
+                        "net_rx" ->
+                            object : PrimitiveConverter() {
+                                override fun addDouble(value: Double) {
+                                    localNetRx = value
+                                }
+                            }
                         else -> error("Unknown column $type")
                     }
                 }
@@ -108,7 +122,16 @@ internal class ResourceStateRecordMaterializer(schema: MessageType) : RecordMate
             override fun getConverter(fieldIndex: Int): Converter = converters[fieldIndex]
         }
 
-    override fun getCurrentRecord(): ResourceState = ResourceState(localId, localTimestamp, localDuration, localCpuCount, localCpuUsage)
+    override fun getCurrentRecord(): ResourceState =
+        ResourceState(
+            localId,
+            localTimestamp,
+            localDuration,
+            localCpuCount,
+            localCpuUsage,
+            localNetTx,
+            localNetRx,
+        )
 
     override fun getRootConverter(): GroupConverter = root
 }

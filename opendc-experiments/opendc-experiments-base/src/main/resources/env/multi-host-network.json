@@ -1,0 +1,19 @@
+{
+    "type": "fat-tree-specs",
+    "coreSwitchSpecs": {
+        "numOfPorts": 8,
+        "portSpeed": "10Gbps"
+    },
+    "aggrSwitchSpecs": {
+        "numOfPorts": 8,
+        "portSpeed": "10Gbps"
+    },
+    "torSwitchSpecs": {
+        "numOfPorts": 8,
+        "portSpeed": "10Gbps"
+    },
+    "hostNodeSpecs": {
+        "numOfPorts": 1,
+        "portSpeed": "1Gbps"
+    }
+}
