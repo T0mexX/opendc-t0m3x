@@ -157,6 +157,9 @@ public class NetFlow internal constructor(
         }
     }
 
+    override fun toString(): String =
+        "NetFlow(id=$id, name=$name, transmitterId=$transmitterId, destinationId=$destinationId, currentDemand=$demand)"
+
     /**
      * Invoked by the garbage collector whenever a flow is destroyed.
      * It is deprecated since it does not offer any guarantees to be invoked,

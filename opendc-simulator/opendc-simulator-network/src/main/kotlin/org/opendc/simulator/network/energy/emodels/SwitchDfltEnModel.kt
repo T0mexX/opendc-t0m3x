@@ -29,7 +29,6 @@ import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.energy.EnModel
 import kotlin.math.log
 import kotlin.math.pow
-import kotlin.time.times
 
 /**
  * Model defined by Xiaodong Wang et al. in 'CARPO:

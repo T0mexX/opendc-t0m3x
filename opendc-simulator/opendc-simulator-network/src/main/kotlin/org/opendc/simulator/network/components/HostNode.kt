@@ -30,6 +30,11 @@ import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
 import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.components.internalstructs.port.PortImpl
+import org.opendc.simulator.network.energy.EnModel
+import org.opendc.simulator.network.energy.EnMonitor
+import org.opendc.simulator.network.energy.EnergyConsumer
+import org.opendc.simulator.network.energy.emodels.HostNodeDfltEnModel
+import org.opendc.simulator.network.energy.emodels.SwitchDfltEnModel
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.flow.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
@@ -50,13 +55,11 @@ internal data class HostNode(
     override val numOfPorts: Int = 1,
     override val fairnessPolicy: FairnessPolicy = FirstComeFirstServed,
     override val portSelectionPolicy: PortSelectionPolicy = StaticECMP,
-) : EndPointNode {
+) : EndPointNode, EnergyConsumer<HostNode> {
     override val updtChl = UpdateChl()
-
+    override val enMonitor: EnMonitor<HostNode> by lazy { EnMonitor(this) }
     override val routingTable: RoutingTable = RoutingTable(this.id)
-
     override val portToNode: MutableMap<NodeId, Port> = HashMap()
-
     override val ports: List<Port> =
         buildList {
             repeat(numOfPorts) {
@@ -66,6 +69,11 @@ internal data class HostNode(
 
     override val flowHandler = FlowHandler(ports)
 
+    override suspend fun consumeUpdt() {
+        super.consumeUpdt()
+        enMonitor.update()
+    }
+
     override fun toSpecs(): Specs<HostNode> =
         HostNodeSpecs(
             id = id,
@@ -74,6 +82,8 @@ internal data class HostNode(
             fairnessPolicy = fairnessPolicy,
             portSelectionPolicy = portSelectionPolicy,
         )
+
+    override fun getDfltEnModel(): EnModel<HostNode> = HostNodeDfltEnModel
 
     @Serializable
     @SerialName("host-node-specs")

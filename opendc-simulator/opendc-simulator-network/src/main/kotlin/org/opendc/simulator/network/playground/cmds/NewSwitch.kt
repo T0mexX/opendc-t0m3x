@@ -46,7 +46,7 @@ import org.opendc.simulator.network.playground.cmds.NewLink.regex
  * > core switch 0 /* node id */ - 1Gbps /* port speed */ 4 /* num of ports */
  */
 internal data object NewSwitch : PGCmd("NEW_SWITCH") {
-    override val regex = Regex("\\s*(c|core|)(?:s|switch)\\s+(\\d+)\\s+([^ ]+)\\s+([^ ]+)\\s*")
+    override val regex = Regex("\\s*(c|core|)\\s*(?:s|switch)\\s+(\\d+)\\s+([^ ]+)\\s+([^ ]+)\\s*")
 
     override fun CoroutineScope.execCmd(result: MatchResult) {
         val customNetwork: CustomNetwork =
