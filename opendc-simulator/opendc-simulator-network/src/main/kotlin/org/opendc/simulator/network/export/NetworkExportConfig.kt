@@ -52,15 +52,16 @@ import java.io.File
  * parquet files for network simulations.
  *
  * @param[networkExportColumns]     the columns that will be included in the `network.parquet` raw output file.
- * @param[nodeExportColumns]         the columns that will be included in the `node.parquet` raw output file.
- * @param[exportInterval]           the time interval between exports. If it is handled externally, this param should be `null`.
+ * @param[nodeExportColumns]        the columns that will be included in the `node.parquet` raw output file.
+ * @param[exportInterval]           the time interval between exports.
+ * If `null`, the workload events granularity will be used as the export interval.
  */
 @Serializable(with = NetworkExportConfig.Companion.NetExpConfigSerializer::class)
 public data class NetworkExportConfig(
     val networkExportColumns: List<ExportColumn<NetworkSnapshot>>,
     val nodeExportColumns: List<ExportColumn<NodeSnapshot>>,
     val outputFolder: File?,
-    val exportInterval: Time,
+    val exportInterval: Time? = null,
     val startTime: Time? = null,
 ) {
     /**
@@ -71,7 +72,7 @@ public data class NetworkExportConfig(
         | === NETWORK EXPORT CONFIG ===
         | Network columns  : ${networkExportColumns.map { it.name }.toString().trim('[', ']')}
         | Node columns     : ${nodeExportColumns.map { it.name }.toString().trim('[', ']')}
-        | Export interval  : $exportInterval
+        | Export interval  : ${exportInterval ?: "N/A"}
         | Output folder    : ${outputFolder?.absolutePath ?: "N/A"}
         """.trimIndent()
 
@@ -143,12 +144,9 @@ public data class NetworkExportConfig(
                     nodeExportColumns = elem["nodeExportColumns"].toFieldList(),
                     outputFolder = outputFolder,
                     exportInterval =
-                        Json.decodeFromString(
-                            elem["exportInterval"]?.toString()?.trim('"')
-                                ?: throw RuntimeException(
-                                    "`exportInterval` in `networkExportConfig` is needed in order to export network information",
-                                ),
-                        ),
+                            elem["exportInterval"]?.toString()?.trim('"')?.let {
+                                Json.decodeFromString(it)
+                            },
                 )
             }
 

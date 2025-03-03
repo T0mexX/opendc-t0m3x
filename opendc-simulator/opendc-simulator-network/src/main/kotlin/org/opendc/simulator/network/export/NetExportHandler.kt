@@ -37,8 +37,11 @@ internal class NetExportHandler(
     private val config: NetworkExportConfig,
 ) : AutoCloseable {
     private var startTime: Time? = config.startTime
-    internal var nextExportDeadline: Time? = startTime?.plus(config.exportInterval)
+    private var nextExportDeadline: Time? = startTime?.let { startTm ->
+        config.exportInterval?.let { startTm + it }
+    }
         private set
+    private var lastExportTime: Time? = null
     private val networkExporter: Exporter<NetworkSnapshot>?
     private val nodeExporter: Exporter<NodeSnapshot>?
 
@@ -84,21 +87,25 @@ internal class NetExportHandler(
         }
     }
 
-    internal fun NetworkController.timeUntilExport() = getNextDeadline() - lastUpdate
+    internal fun NetworkController.timeUntilExport(): Time? = getNextDeadline()?.minus(lastUpdate)
 
     internal fun NetworkController.exportIfNeeded() {
         // Non-mutable for smart cast.
         val exportDeadline = getNextDeadline()
 
-        // If not yet time to export then return.
-        if (exportDeadline approxLarger lastUpdate) return
-        // Check export deadline not passed yet.
-        check(exportDeadline approx lastUpdate)
+        exportDeadline?.let {
+            // If not yet time to export, then return.
+            if (exportDeadline approxLarger lastUpdate) return
+            // Check export deadline not passed yet.
+            check(exportDeadline approx lastUpdate)
+        } ?: run {
+            if (lastExportTime == lastUpdate) return
+        }
 
-        // Write network snapshot to output file.
+        // Write network snapshot to the output file.
         networkExporter?.write(snapshot())
 
-        // Write each node's snapshot to output file.
+        // Write each node's snapshot to the output file.
         network.nodesById.values.forEach {
             if (it.id == INTERNET_ID) return@forEach
             nodeExporter?.write(
@@ -109,10 +116,12 @@ internal class NetExportHandler(
             )
         }
 
-        nextExportDeadline = exportDeadline + config.exportInterval
+        lastExportTime = lastUpdate
+        config.exportInterval?.let { nextExportDeadline = exportDeadline?.plus(it) }
     }
 
-    private fun NetworkController.getNextDeadline(): Time {
+    private fun NetworkController.getNextDeadline(): Time? {
+        config.exportInterval ?: run { return null }
         val nextDeadline = nextExportDeadline
 
         return nextDeadline ?: let {

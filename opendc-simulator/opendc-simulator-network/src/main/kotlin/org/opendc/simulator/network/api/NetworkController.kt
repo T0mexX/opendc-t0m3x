@@ -418,12 +418,12 @@ public class NetworkController(
         if (time < Time.ZERO) return log.error("advanceBy received negative time-span parameter($time), ignoring...")
         if (time == Time.ZERO) return
 
-        netExportHandler?.let {
+        netExportHandler?.let { exprtHndl ->
             // Advances time in multiple steps to allow all export deadlines.
-            with(it) {
+            with(exprtHndl) {
                 var remaining: Time = time
                 while (remaining != Time.ZERO) {
-                    val nextJump = remaining min timeUntilExport()
+                    val nextJump = timeUntilExport()?.let { it min remaining } ?: remaining
                     advance(nextJump)
                     exportIfNeeded()
                     remaining -= nextJump
