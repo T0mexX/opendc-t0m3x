@@ -1,0 +1,16 @@
+{
+    "networkExportConfig": {
+        "exportInterval": "5min"
+    },
+    "runs": 1,
+    "topologies": [{
+        "pathToFile": "resources/exp-top/top.json"
+    }],
+    "workloads": [{
+        "pathToFile": "resources/exp-top/bitbrains250x10/",
+        "type": "ComputeWorkload"
+    }],
+    "allocationPolicies": [{
+        "policyType": "Mem"
+    }]
+}

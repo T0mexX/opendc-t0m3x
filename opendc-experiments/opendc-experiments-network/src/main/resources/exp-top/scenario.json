@@ -1,5 +1,0 @@
-{
-    "networkSpecsPath": "resources/exp-top/fat-tree.json",
-    "wlPath": "resources/example-traces/bb_net_wl250.parquet",
-    "virtualMapping": true
-}

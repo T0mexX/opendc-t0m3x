@@ -52,12 +52,12 @@ internal class ImprintsToWlConverter private constructor(
         imprints.forEach { it.convert() }
         val events = converted.sorted()
 
-        val hostIds =
-            buildSet { // TODO: remove this feature from workload and just
-                events.forEach { event ->
-                    addAll(event.involvedIds().filterNot { it == INTERNET_ID })
-                }
-            }
+//        val hostIds =
+//            buildSet { // TODO: remove this feature from workload and just
+//                events.forEach { event ->
+//                    addAll(event.involvedIds().filterNot { it == INTERNET_ID })
+//                }
+//            }
 
         return SimNetWorkload(networkEvents = events)
     }

@@ -1,0 +1,26 @@
+{
+    "networkSpecsPath": "resources/env/networks/128_test_net.json",
+    "clusters":
+    [{
+        "name": "C01",
+        "hosts" : [{
+            "count": 128,
+            "cpu": {
+                "coreCount": 8,
+                "coreSpeed": "3.2 Ghz"
+            },
+            "memory": {
+                "memorySize": "128e3 MiB",
+                "memorySpeed": "1 Mhz"
+            },
+            "powerModel": {
+                "modelType": "linear",
+                "power": "400 Watts",
+                "maxPower": "1 KW",
+                "idlePower": "0.4W"
+            }
+        }]
+    }]
+}
+
+
