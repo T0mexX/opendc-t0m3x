@@ -46,7 +46,7 @@ internal class NetScenarioCmd : CliktCommand(name = "scenario") {
      */
     private val scenarioPath by option("--scenario-path", help = "path to scenario file")
         .file(canBeDir = false, canBeFile = true)
-        .defaultLazy { File("resources/example-scenarios/net-scenario.json") }
+        .defaultLazy { File("resources/exp-top/scenario.json") }
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {

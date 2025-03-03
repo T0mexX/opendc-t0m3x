@@ -216,7 +216,7 @@ public class NetworkController(
             ?.let {
                 _claimedHostIds.add(it)
                 getNetInterfaceOf(it)
-            } ?: log.errAndNull("unable to claim host node, none available")
+            } ?: log.errAndNull("unable to claim host node, none available (${claimedHostIds.size} already claimed)")
     }
 
     /**

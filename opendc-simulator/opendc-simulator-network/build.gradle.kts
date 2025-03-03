@@ -33,20 +33,21 @@ plugins {
 }
 
 val kLoggingVersion = "3.0.5"
-val logBackVersion = "1.5.6"
 val kotestVersion = "5.9.1"
 val kotestDataTestVersion = kotestVersion
 val kotestPropertyTestVersion = kotestVersion
 val serializationVersion = "1.6.0"
+val kotlinxCoroutinesVersion = "1.8.1"
+val slf4j2Version = "2.23.0"
 
 dependencies {
     implementation(libs.progressbar)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
     implementation(projects.opendcSimulator.opendcSimulatorCore)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
     implementation("io.github.microutils:kotlin-logging-jvm:$kLoggingVersion")
-    implementation("ch.qos.logback:logback-classic:$logBackVersion")
+    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$slf4j2Version")
     implementation(libs.clikt)
     implementation(projects.opendcTrace.opendcTraceParquet)
 

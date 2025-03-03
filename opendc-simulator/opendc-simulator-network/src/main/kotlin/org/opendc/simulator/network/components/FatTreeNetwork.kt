@@ -25,11 +25,11 @@ package org.opendc.simulator.network.components
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.opendc.common.logger.logger
 import org.opendc.simulator.network.api.NodeId
 import org.opendc.simulator.network.components.HostNode.HostNodeSpecs
 import org.opendc.simulator.network.components.Switch.SwitchSpecs
 import org.opendc.simulator.network.utils.NonSerializable
-import org.opendc.simulator.network.utils.logger
 import kotlin.math.min
 import kotlin.math.pow
 

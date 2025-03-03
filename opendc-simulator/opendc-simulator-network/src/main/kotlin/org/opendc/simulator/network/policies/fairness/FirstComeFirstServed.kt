@@ -27,6 +27,7 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.flow.RateUpdt
+import org.opendc.simulator.network.flow.tracker.UnsatisfiedByDemand
 
 @Serializable
 @SerialName("first_come_first_served")
@@ -34,9 +35,16 @@ internal data object FirstComeFirstServed : FairnessPolicy {
     override fun FlowHandler.applyPolicy(updt: RateUpdt) {
         execRateReductions(updt)
 
+        val flows = nodeFlowTracker[UnsatisfiedByDemand]
+
+        flows.reversed().forEach {
+            val oldTput = it.totRateOut
+            if (it.tryUpdtRate() == oldTput) return
+        }
+
         updt.filter {
             it.value approxLarger DataRate.ZERO
-        }.keys.forEach { flowId ->
+        }.toList().sortedByDescending { it.second }.forEach { (flowId, _) ->
             outgoingFlows[flowId]
                 ?.tryUpdtRate()
         }

@@ -37,6 +37,7 @@ import org.opendc.simulator.network.energy.emodels.SwitchDfltEnModel
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
+import org.opendc.simulator.network.policies.fairness.MaxMinPerPort
 import org.opendc.simulator.network.policies.forwarding.OSPF
 import org.opendc.simulator.network.policies.forwarding.PortSelectionPolicy
 import org.opendc.simulator.network.policies.forwarding.StaticECMP
@@ -51,7 +52,7 @@ internal open class Switch(
     final override val id: NodeId,
     override val portSpeed: DataRate,
     override val numOfPorts: Int,
-    override val fairnessPolicy: FairnessPolicy = FirstComeFirstServed,
+    override val fairnessPolicy: FairnessPolicy = MaxMinPerPort,
     override val portSelectionPolicy: PortSelectionPolicy = StaticECMP,
 ) : Node, EnergyConsumer<Switch> {
     override val updtChl = UpdateChl()

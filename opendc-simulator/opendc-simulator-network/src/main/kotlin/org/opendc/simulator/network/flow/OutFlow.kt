@@ -56,7 +56,7 @@ internal class OutFlow(
     var demand: DataRate = DataRate.ZERO
         set(value) {
             @Suppress("NAME_SHADOWING")
-            val newValue = value.roundToIfWithinEpsilon(DataRate.ZERO)
+            val newValue = value.roundToIfWithinEpsilon(DataRate.ZERO, 1e-03)
             if (newValue.isZero()) {
                 tryUpdtRate(DataRate.ZERO)
             }

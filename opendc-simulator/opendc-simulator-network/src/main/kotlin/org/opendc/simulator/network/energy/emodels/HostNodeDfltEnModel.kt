@@ -42,6 +42,7 @@ internal object HostNodeDfltEnModel: EnModel<HostNode> {
         val idlePwr: Power = activePorts.sumOfUnit { port ->
             passivePwrFromMaxPortSpeed(port.currSpeed)
         }
+//        check(idlePwr > Power.ZERO) {"${idlePwr.toWatts()}, "}
         val activePwr: Power = activePorts.sumOfUnit { port ->
             val currPortRate: DataRate = port.currSpeed * port.util
             activePwrFromCurrRate(currPortRate)

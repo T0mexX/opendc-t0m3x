@@ -1,0 +1,27 @@
+{
+    "type": "fat-tree-specs",
+    "coreSwitchSpecs": {
+        "numOfPorts": 4,
+        "portSpeed": "10Gbps",
+        "fairnessPolicy": { "type": "max-min" },
+        "portSelectionPolicy": { "type": "ospf" }
+    },
+    "aggrSwitchSpecs": {
+        "numOfPorts": 4,
+        "portSpeed": "1Gbps",
+        "fairnessPolicy": { "type": "max-min" },
+        "portSelectionPolicy": { "type": "ospf" }
+    },
+    "torSwitchSpecs": {
+        "numOfPorts": 4,
+        "portSpeed": "500Mbps",
+        "fairnessPolicy": { "type": "max-min" },
+        "portSelectionPolicy": { "type": "ospf" }
+    },
+    "hostNodeSpecs": {
+        "numOfPorts": 1,
+        "portSpeed": "1Gbps",
+        "fairnessPolicy": { "type": "max-min" },
+        "portSelectionPolicy": { "type": "static-ecmp" }
+    }
+}

@@ -109,6 +109,17 @@ public object DfltNetworkExportColumns {
             field = Types.optional(DOUBLE).named("tot_tput_ratio"),
         ) { it.totTputPerc?.toRatio() }
 
+    public val TOT_TPUT: ExportColumn<NetworkSnapshot> =
+        ExportColumn(
+            field = Types.optional(DOUBLE).named("tot_tput_mbps"),
+        ) { it.totTput.toMbps() }
+
+    public val WORST_TPUT_PERC: ExportColumn<NetworkSnapshot> =
+        ExportColumn(
+            field = Types.optional(DOUBLE).named("worst_tput_ratio"),
+        ) { it.worstTputPerc?.toRatio() }
+
+
     /**
      * The sum of the current power draw` (network related) of all components in the [Network].
      */

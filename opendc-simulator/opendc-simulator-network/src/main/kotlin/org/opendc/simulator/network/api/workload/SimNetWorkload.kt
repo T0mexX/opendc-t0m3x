@@ -25,6 +25,7 @@ package org.opendc.simulator.network.api.workload
 import org.opendc.common.units.Time
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.utils.logger
 import java.time.Duration
 import java.time.Instant
@@ -63,7 +64,12 @@ public class SimNetWorkload(
     private val hostIds: Set<NodeId> =
         buildSet {
             events.forEach { addAll(it.involvedIds()) }
-        }
+        }.filterNot { it == Network.INTERNET_ID }.toSet()
+
+    init {
+        check(events.isNotEmpty())
+        {"Network workload is empty."}
+    }
 
     /**
      * If this method successfully completes, the controller is then able to execute ***this*** workload,
@@ -82,7 +88,7 @@ public class SimNetWorkload(
                         pId ->
                     controller.virtualMap(vId, pId)
                 },
-            ) { "unable to map workload to network, not enough host nodesById claimable in the network" }
+            ) { "unable to map workload to network, not enough host nodes claimable in the network (${hostIds.size} needed)" }
         }
     }
 

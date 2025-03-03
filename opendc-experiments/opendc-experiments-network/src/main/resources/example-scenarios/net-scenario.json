@@ -2,6 +2,8 @@
     "networkSpecsPath": "resources/example-topologies/net-spec.json",
     "wlPath": "resources/example-traces/example_net_trace.parquet",
     "exportConfig": {
+        "networkExportColumns": ["timestamp_absolute", "avg_tput_ratio","power_draw_watt"],
+        "nodeExportColumns": ["timestamp_absolute", "node_throughput_mbps","energy_consumed_joule"],
         "outputFolder": "output/test1",
         "exportInterval": "5min"
     },

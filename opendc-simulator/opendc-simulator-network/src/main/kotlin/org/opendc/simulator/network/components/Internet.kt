@@ -33,6 +33,7 @@ import org.opendc.simulator.network.components.internalstructs.port.PortImpl
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
+import org.opendc.simulator.network.policies.forwarding.OSPF
 import org.opendc.simulator.network.policies.forwarding.PortSelectionPolicy
 import org.opendc.simulator.network.policies.forwarding.StaticECMP
 

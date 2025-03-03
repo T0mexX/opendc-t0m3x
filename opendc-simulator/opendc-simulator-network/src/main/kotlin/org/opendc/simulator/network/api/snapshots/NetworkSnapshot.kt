@@ -37,6 +37,7 @@ import org.opendc.simulator.network.components.Network.Companion.getNodesById
 import org.opendc.simulator.network.flow.NetFlow
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
+import org.opendc.simulator.network.utils.ratioToPerc
 import org.opendc.trace.util.parquet.exporter.Exportable
 import java.time.Instant
 
@@ -67,6 +68,7 @@ public class NetworkSnapshot private constructor(
     public val totTput: DataRate,
     public val totTputPerc: Percentage?,
     public val avrgTputPerc: Percentage?,
+    public val worstTputPerc: Percentage?,
     public val currPwrUse: Power,
     public val avrgPwrUseOverTime: Power,
     public val totEnConsumed: Energy,
@@ -230,6 +232,14 @@ public class NetworkSnapshot private constructor(
                             null
                         } else {
                             activeFlows.sumOfUnit { it.throughput roundedPercentageOf it.demand } / activeFlows.size
+                        }
+                    },
+                worstTputPerc =
+                    let {
+                        if (activeFlows.isEmpty()) {
+                            null
+                        } else {
+                            activeFlows.minOf { it.throughput roundedPercentageOf  it.demand }
                         }
                     },
                 currPwrUse = energyRecorder.currPwrUsage,
