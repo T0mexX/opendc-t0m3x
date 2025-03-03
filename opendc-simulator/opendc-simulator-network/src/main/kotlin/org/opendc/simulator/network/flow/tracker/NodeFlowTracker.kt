@@ -34,7 +34,10 @@ import java.util.TreeSet
 
 /**
  * Keeps track of those flows whose demand is not satisfied,
- * maintaining them ordered by their data rate output.
+ * maintaining multiple "lists" in which flows are ordered
+ * according to some [TrackerMode]s in O(log(n)).
+ *
+ * The ordered lists can be retrieved for routing/fairness decisions.
  *
  * This class guarantees Thread safety regarding addition
  * and removal of both [TrackerMode]s and [OutFlow]s.
