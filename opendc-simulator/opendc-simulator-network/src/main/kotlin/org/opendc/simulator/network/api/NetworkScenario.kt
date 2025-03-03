@@ -107,6 +107,7 @@ public data class NetworkScenario(
 
         private fun NetworkController.execWl(runWl: SimNetWorkload) =
             runBlocking(network.validator) {
+                network.awaitStability()
                 with(runWl) wl@{
                     while (runWl.hasNext()) {
                         val nextWlDeadline = runWl.peek().deadline
