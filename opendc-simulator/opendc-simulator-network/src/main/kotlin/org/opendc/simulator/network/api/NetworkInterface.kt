@@ -34,8 +34,6 @@ import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.flow.FlowId
 import org.opendc.simulator.network.flow.NetFlow
 import org.opendc.simulator.network.utils.logger
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.time.TimeSource
 
 /**
  * Type alias for improved understandability.

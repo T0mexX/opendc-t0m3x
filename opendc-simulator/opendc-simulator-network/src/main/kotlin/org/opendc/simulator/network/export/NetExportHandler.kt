@@ -37,9 +37,10 @@ internal class NetExportHandler(
     private val config: NetworkExportConfig,
 ) : AutoCloseable {
     private var startTime: Time? = config.startTime
-    private var nextExportDeadline: Time? = startTime?.let { startTm ->
-        config.exportInterval?.let { startTm + it }
-    }
+    private var nextExportDeadline: Time? =
+        startTime?.let { startTm ->
+            config.exportInterval?.let { startTm + it }
+        }
         private set
     private var lastExportTime: Time? = null
     private val networkExporter: Exporter<NetworkSnapshot>?

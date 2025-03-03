@@ -67,8 +67,7 @@ public class SimNetWorkload(
         }.filterNot { it == Network.INTERNET_ID }.toSet()
 
     init {
-        check(events.isNotEmpty())
-        {"Network workload is empty."}
+        check(events.isNotEmpty()) { "Network workload is empty." }
     }
 
     /**

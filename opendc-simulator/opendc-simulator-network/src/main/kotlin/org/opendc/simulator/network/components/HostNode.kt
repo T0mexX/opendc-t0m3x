@@ -34,7 +34,6 @@ import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.energy.EnMonitor
 import org.opendc.simulator.network.energy.EnergyConsumer
 import org.opendc.simulator.network.energy.emodels.HostNodeDfltEnModel
-import org.opendc.simulator.network.energy.emodels.SwitchDfltEnModel
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.flow.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy

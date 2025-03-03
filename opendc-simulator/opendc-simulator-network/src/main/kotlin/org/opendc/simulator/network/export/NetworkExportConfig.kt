@@ -144,9 +144,9 @@ public data class NetworkExportConfig(
                     nodeExportColumns = elem["nodeExportColumns"].toFieldList(),
                     outputFolder = outputFolder,
                     exportInterval =
-                            elem["exportInterval"]?.toString()?.trim('"')?.let {
-                                Json.decodeFromString(it)
-                            },
+                        elem["exportInterval"]?.toString()?.trim('"')?.let {
+                            Json.decodeFromString(it)
+                        },
                 )
             }
 

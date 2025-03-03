@@ -28,16 +28,17 @@ import org.opendc.common.units.Energy
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
+import org.opendc.simulator.network.api.NetEnRecorder
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.HDR
 import org.opendc.simulator.network.components.CoreSwitch
 import org.opendc.simulator.network.components.HostNode
+import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.components.Network.Companion.getNodesById
 import org.opendc.simulator.network.flow.NetFlow
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
-import org.opendc.simulator.network.utils.ratioToPerc
 import org.opendc.trace.util.parquet.exporter.Exportable
 import java.time.Instant
 
@@ -239,12 +240,66 @@ public class NetworkSnapshot private constructor(
                         if (activeFlows.isEmpty()) {
                             null
                         } else {
-                            activeFlows.minOf { it.throughput roundedPercentageOf  it.demand }
+                            activeFlows.minOf { it.throughput roundedPercentageOf it.demand }
                         }
                     },
                 currPwrUse = energyRecorder.currPwrUsage,
                 avrgPwrUseOverTime = energyRecorder.avrgPwrUsage,
                 totEnConsumed = energyRecorder.totalConsumption,
+            ).also { lastSnapshot = it }
+        }
+
+        /**
+         * Retrieves a snapshot of [this].
+         * @param[noCache] if `true` prevents the use of cache. Cache use needs to
+         * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
+         */
+        public fun Network.snapshot(
+            noCache: Boolean = false,
+            instant: Instant,
+            enRecorder: NetEnRecorder,
+        ): NetworkSnapshot {
+            if (noCache.not()) {
+                lastSnapshot?.let {
+                    if (it.instant == instant) return it
+                }
+            }
+
+            val flows: Collection<NetFlow> = this.flowsById.values
+            val activeFlows: Collection<NetFlow> = flows.filterNot { it.demand.isZero() }
+            val totDemand: DataRate = flows.sumOfUnit { it.demand }
+            val totThroughput: DataRate = flows.sumOfUnit { it.throughput }
+
+            runBlocking { this@snapshot.awaitStability() }
+
+            return NetworkSnapshot(
+                instant = instant,
+                numNodes = this.nodesById.size,
+                numHostNodes = this.getNodesById<HostNode>().size,
+                claimedHostNodes = this.getNodesById<HostNode>().size,
+                numCoreSwitches = this.getNodesById<CoreSwitch>().size,
+                numActiveFlows = activeFlows.size,
+                totTput = totThroughput,
+                totTputPerc = if (activeFlows.isEmpty()) null else totThroughput roundedPercentageOf totDemand,
+                avrgTputPerc =
+                    let {
+                        if (activeFlows.isEmpty()) {
+                            null
+                        } else {
+                            activeFlows.sumOfUnit { it.throughput roundedPercentageOf it.demand } / activeFlows.size
+                        }
+                    },
+                worstTputPerc =
+                    let {
+                        if (activeFlows.isEmpty()) {
+                            null
+                        } else {
+                            activeFlows.minOf { it.throughput roundedPercentageOf it.demand }
+                        }
+                    },
+                currPwrUse = enRecorder.currPwrUsage,
+                avrgPwrUseOverTime = enRecorder.avrgPwrUsage,
+                totEnConsumed = enRecorder.totalConsumption,
             ).also { lastSnapshot = it }
         }
     }

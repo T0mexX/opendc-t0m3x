@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.runBlocking
@@ -19,7 +41,7 @@ internal class TreeNetwork(
     private val aggrSpecs: SwitchSpecs,
     private val accessSpecs: SwitchSpecs,
     private val hostNodeSpecs: HostNodeSpecs,
-): Network() {
+) : Network() {
     override val nodesById: Map<NodeId, Node>
     override val endPointNodes: Map<NodeId, EndPointNode>
     override val internet: Internet
@@ -42,45 +64,49 @@ internal class TreeNetwork(
         internet = Internet().connectedTo(coreSwitches)
 
         // Build aggregation layer.
-        aggrSwitches = buildList {
-            coreSwitches.forEach { crSw ->
-                repeat(n) {
-                    val aggrSw = aggrSpecs.build()
-                    check(runBlocking { aggrSw.connect(crSw) })
-                    add(aggrSw)
+        aggrSwitches =
+            buildList {
+                coreSwitches.forEach { crSw ->
+                    repeat(n) {
+                        val aggrSw = aggrSpecs.build()
+                        check(runBlocking { aggrSw.connect(crSw) })
+                        add(aggrSw)
+                    }
                 }
             }
-        }
 
         // Build access layer.
-        accessSwitches = buildList {
-            aggrSwitches.forEach { aggrSw ->
-                repeat(n) {
-                    val accessSw = accessSpecs.build()
-                    check(runBlocking { accessSw.connect(aggrSw) })
-                    add(accessSw)
+        accessSwitches =
+            buildList {
+                aggrSwitches.forEach { aggrSw ->
+                    repeat(n) {
+                        val accessSw = accessSpecs.build()
+                        check(runBlocking { accessSw.connect(aggrSw) })
+                        add(accessSw)
+                    }
                 }
             }
-        }
 
         // Build host layer.
-        hosts = buildList {
-            accessSwitches.forEach { accessSw ->
-                repeat(n) {
-                    val host = hostNodeSpecs.build()
-                    check(runBlocking { host.connect(accessSw) })
-                    add(host)
+        hosts =
+            buildList {
+                accessSwitches.forEach { accessSw ->
+                    repeat(n) {
+                        val host = hostNodeSpecs.build()
+                        check(runBlocking { host.connect(accessSw) })
+                        add(host)
+                    }
                 }
             }
-        }
 
-        nodesById = buildMap {
-            putAll((hosts + accessSwitches + aggrSwitches + coreSwitches).associateBy { it.id } )
-            check(
-                internet.id !in this,
-            ) { "unable to create network: one node has id $INTERNET_ID, which is reserved for internet abstraction" }
-            put(internet.id, internet)
-        }
+        nodesById =
+            buildMap {
+                putAll((hosts + accessSwitches + aggrSwitches + coreSwitches).associateBy { it.id })
+                check(
+                    internet.id !in this,
+                ) { "unable to create network: one node has id $INTERNET_ID, which is reserved for internet abstraction" }
+                put(internet.id, internet)
+            }
 
         endPointNodes = (coreSwitches + hosts + internet).associateBy { it.id }
     }

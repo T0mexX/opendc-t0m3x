@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 AtLarge Research
+ * Copyright (c) 2025 AtLarge Research
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,37 @@
  * SOFTWARE.
  */
 
-package org.opendc.simulator.network.playground.cmds
+package org.opendc.simulator.network.repl.cmds.flow
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.long
+import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.api.NodeId
-import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.playground.PGEnv
-import org.opendc.simulator.network.playground.cmds.NewSwitch.regex
-import org.opendc.simulator.network.utils.infoNewLn
+import org.opendc.simulator.network.repl.cmds.REPLCmd
 
-/**
- * Displays [Node] information.
- * Check [regex] for a complete understanding of the command parsing.
- *
- * ```console
- * // Example
- * > node 0
- * 16:46:14.078 [INFO] NODE_INFO -
- * | Type = HostNode
- * | numPorts = 1000
- * | portSpeed = 10.485760 Mbps
- * | numConnectedNodes = 2
- */
-internal data object NodeInfo : PGCmd("NODE_INFO") {
-    override val regex = Regex("\\s*(?:n|node)\\s+([^ ]+)\\s*")
+private const val CMD_STR: String = "info"
 
-    override fun CoroutineScope.execCmd(result: MatchResult) {
-        val network: Network = (coroutineContext[PGEnv]!!.network)
+internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
+    private val nodeId: NodeId? by option(
+        help = "Id of the node to display info of",
+        names = arrayOf("-n", "--node"),
+    ).long()
 
-        val nodeId: NodeId = ifInternetElseNull(result.groupValues[1]) ?: fromStrElseCanc(result.groupValues[1])
+    override fun aliases(): Map<String, List<String>> =
+        mapOf(
+            "i" to listOf(CMD_STR),
+        )
 
-        val node: Node = network.getNodeElseCanc(nodeId)
+    override fun run(): Unit =
+        runBlocking(net.validator) {
+            net.awaitStability()
 
-        launch {
-            network.awaitStability()
-            log.infoNewLn(node.fmt())
+            nodeId?.let {
+                // NodeId specified.
+                val node: Node? = net.nodesById[it]
+                checkNotNull(node)
+                echo(node.fmtFlows())
+            } ?: echo(net.fmtFlows())
         }
-    }
 }

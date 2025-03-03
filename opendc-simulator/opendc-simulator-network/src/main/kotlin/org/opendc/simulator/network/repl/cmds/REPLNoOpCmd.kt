@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 AtLarge Research
+ * Copyright (c) 2025 AtLarge Research
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,35 @@
  * SOFTWARE.
  */
 
-package org.opendc.simulator.network.playground
+package org.opendc.simulator.network.repl.cmds
 
+import com.github.ajalt.clikt.core.NoOpCliktCommand
+import com.github.ajalt.clikt.core.requireObject
+import kotlinx.serialization.json.Json
 import org.opendc.simulator.network.api.NetEnRecorder
 import org.opendc.simulator.network.components.Network
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
+import org.opendc.simulator.network.repl.REPLEnv
+import org.opendc.simulator.network.repl.REPLTmSrc
+import org.opendc.simulator.network.utils.logger
 
-internal data class PGEnv(
-    val network: Network,
-    val energyRecorder: NetEnRecorder,
-    val pgTimeSource: PGTimeSource,
-) : AbstractCoroutineContextElement(Key) {
-    companion object Key : CoroutineContext.Key<PGEnv>
+internal abstract class REPLNoOpCmd(val name: String) : NoOpCliktCommand(name = name, invokeWithoutSubcommand = false) {
+    protected val log by logger(name)
+
+    protected val env by requireObject<REPLEnv>()
+    protected val net: Network by lazy { env.network }
+    protected val enRec: NetEnRecorder by lazy { env.energyRecorder }
+    protected val tmSrc: REPLTmSrc by lazy { env.tmSrc }
+
+    override fun aliases(): Map<String, List<String>> =
+        registeredSubcommands().flatMap {
+            it.aliases().toList()
+        }.toMap()
+
+    protected inline fun <reified T> decodeOrNull(str: String): T? {
+        return try {
+            Json.decodeFromString<T>(str)
+        } catch (_: Exception) {
+            null
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 AtLarge Research
+ * Copyright (c) 2025 AtLarge Research
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,15 @@
  * SOFTWARE.
  */
 
-package org.opendc.simulator.network.playground.cmds
+package org.opendc.simulator.network.repl.cmds.link
 
-import kotlinx.coroutines.CoroutineScope
-import org.opendc.simulator.network.playground.cmds.NodeInfo.regex
-import kotlin.system.exitProcess
+import org.opendc.simulator.network.repl.cmds.REPLNoOpCmd
 
-/**
- * Exits process.
- * Check [regex] for a complete understanding of the command parsing.
- *
- * ```console
- * // Example
- * > quit
- * ```
- */
-internal data object Quit : PGCmd("QUIT") {
-    override val regex = Regex("\\s*(?:q|quit)\\s*")
-
-    override fun CoroutineScope.execCmd(result: MatchResult) {
-        exitProcess(status = 0)
-    }
+internal class LinkCmd : REPLNoOpCmd(name = "link") {
+    override fun aliases(): Map<String, List<String>> =
+        mapOf(
+            "l" to listOf("link"),
+            "lmk" to listOf("link mk"),
+            "lrm" to listOf("link rm"),
+        ) + super.aliases()
 }

@@ -45,6 +45,8 @@ import org.opendc.simulator.network.utils.NonSerializable
 import org.opendc.simulator.network.utils.errAndNull
 import org.opendc.simulator.network.utils.logger
 
+private const val SERIAL_NAME: String = "custom-network-specs"
+
 /**
  * Network that is not built following a specific algorithm.
  * It can be built from json with specific format.

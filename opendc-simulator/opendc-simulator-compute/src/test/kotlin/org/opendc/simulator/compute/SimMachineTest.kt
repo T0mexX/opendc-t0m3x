@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.opendc.simulator.compute.device.SimNetworkAdapter
 import org.opendc.simulator.compute.model.MachineModel
 import org.opendc.simulator.compute.model.MemoryUnit
 import org.opendc.simulator.compute.model.NetworkAdapter
@@ -268,7 +267,7 @@ class SimMachineTest {
 //                )
 //
 //            val adapter = (machine.peripherals[0] as SimNetworkAdapter)
-////            adapter.connect(SimNetworkSink(graph, adapter.bandwidth.toFloat()))
+// //            adapter.connect(SimNetworkSink(graph, adapter.bandwidth.toFloat()))
 //
 //            machine.runWorkload(
 //                object : SimWorkload {

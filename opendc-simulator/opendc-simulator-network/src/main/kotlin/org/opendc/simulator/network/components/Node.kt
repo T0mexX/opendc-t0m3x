@@ -22,7 +22,6 @@
 
 package org.opendc.simulator.network.components
 
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.NodeId

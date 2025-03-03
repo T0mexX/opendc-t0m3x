@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 AtLarge Research
+ * Copyright (c) 2025 AtLarge Research
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,15 @@
  * SOFTWARE.
  */
 
-package org.opendc.simulator.network.playground
+package org.opendc.simulator.network.repl.cmds.network
 
-import org.opendc.common.units.Time
-import java.time.Instant
+import org.opendc.simulator.network.repl.cmds.REPLNoOpCmd
 
-internal class PGTimeSource(private val initialInstant: Instant) {
-    val currentInstant: Instant get() =
-        (Time.ofInstantFromEpoch(initialInstant) + _timeElapsed).toInstantFromEpoch()
+private const val CMD_STR: String = "network"
 
-    val timeElapsed: Time get() = _timeElapsed
-    private var _timeElapsed: Time = Time.ZERO
-
-    fun advanceBy(timeDelta: Time) {
-        _timeElapsed += timeDelta
-    }
+internal class NetCmd : REPLNoOpCmd(name = CMD_STR) {
+    override fun aliases(): Map<String, List<String>> =
+        mapOf(
+            "net" to listOf(CMD_STR),
+        ) + super.aliases()
 }

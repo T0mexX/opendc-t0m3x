@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 AtLarge Research
+ * Copyright (c) 2025 AtLarge Research
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,35 +20,11 @@
  * SOFTWARE.
  */
 
-package org.opendc.simulator.network.playground.cmds
+package org.opendc.simulator.network
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import org.opendc.simulator.network.playground.PGEnv
-import org.opendc.simulator.network.utils.infoNewLn
+import io.kotest.core.config.AbstractProjectConfig
+import io.kotest.core.names.DuplicateTestNameMode
 
-/**
- * Logs the energy report of the network.
- * Check [regex] for a complete understanding of the command parsing.
- *
- * ```console
- * // Example
- * > energy report
- * 16:04:47.178 [INFO] ENERGY_REPORT -
- * | ==== Energy Report ====
- * | Current Power Usage: 135.400000 Watts
- * | Total Energy Consumed: 1354.000000 Joule
- * ```
- */
-internal data object EnReport : PGCmd("ENERGY_REPORT") {
-    override val regex = Regex("\\s*(?:energy|en|e)(?:|report|rep|r)\\s*")
-
-    override fun CoroutineScope.execCmd(result: MatchResult) {
-        val pgEnv: PGEnv = coroutineContext[PGEnv]!!
-
-        launch {
-            pgEnv.network.awaitStability()
-            log.infoNewLn(pgEnv.energyRecorder.fmt())
-        }
-    }
+object KotestConfig : AbstractProjectConfig() {
+    override val duplicateTestNameMode = DuplicateTestNameMode.Silent
 }

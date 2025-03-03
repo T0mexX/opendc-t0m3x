@@ -29,7 +29,6 @@ plugins {
     `testing-conventions`
     `jacoco-conventions`
     kotlin("plugin.serialization") version "1.9.22"
-//    id("org.jetbrains.kotlinx.atomicfu") version "0.25.0"
 }
 
 val kLoggingVersion = "3.0.5"
@@ -39,6 +38,7 @@ val kotestPropertyTestVersion = kotestVersion
 val serializationVersion = "1.6.0"
 val kotlinxCoroutinesVersion = "1.8.1"
 val slf4j2Version = "2.23.0"
+val cliktVersion = "2.8.0"
 
 dependencies {
     implementation(libs.progressbar)
@@ -50,6 +50,7 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$slf4j2Version")
     implementation(libs.clikt)
     implementation(projects.opendcTrace.opendcTraceParquet)
+    runtimeOnly("com.github.ajalt:clikt:$cliktVersion")
 
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-property:$version")

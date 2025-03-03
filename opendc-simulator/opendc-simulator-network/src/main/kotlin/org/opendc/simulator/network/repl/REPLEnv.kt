@@ -20,37 +20,17 @@
  * SOFTWARE.
  */
 
-package org.opendc.simulator.network.playground.cmds
+package org.opendc.simulator.network.repl
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import org.opendc.simulator.network.api.NetEnRecorder
 import org.opendc.simulator.network.components.Network
-import org.opendc.simulator.network.flow.FlowId
-import org.opendc.simulator.network.playground.PGEnv
-import org.opendc.simulator.network.playground.cmds.NodeInfo.regex
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
-/**
- * Stops a network flow with certain [FlowId].
- * Check [regex] for a complete understanding of the command parsing.
- *
- * ```console
- * // Example
- * > rm flow 1 /* flow id */
- * 16:49:13.409 [INFO] RM_FLOW - flow successfully stopped
- */
-internal data object RmFlow : PGCmd("RM_FLOW") {
-    override val regex = Regex("\\s*rm\\s+(?:f|flow)\\s+(\\d+)\\s*")
-
-    override fun CoroutineScope.execCmd(result: MatchResult) {
-        val network: Network = (coroutineContext[PGEnv]!!.network)
-
-        val flowId: FlowId = fromStrElseCanc(result.groupValues[1])
-
-        launch {
-            async { network.stopFlow(flowId) }.await()
-                ?.let { log.info("flow successfully stopped") }
-                ?: log.error("unable to stop flow")
-        }
-    }
+internal data class REPLEnv(
+    var network: Network,
+    var energyRecorder: NetEnRecorder,
+    var tmSrc: REPLTmSrc,
+) : AbstractCoroutineContextElement(Key) {
+    companion object Key : CoroutineContext.Key<REPLEnv>
 }

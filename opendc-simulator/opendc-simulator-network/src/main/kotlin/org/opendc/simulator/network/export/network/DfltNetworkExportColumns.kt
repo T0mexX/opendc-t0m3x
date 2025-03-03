@@ -119,7 +119,6 @@ public object DfltNetworkExportColumns {
             field = Types.optional(DOUBLE).named("worst_tput_ratio"),
         ) { it.worstTputPerc?.toRatio() }
 
-
     /**
      * The sum of the current power draw` (network related) of all components in the [Network].
      */
