@@ -111,6 +111,7 @@ public data class NetworkScenario(
                     while (runWl.hasNext()) {
                         val nextWlDeadline = runWl.peek().deadline
                         pb.stepBy(execUntil(nextWlDeadline))
+                        pb.refresh()
                         network.awaitStability()
                     }
                 }
