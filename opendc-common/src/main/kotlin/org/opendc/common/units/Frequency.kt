@@ -26,6 +26,7 @@ package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.InternalUse
+import org.opendc.common.units.Power.Companion
 import org.opendc.common.units.Time.Companion.toTime
 import org.opendc.common.utils.fmt
 import org.opendc.common.utils.ifNeg0thenPos0
@@ -44,6 +45,9 @@ public value class Frequency private constructor(
 ) : Unit<Frequency> {
     override fun new(value: Double): Frequency = Frequency(value.ifNeg0thenPos0().also { check(it >= .0) })
 
+    override val unitType: UnitType<Frequency>
+        get() = Companion
+
     public fun toHz(): Double = value * 1e6
 
     public fun toKHz(): Double = value * 1e3
@@ -56,7 +60,7 @@ public value class Frequency private constructor(
 
     override fun fmtValue(fmt: String): String =
         when (abs()) {
-            in ZERO..ofHz(500) -> "${toHz().fmt(fmt)} Hz"
+            in zero..ofHz(500) -> "${toHz().fmt(fmt)} Hz"
             in ofHz(500)..ofKHz(500) -> "${toKHz().fmt(fmt)} KHz"
             in ofKHz(500)..ofMHz(500) -> "${toMHz().fmt(fmt)} MHz"
             else -> "${toGHz().fmt(fmt)} GHz"
@@ -66,8 +70,9 @@ public value class Frequency private constructor(
 
     public operator fun times(duration: Duration): Double = toHz() * duration.toTime().toSec()
 
-    public companion object {
-        @JvmStatic public val ZERO: Frequency = Frequency(.0)
+    public companion object : UnitType<Frequency> {
+        override val zero: Frequency = Frequency(.0)
+        override val max: Frequency = Frequency(Double.MAX_VALUE)
 
         @JvmStatic
         @JvmName("ofHz")

@@ -26,6 +26,7 @@ package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.InternalUse
+import org.opendc.common.units.Time.Companion
 import org.opendc.common.units.Time.Companion.toTime
 import org.opendc.common.utils.fmt
 import org.opendc.common.utils.ifNeg0thenPos0
@@ -45,6 +46,9 @@ public value class Power private constructor(
     @InternalUse
     override fun new(value: Double): Power = Power(value.ifNeg0thenPos0())
 
+    override val unitType: UnitType<Power>
+        get() = Companion
+
     public fun toWatts(): Double = value
 
     public fun toKWatts(): Double = value / 1000.0
@@ -62,9 +66,9 @@ public value class Power private constructor(
 
     public operator fun times(duration: Duration): Energy = this * duration.toTime()
 
-    public companion object {
-        @JvmStatic
-        public val ZERO: Power = Power(.0)
+    public companion object : UnitType<Power> {
+        override val zero: Power = Power(.0)
+        override val max: Power = Power(Double.MAX_VALUE)
 
         @JvmStatic
         @JvmName("ofWatts")

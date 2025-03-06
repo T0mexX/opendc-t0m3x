@@ -106,6 +106,11 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
     public val value: Double
 
     /**
+     * @return Companion object of this unit, to be used as an enum.
+     */
+    public val unitType: UnitType<T>
+
+    /**
      * @return the sum with [other] as [T].
      */
     public operator fun plus(other: T): T = new(value + other.value)
@@ -141,6 +146,16 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
      * @return `true` if *this* is equal to 0 (using `==` operator).
      */
     public fun isZero(): Boolean = value == .0 || value == -.0
+
+    /**
+     * @return the same unit of measure but with value 0.
+     */
+    public fun zeroUnit(): T = new(.0)
+
+    /**
+     * @return the same unit of measure but with the maximum value.
+     */
+    public fun maxUnit(): T = new(Double.MAX_VALUE)
 
     /**
      * @return `true` if *this* is approximately equal to 0.
@@ -324,7 +339,7 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
         @OverloadResolutionByLambdaReturnType
         @JvmName("sumOfDataRate")
         public inline fun <T> Iterable<T>.sumOfUnit(selector: (T) -> DataRate): DataRate {
-            var sum: DataRate = DataRate.ZERO
+            var sum: DataRate = DataRate.zero
             forEach { sum += selector(it) }
             return sum
         }
@@ -333,7 +348,7 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
         @OverloadResolutionByLambdaReturnType
         @JvmName("sumOfDataSize")
         public inline fun <T> Iterable<T>.sumOfUnit(selector: (T) -> DataSize): DataSize {
-            var sum: DataSize = DataSize.ZERO
+            var sum: DataSize = DataSize.zero
             forEach { sum += selector(it) }
             return sum
         }
@@ -342,7 +357,7 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
         @OverloadResolutionByLambdaReturnType
         @JvmName("sumOfEnergy")
         public inline fun <T> Iterable<T>.sumOfUnit(selector: (T) -> Energy): Energy {
-            var sum: Energy = Energy.ZERO
+            var sum: Energy = Energy.zero
             forEach { sum += selector(it) }
             return sum
         }
@@ -351,7 +366,7 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
         @OverloadResolutionByLambdaReturnType
         @JvmName("sumOfPower")
         public inline fun <T> Iterable<T>.sumOfUnit(selector: (T) -> Power): Power {
-            var sum: Power = Power.ZERO
+            var sum: Power = Power.zero
             forEach { sum += selector(it) }
             return sum
         }
@@ -360,7 +375,7 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
         @OverloadResolutionByLambdaReturnType
         @JvmName("sumOfTime")
         public inline fun <T> Iterable<T>.sumOfUnit(selector: (T) -> Time): Time {
-            var sum: Time = Time.ZERO
+            var sum: Time = Time.zero
             forEach { sum += selector(it) }
             return sum
         }
@@ -369,7 +384,7 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
         @OverloadResolutionByLambdaReturnType
         @JvmName("sumOfFrequency")
         public inline fun <T> Iterable<T>.sumOfUnit(selector: (T) -> Frequency): Frequency {
-            var sum: Frequency = Frequency.ZERO
+            var sum: Frequency = Frequency.zero
             forEach { sum += selector(it) }
             return sum
         }
@@ -378,7 +393,7 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
         @OverloadResolutionByLambdaReturnType
         @JvmName("sumOfPercentage")
         public inline fun <T> Iterable<T>.sumOfUnit(selector: (T) -> Percentage): Percentage {
-            var sum: Percentage = Percentage.ZERO
+            var sum: Percentage = UnboundedPercentage.zero
             forEach { sum += selector(it) }
             return sum
         }

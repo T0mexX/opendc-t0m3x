@@ -44,6 +44,9 @@ public value class Time private constructor(
     @InternalUse
     override fun new(value: Double): Time = Time(value.ifNeg0thenPos0())
 
+    override val unitType: UnitType<Time>
+        get() = Companion
+
     public fun toNs(): Double = value * 1e6
 
     public fun toMicros(): Double = value * 1e3
@@ -71,8 +74,9 @@ public value class Time private constructor(
 
     public operator fun times(dataRate: DataRate): DataSize = DataSize.ofKB(toSec() * dataRate.toKBps())
 
-    public companion object {
-        @JvmStatic public val ZERO: Time = Time(.0)
+    public companion object : UnitType<Time> {
+        override val zero: Time = Time(.0)
+        override val max: Time = Time(Double.MAX_VALUE)
 
         @JvmStatic
         @JvmName("ofNanos")

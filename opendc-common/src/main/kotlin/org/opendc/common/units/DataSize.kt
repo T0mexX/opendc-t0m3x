@@ -26,6 +26,7 @@ package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.InternalUse
+import org.opendc.common.units.Energy.Companion
 import org.opendc.common.units.Time.Companion.toTime
 import org.opendc.common.utils.fmt
 import java.time.Duration
@@ -42,6 +43,9 @@ public value class DataSize private constructor(
 ) : Unit<DataSize> {
     @InternalUse
     override fun new(value: Double): DataSize = DataSize(value)
+
+    override val unitType: UnitType<DataSize>
+        get() = Companion
 
     public fun toBits(): Double = toKib() * 1024
 
@@ -87,7 +91,7 @@ public value class DataSize private constructor(
 
     override fun fmtValue(fmt: String): String =
         when (abs()) {
-            in ZERO..ofBytes(100) -> "${toBytes().fmt(fmt)} Bytes"
+            in zero..ofBytes(100) -> "${toBytes().fmt(fmt)} Bytes"
             in ofBytes(100)..ofKiB(100) -> "${toKiB().fmt(fmt)} KiB"
             in ofKiB(100)..ofMiB(100) -> "${toMiB().fmt(fmt)} MiB"
             else -> "${toGiB().fmt(fmt)} GiB"
@@ -97,8 +101,9 @@ public value class DataSize private constructor(
 
     public operator fun div(duration: Duration): DataRate = this / duration.toTime()
 
-    public companion object {
-        @JvmStatic public val ZERO: DataSize = DataSize(.0)
+    public companion object : UnitType<DataSize> {
+        override val zero: DataSize = DataSize(.0)
+        override val max: DataSize = DataSize(Double.MAX_VALUE)
 
         @JvmStatic
         @JvmName("ofBits")
