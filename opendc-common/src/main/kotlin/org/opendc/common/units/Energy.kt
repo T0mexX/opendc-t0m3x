@@ -26,6 +26,7 @@ package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.InternalUse
+import org.opendc.common.units.Frequency.Companion
 import org.opendc.common.units.Time.Companion.toTime
 import org.opendc.common.utils.fmt
 import org.opendc.common.utils.ifNeg0thenPos0
@@ -43,6 +44,9 @@ public value class Energy private constructor(
     override val value: Double,
 ) : Unit<Energy> {
     override fun new(value: Double): Energy = Energy(value.ifNeg0thenPos0())
+
+    override val unitType: UnitType<Energy>
+        get() = Companion
 
     public fun toJoule(): Double = value
 
@@ -65,9 +69,9 @@ public value class Energy private constructor(
 
     public operator fun div(duration: Duration): Power = this / duration.toTime()
 
-    public companion object {
-        @JvmStatic
-        public val ZERO: Energy = Energy(.0)
+    public companion object : UnitType<Energy> {
+        override val zero: Energy = Energy(.0)
+        override val max: Energy = Energy(Double.MAX_VALUE)
 
         @JvmStatic
         @JvmName("ofJoule")

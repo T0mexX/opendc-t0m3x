@@ -25,8 +25,8 @@
 package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
-import mu.KotlinLogging
 import org.opendc.common.annotations.InternalUse
+import org.opendc.common.logger.logger
 import org.opendc.common.utils.fmt
 import org.opendc.common.utils.ifNeg0thenPos0
 import kotlin.text.RegexOption.IGNORE_CASE
@@ -82,8 +82,6 @@ public sealed interface Percentage : Unit<Percentage> {
     override fun fmtValue(fmt: String): String = "${toPercentageValue().fmt(fmt)}%"
 
     public companion object {
-        @JvmStatic public val ZERO: Percentage = UnboundedPercentage(.0)
-
         @JvmStatic
         @JvmName("ofRatio")
         public fun ofRatio(ratio: Double): UnboundedPercentage = UnboundedPercentage(ratio)
@@ -117,7 +115,7 @@ public sealed interface Percentage : Unit<Percentage> {
         public infix fun <T : Unit<T>> T.percentageOf(other: T): UnboundedPercentage = UnboundedPercentage(this.value / other.value)
 
         /**
-         * @return the *bounded* percentage resulting from [this] / [other], applicable on all [Unit]s of same type.
+         * @return the *bounded* percentage resulting from [this] / [other], applicable on all [Unit]s of the same type.
          */
         public infix fun <T : Unit<T>> T.boundedPercentageOf(other: T): BoundedPercentage = BoundedPercentage(this.value / other.value)
 
@@ -169,6 +167,9 @@ public value class BoundedPercentage
 
         override fun new(value: Double): BoundedPercentage = BoundedPercentage(value.forceInRange().ifNeg0thenPos0())
 
+        override val unitType: UnitType<Percentage>
+            get() = Companion
+
         override fun toString(): String = fmtValue()
 
         /**
@@ -200,18 +201,19 @@ public value class BoundedPercentage
             to: Double = 1.0,
         ): Double =
             if (this < from) {
-                LOG.warn("bounded percentage has been rounded up (from ${this * 1e2}% to ${from * 1e2}%")
+                log.warn("bounded percentage has been rounded up (from ${this * 1e2}% to ${from * 1e2}%")
                 from
             } else if (this > to) {
-                LOG.warn("bounded percentage has been rounded down (from ${this * 1e2}% to ${to * 1e2}%")
+                log.warn("bounded percentage has been rounded down (from ${this * 1e2}% to ${to * 1e2}%")
                 to
             } else {
                 this
             }
 
-        public companion object {
-            // TODO: replace with `by logger()` if pr #241 is approved
-            private val LOG = KotlinLogging.logger(name = this::class.java.enclosingClass.simpleName)
+        public companion object : UnitType<Percentage> {
+            override val zero: Percentage = UnboundedPercentage(.0)
+            override val max: Percentage = UnboundedPercentage(Double.MAX_VALUE)
+            private val log by logger()
         }
     }
 
@@ -231,6 +233,9 @@ public value class UnboundedPercentage
 
         @InternalUse
         override fun new(value: Double): UnboundedPercentage = UnboundedPercentage(value)
+
+        override val unitType: UnitType<Percentage>
+            get() = UnboundedPercentage
 
         override fun toString(): String = fmtValue()
 
@@ -257,4 +262,9 @@ public value class UnboundedPercentage
          * @see[Unit.div]
          */
         override operator fun div(scalar: Number): UnboundedPercentage = UnboundedPercentage(this.value / scalar.toDouble())
+
+        public companion object : UnitType<Percentage> {
+            override val zero: Percentage = UnboundedPercentage(.0)
+            override val max: Percentage = UnboundedPercentage(Double.MAX_VALUE)
+        }
     }

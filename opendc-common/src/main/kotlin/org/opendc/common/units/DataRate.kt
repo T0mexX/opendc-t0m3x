@@ -26,6 +26,7 @@ package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.InternalUse
+import org.opendc.common.units.DataSize.Companion
 import org.opendc.common.units.Time.Companion.toTime
 import org.opendc.common.utils.ifNeg0thenPos0
 import java.time.Duration
@@ -42,6 +43,9 @@ public value class DataRate private constructor(
 ) : Unit<DataRate> {
     @InternalUse
     override fun new(value: Double): DataRate = DataRate(value.ifNeg0thenPos0())
+
+    override val unitType: UnitType<DataRate>
+        get() = Companion
 
     public fun tobps(): Double = value
 
@@ -73,7 +77,7 @@ public value class DataRate private constructor(
 
     public override fun fmtValue(fmt: String): String =
         when (abs()) {
-            in ZERO..ofBps(100) -> "${String.format(fmt, tobps())} bps"
+            in zero..ofBps(100) -> "${String.format(fmt, tobps())} bps"
             in ofbps(100)..ofKbps(100) -> "${String.format(fmt, toKbps())} Kbps"
             in ofKbps(100)..ofMbps(100) -> "${String.format(fmt, toMbps())} Mbps"
             else -> "${String.format(fmt, toGbps())} Gbps"
@@ -83,8 +87,9 @@ public value class DataRate private constructor(
 
     public operator fun times(duration: Duration): DataSize = this * duration.toTime()
 
-    public companion object {
-        @JvmStatic public val ZERO: DataRate = DataRate(.0)
+    public companion object : UnitType<DataRate> {
+        override val zero: DataRate = DataRate(.0)
+        override val max: DataRate = DataRate(Double.MAX_VALUE)
 
         @JvmStatic
         @JvmName("ofbps")
