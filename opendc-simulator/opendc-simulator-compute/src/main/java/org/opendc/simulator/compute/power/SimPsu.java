@@ -23,16 +23,16 @@
 package org.opendc.simulator.compute.power;
 
 import org.opendc.simulator.compute.cpu.SimCpu;
-import org.opendc.simulator.engine.graph.FlowConsumer;
+import org.opendc.simulator.engine.graph.FlowConsumerDecorator;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowGraph;
 import org.opendc.simulator.engine.graph.FlowNode;
-import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.FlowSupplierDecorator;
 
 /**
  * A {@link SimPsu} implementation that estimates the power consumption based on CPU usage.
  */
-public final class SimPsu extends FlowNode implements FlowSupplier, FlowConsumer {
+public final class SimPsu extends FlowNode implements FlowSupplierDecorator, FlowConsumerDecorator {
     private long lastUpdate;
 
     private double powerDemand = 0.0;
@@ -165,12 +165,12 @@ public final class SimPsu extends FlowNode implements FlowSupplier, FlowConsumer
     }
 
     @Override
-    public void addConsumerEdge(FlowEdge consumerEdge) {
+    public void addDfltConsumerEdge(FlowEdge consumerEdge) {
         this.cpuEdge = consumerEdge;
     }
 
     @Override
-    public void addSupplierEdge(FlowEdge supplierEdge) {
+    public void addDfltSupplierEdge(FlowEdge supplierEdge) {
         this.powerSupplyEdge = supplierEdge;
     }
 

@@ -1,0 +1,8 @@
+{
+    "networkSpecsPath": "resources/test/fat-tree.json",
+    "wlPath": "resources/example-traces/anarchy_online_10servers.parquet",
+    "virtualMapping": true,
+    "exportConfig": {
+        "outputFolder": "output/tobedel"
+    }
+}

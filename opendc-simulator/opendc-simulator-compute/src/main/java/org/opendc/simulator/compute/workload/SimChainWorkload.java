@@ -25,12 +25,12 @@ package org.opendc.simulator.compute.workload;
 import java.util.LinkedList;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowNode;
-import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.FlowSupplierDecorator;
 
 /**
  * A {@link SimChainWorkload} that composes multiple {@link SimWorkload}s.
  */
-final class SimChainWorkload extends SimWorkload implements FlowSupplier {
+final class SimChainWorkload extends SimWorkload implements FlowSupplierDecorator {
     private final LinkedList<Workload> workloads;
     private int workloadIndex;
 
@@ -83,7 +83,7 @@ final class SimChainWorkload extends SimWorkload implements FlowSupplier {
     // Constructors
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    SimChainWorkload(FlowSupplier supplier, ChainWorkload workload, long now) {
+    SimChainWorkload(FlowSupplierDecorator supplier, ChainWorkload workload, long now) {
         super(((FlowNode) supplier).getGraph());
 
         this.snapshot = workload;
@@ -173,7 +173,7 @@ final class SimChainWorkload extends SimWorkload implements FlowSupplier {
      * @param consumerEdge The edge to the workload
      */
     @Override
-    public void addConsumerEdge(FlowEdge consumerEdge) {
+    public void addDfltConsumerEdge(FlowEdge consumerEdge) {
         this.workloadEdge = consumerEdge;
     }
 
@@ -183,7 +183,7 @@ final class SimChainWorkload extends SimWorkload implements FlowSupplier {
      * @param supplierEdge The edge to the cpuMux
      */
     @Override
-    public void addSupplierEdge(FlowEdge supplierEdge) {
+    public void addDfltSupplierEdge(FlowEdge supplierEdge) {
         this.machineEdge = supplierEdge;
         this.capacity = supplierEdge.getCapacity();
     }

@@ -26,13 +26,13 @@ import java.util.LinkedList;
 import org.opendc.simulator.compute.workload.SimWorkload;
 import org.opendc.simulator.compute.workload.trace.scaling.NoDelayScaling;
 import org.opendc.simulator.compute.workload.trace.scaling.ScalingPolicy;
-import org.opendc.simulator.engine.graph.FlowConsumer;
+import org.opendc.simulator.engine.graph.FlowConsumerDecorator;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowGraph;
 import org.opendc.simulator.engine.graph.FlowNode;
-import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.FlowSupplierDecorator;
 
-public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
+public class SimTraceWorkload extends SimWorkload implements FlowConsumerDecorator {
     private LinkedList<TraceFragment> remainingFragments;
     private int fragmentIndex;
 
@@ -83,7 +83,7 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
     // Constructors
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public SimTraceWorkload(FlowSupplier supplier, TraceWorkload workload, long now) {
+    public SimTraceWorkload(FlowSupplierDecorator supplier, TraceWorkload workload, long now) {
         super(((FlowNode) supplier).getGraph());
 
         this.snapshot = workload;
@@ -271,7 +271,7 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
      * @param supplierEdge edge to the VM on which this is running
      */
     @Override
-    public void addSupplierEdge(FlowEdge supplierEdge) {
+    public void addDfltSupplierEdge(FlowEdge supplierEdge) {
         this.machineEdge = supplierEdge;
     }
 

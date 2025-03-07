@@ -22,7 +22,7 @@
 
 package org.opendc.simulator.compute.workload;
 
-import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.FlowSupplierDecorator;
 
 public interface Workload {
 
@@ -32,5 +32,5 @@ public interface Workload {
 
     double getCheckpointIntervalScaling();
 
-    SimWorkload startWorkload(FlowSupplier supplier, long now);
+    SimWorkload startWorkload(FlowSupplierDecorator supplier, long now);
 }

@@ -22,7 +22,7 @@
 
 package org.opendc.simulator.compute.workload;
 
-import org.opendc.simulator.engine.graph.FlowConsumer;
+import org.opendc.simulator.engine.graph.FlowConsumerDecorator;
 import org.opendc.simulator.engine.graph.FlowGraph;
 import org.opendc.simulator.engine.graph.FlowNode;
 
@@ -33,7 +33,7 @@ import org.opendc.simulator.engine.graph.FlowNode;
  * Workloads are stateful objects that may be paused and resumed at a later moment. As such, be careful when using the
  * same {@link SimWorkload} from multiple contexts.
  */
-public abstract class SimWorkload extends FlowNode implements FlowConsumer {
+public abstract class SimWorkload extends FlowNode implements FlowConsumerDecorator {
     /**
      * Construct a new {@link FlowNode} instance.
      *

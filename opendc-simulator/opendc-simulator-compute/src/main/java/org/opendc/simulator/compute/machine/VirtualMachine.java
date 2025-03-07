@@ -26,16 +26,16 @@ import java.util.function.Consumer;
 import org.opendc.simulator.compute.cpu.SimCpu;
 import org.opendc.simulator.compute.workload.SimWorkload;
 import org.opendc.simulator.compute.workload.Workload;
-import org.opendc.simulator.engine.graph.FlowConsumer;
+import org.opendc.simulator.engine.graph.FlowConsumerDecorator;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowGraph;
 import org.opendc.simulator.engine.graph.FlowNode;
-import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.FlowSupplierDecorator;
 
 /*
   A virtual Machine created to run a single workload
 */
-public class VirtualMachine extends FlowNode implements FlowConsumer, FlowSupplier {
+public class VirtualMachine extends FlowNode implements FlowConsumerDecorator, FlowSupplierDecorator {
     private final SimMachine machine;
 
     private SimWorkload activeWorkload;
@@ -168,7 +168,7 @@ public class VirtualMachine extends FlowNode implements FlowConsumer, FlowSuppli
      * TODO: maybe add a check if there is already an edge
      */
     @Override
-    public void addConsumerEdge(FlowEdge consumerEdge) {
+    public void addDfltConsumerEdge(FlowEdge consumerEdge) {
         this.workloadEdge = consumerEdge;
     }
 
@@ -177,7 +177,7 @@ public class VirtualMachine extends FlowNode implements FlowConsumer, FlowSuppli
      * TODO: maybe add a check if there is already an edge
      */
     @Override
-    public void addSupplierEdge(FlowEdge supplierEdge) {
+    public void addDfltSupplierEdge(FlowEdge supplierEdge) {
         this.cpuEdge = supplierEdge;
     }
 

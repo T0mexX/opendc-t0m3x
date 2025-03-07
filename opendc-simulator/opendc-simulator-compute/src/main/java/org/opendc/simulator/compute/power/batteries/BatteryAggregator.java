@@ -24,14 +24,14 @@ package org.opendc.simulator.compute.power.batteries;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.opendc.simulator.engine.graph.FlowConsumer;
+import org.opendc.simulator.engine.graph.FlowConsumerDecorator;
 import org.opendc.simulator.engine.graph.FlowDistributor;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowGraph;
 import org.opendc.simulator.engine.graph.FlowNode;
-import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.FlowSupplierDecorator;
 
-public class BatteryAggregator extends FlowNode implements FlowConsumer, FlowSupplier {
+public class BatteryAggregator extends FlowNode implements FlowConsumerDecorator, FlowSupplierDecorator {
 
     private FlowEdge batteryEdge;
     private FlowEdge powerSourceEdge;
@@ -128,7 +128,7 @@ public class BatteryAggregator extends FlowNode implements FlowConsumer, FlowSup
     }
 
     @Override
-    public void addSupplierEdge(FlowEdge supplierEdge) {}
+    public void addDfltSupplierEdge(FlowEdge supplierEdge) {}
 
     @Override
     public void removeSupplierEdge(FlowEdge supplierEdge) {
@@ -141,7 +141,7 @@ public class BatteryAggregator extends FlowNode implements FlowConsumer, FlowSup
     }
 
     @Override
-    public void addConsumerEdge(FlowEdge consumerEdge) {
+    public void addDfltConsumerEdge(FlowEdge consumerEdge) {
         this.hostEdge = consumerEdge;
     }
 

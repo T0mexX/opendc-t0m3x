@@ -29,7 +29,7 @@ import org.opendc.simulator.compute.workload.SimWorkload;
 import org.opendc.simulator.compute.workload.Workload;
 import org.opendc.simulator.compute.workload.trace.scaling.NoDelayScaling;
 import org.opendc.simulator.compute.workload.trace.scaling.ScalingPolicy;
-import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.FlowSupplierDecorator;
 
 public class TraceWorkload implements Workload {
     private ArrayList<TraceFragment> fragments;
@@ -111,7 +111,7 @@ public class TraceWorkload implements Workload {
     }
 
     @Override
-    public SimWorkload startWorkload(FlowSupplier supplier, long now) {
+    public SimWorkload startWorkload(FlowSupplierDecorator supplier, long now) {
         return new SimTraceWorkload(supplier, this, now);
     }
 

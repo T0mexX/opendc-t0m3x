@@ -23,13 +23,13 @@
 package org.opendc.simulator.compute.power.batteries;
 
 import org.opendc.simulator.compute.power.batteries.policy.BatteryPolicy;
-import org.opendc.simulator.engine.graph.FlowConsumer;
+import org.opendc.simulator.engine.graph.FlowConsumerDecorator;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowGraph;
 import org.opendc.simulator.engine.graph.FlowNode;
-import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.FlowSupplierDecorator;
 
-public class SimBattery extends FlowNode implements FlowConsumer, FlowSupplier {
+public class SimBattery extends FlowNode implements FlowConsumerDecorator, FlowSupplierDecorator {
 
     private final double capacity;
     private final double chargingSpeed;
@@ -287,7 +287,7 @@ public class SimBattery extends FlowNode implements FlowConsumer, FlowSupplier {
     }
 
     @Override
-    public void addSupplierEdge(FlowEdge supplierEdge) {
+    public void addDfltSupplierEdge(FlowEdge supplierEdge) {
         this.distributorEdge = supplierEdge;
     }
 
@@ -311,7 +311,7 @@ public class SimBattery extends FlowNode implements FlowConsumer, FlowSupplier {
     }
 
     @Override
-    public void addConsumerEdge(FlowEdge consumerEdge) {
+    public void addDfltConsumerEdge(FlowEdge consumerEdge) {
         this.aggregatorEdge = consumerEdge;
     }
 
