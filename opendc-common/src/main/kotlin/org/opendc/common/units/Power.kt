@@ -26,7 +26,8 @@ package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.InternalUse
-import org.opendc.common.units.Time.Companion
+import org.opendc.common.annotations.JavaOnly
+import org.opendc.common.annotations.RestrictedApi
 import org.opendc.common.units.Time.Companion.toTime
 import org.opendc.common.utils.fmt
 import org.opendc.common.utils.ifNeg0thenPos0
@@ -37,70 +38,77 @@ import kotlin.text.RegexOption.IGNORE_CASE
  * Represents power values.
  * @see[Unit]
  */
+@OptIn(JavaOnly::class)
 @JvmInline
 @Serializable(with = Power.Companion.PowerSerializer::class)
-public value class Power private constructor(
-    // In Watts.
-    override val value: Double,
-) : Unit<Power> {
-    @InternalUse
-    override fun new(value: Double): Power = Power(value.ifNeg0thenPos0())
+public value class Power
+    @JavaOnly
+    constructor(
+        // In Watts.
+        override val value: Double,
+    ) : Unit<Power> {
+        @InternalUse
+        override fun new(value: Double): Power = Power(value.ifNeg0thenPos0())
 
-    override val unitType: UnitType<Power>
-        get() = Companion
+        override val unitType: UnitType<Power>
+            get() = Companion
 
-    public fun toWatts(): Double = value
+        public fun toWatts(): Double = value
 
-    public fun toKWatts(): Double = value / 1000.0
+        public fun toKWatts(): Double = value / 1000.0
 
-    override fun toString(): String = fmtValue()
+        override fun toString(): String = fmtValue()
 
-    override fun fmtValue(fmt: String): String =
-        if (value >= 1000.0) {
-            "${toKWatts().fmt(fmt)} KWatts"
-        } else {
-            "${toWatts().fmt(fmt)} Watts"
+        override fun fmtValue(fmt: String): String =
+            if (value >= 1000.0) {
+                "${toKWatts().fmt(fmt)} KWatts"
+            } else {
+                "${toWatts().fmt(fmt)} Watts"
+            }
+
+        public operator fun times(time: Time): Energy = Energy.ofWh(toWatts() * time.toHours())
+
+        public operator fun times(duration: Duration): Energy = this * duration.toTime()
+
+        public companion object : UnitType<Power> {
+            override val zero: Power = Power(.0)
+            override val max: Power = Power(Double.MAX_VALUE)
+
+            @Unit.UnsafeUnitOperation
+            @RestrictedApi
+            override fun ofBase(value: Double): Power = Power(value)
+
+            @JvmStatic
+            @JvmName("ofWatts")
+            public fun ofWatts(watts: Number): Power = Power(watts.toDouble())
+
+            @JvmStatic
+            @JvmName("ofKWatts")
+            public fun ofKWatts(kWatts: Number): Power = Power(kWatts.toDouble() * 1000.0)
+
+            /**
+             * Serializer for [Power] value class. It needs to be a compile
+             * time constant in order to be used as serializer automatically,
+             * hence `object :` instead of class instantiation.
+             *
+             * ```json
+             * // e.g.
+             * "power-draw": "4 watts"
+             * "power-draw": "  1    KWatt   "
+             * // etc.
+             * ```
+             */
+            internal object PowerSerializer : UnitSerializer<Power>(
+                ifNumber = {
+                    LOG.warn(
+                        "deserialization of number with no unit of measure, assuming it is in Watts." +
+                            "Keep in mind that you can also specify the value as '$it W'",
+                    )
+                    ofWatts(it.toDouble())
+                },
+                serializerFun = { this.encodeString(it.toString()) },
+                ifMatches("$NUM_GROUP$WATTS", IGNORE_CASE) { ofWatts(json.decNumFromStr(groupValues[1])) },
+                ifMatches("$NUM_GROUP$KILO$WATTS", IGNORE_CASE) { ofKWatts(json.decNumFromStr(groupValues[1])) },
+            )
         }
-
-    public operator fun times(time: Time): Energy = Energy.ofWh(toWatts() * time.toHours())
-
-    public operator fun times(duration: Duration): Energy = this * duration.toTime()
-
-    public companion object : UnitType<Power> {
-        override val zero: Power = Power(.0)
-        override val max: Power = Power(Double.MAX_VALUE)
-
-        @JvmStatic
-        @JvmName("ofWatts")
-        public fun ofWatts(watts: Number): Power = Power(watts.toDouble())
-
-        @JvmStatic
-        @JvmName("ofKWatts")
-        public fun ofKWatts(kWatts: Number): Power = Power(kWatts.toDouble() * 1000.0)
-
-        /**
-         * Serializer for [Power] value class. It needs to be a compile
-         * time constant in order to be used as serializer automatically,
-         * hence `object :` instead of class instantiation.
-         *
-         * ```json
-         * // e.g.
-         * "power-draw": "4 watts"
-         * "power-draw": "  1    KWatt   "
-         * // etc.
-         * ```
-         */
-        internal object PowerSerializer : UnitSerializer<Power>(
-            ifNumber = {
-                LOG.warn(
-                    "deserialization of number with no unit of measure, assuming it is in Watts." +
-                        "Keep in mind that you can also specify the value as '$it W'",
-                )
-                ofWatts(it.toDouble())
-            },
-            serializerFun = { this.encodeString(it.toString()) },
-            ifMatches("$NUM_GROUP$WATTS", IGNORE_CASE) { ofWatts(json.decNumFromStr(groupValues[1])) },
-            ifMatches("$NUM_GROUP$KILO$WATTS", IGNORE_CASE) { ofKWatts(json.decNumFromStr(groupValues[1])) },
-        )
     }
-}

@@ -111,6 +111,43 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
     public val unitType: UnitType<T>
 
     /**
+     * This method allows converting  a [Unit] into its basic double representation.
+     * This is especially useful when complete/reified types are necessary and `T` in `Unit<T> is not reified/complete
+     * (e.g., if working with arrays for performance reasons), without knowing what [Unit] it is.
+     *
+     * ```kotlin
+     * fun <T: Unit<T>> arrayWork(unit: T) {
+     *    // Step 1: retrieve `UnitType`
+     *    val unitType: UnitType<*> = unit.unitType
+     *    // Step 2: convert to double
+     *    val unitBase: Double = unit.toBase()
+     *    // Step 3: perform some array operation
+     *    // (note: this is not possible without complete/reified type)
+     *    val myArray = Array(250) { unitBase }
+     *    ⋮
+     *    val outputUnitBase: Double = <something>
+     *    // Step 4: convert to original UnitType
+     * }
+     * ```
+     * @see UnitType.ofBase
+     */
+    @UnsafeUnitOperation
+    public fun toBase(): Double = value
+
+    /**
+     * Combines [Unit.toBase] and [UnitType.ofBase] performing a conversion to unit base double value,
+     * a series of operations and then a conversion back to the original Unit.
+     * If no operations are performed with other [Unit]s converted to double,
+     * operation should be Unit and Magnitude safe.
+     * @see Unit.toBase
+     * @see UnitType.ofBase
+     */
+    @UnsafeUnitOperation
+    public fun withUnitAsDouble(block: (unitAsBase: Double) -> Double) {
+        new(block(this.toBase()))
+    }
+
+    /**
      * @return the sum with [other] as [T].
      */
     public operator fun plus(other: T): T = new(value + other.value)
@@ -282,6 +319,13 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
      * ```
      */
     public fun fmtValue(fmt: String = "%f"): String
+
+    @RequiresOptIn(level = RequiresOptIn.Level.ERROR)
+    @Retention(AnnotationRetention.BINARY)
+    @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.CONSTRUCTOR)
+    public annotation class UnsafeUnitOperation(
+        val message: String = "this operation is not safe and may lead to errors if used incorrectly",
+    )
 
     public companion object {
         /**

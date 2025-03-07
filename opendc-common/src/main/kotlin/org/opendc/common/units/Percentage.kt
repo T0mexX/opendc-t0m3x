@@ -26,6 +26,8 @@ package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.InternalUse
+import org.opendc.common.annotations.JavaOnly
+import org.opendc.common.annotations.RestrictedApi
 import org.opendc.common.logger.logger
 import org.opendc.common.utils.fmt
 import org.opendc.common.utils.ifNeg0thenPos0
@@ -81,8 +83,8 @@ public sealed interface Percentage : Unit<Percentage> {
      */
     override fun fmtValue(fmt: String): String = "${toPercentageValue().fmt(fmt)}%"
 
+    @OptIn(JavaOnly::class)
     public companion object {
-        @JvmStatic
         @JvmName("ofRatio")
         public fun ofRatio(ratio: Double): UnboundedPercentage = UnboundedPercentage(ratio)
 
@@ -155,9 +157,10 @@ public sealed interface Percentage : Unit<Percentage> {
  * percentage value is adjusted to always be in the range 0-100%,
  * logging a warning whenever an adjustment has been made.
  */
+@OptIn(JavaOnly::class)
 @JvmInline
 public value class BoundedPercentage
-    @InternalUse
+    @InternalUse @JavaOnly
     internal constructor(
         override val value: Double,
     ) : Percentage {
@@ -211,8 +214,13 @@ public value class BoundedPercentage
             }
 
         public companion object : UnitType<Percentage> {
-            override val zero: Percentage = UnboundedPercentage(.0)
-            override val max: Percentage = UnboundedPercentage(Double.MAX_VALUE)
+            override val zero: Percentage = BoundedPercentage(.0)
+            override val max: Percentage = BoundedPercentage(Double.MAX_VALUE)
+
+            @Unit.UnsafeUnitOperation
+            @RestrictedApi
+            override fun ofBase(value: Double): Percentage = BoundedPercentage(value)
+
             private val log by logger()
         }
     }
@@ -221,9 +229,10 @@ public value class BoundedPercentage
  * Unbounded implementation of [Percentage], meaning the
  * percentage value is allowed to be outside the range 0-100%.
  */
+@OptIn(JavaOnly::class)
 @JvmInline
 public value class UnboundedPercentage
-    @InternalUse
+    @InternalUse @JavaOnly
     internal constructor(
         override val value: Double,
     ) : Percentage {
@@ -266,5 +275,9 @@ public value class UnboundedPercentage
         public companion object : UnitType<Percentage> {
             override val zero: Percentage = UnboundedPercentage(.0)
             override val max: Percentage = UnboundedPercentage(Double.MAX_VALUE)
+
+            @Unit.UnsafeUnitOperation
+            @RestrictedApi
+            override fun ofBase(value: Double): Percentage = UnboundedPercentage(value)
         }
     }

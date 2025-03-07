@@ -26,7 +26,8 @@ package org.opendc.common.units
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.InternalUse
-import org.opendc.common.units.Frequency.Companion
+import org.opendc.common.annotations.JavaOnly
+import org.opendc.common.annotations.RestrictedApi
 import org.opendc.common.units.Time.Companion.toTime
 import org.opendc.common.utils.fmt
 import org.opendc.common.utils.ifNeg0thenPos0
@@ -37,86 +38,97 @@ import kotlin.text.RegexOption.IGNORE_CASE
  * Represents energy values.
  * @see[Unit]
  */
+@OptIn(JavaOnly::class)
 @JvmInline
 @Serializable(with = Energy.Companion.EnergySerializer::class)
-public value class Energy private constructor(
-    // In Joule
-    override val value: Double,
-) : Unit<Energy> {
-    override fun new(value: Double): Energy = Energy(value.ifNeg0thenPos0())
+public value class Energy
+    @JavaOnly
+    constructor(
+        // In Joule
+        override val value: Double,
+    ) : Unit<Energy> {
+        @InternalUse
+        override fun new(value: Double): Energy = Energy(value.ifNeg0thenPos0())
 
-    override val unitType: UnitType<Energy>
-        get() = Companion
+        override val unitType: UnitType<Energy>
+            get() = Companion
 
-    public fun toJoule(): Double = value
+        public fun toJoule(): Double = value
 
-    public fun toKJoule(): Double = value / 1000
+        public fun toKJoule(): Double = value / 1000
 
-    public fun toWh(): Double = value / 3600
+        public fun toWh(): Double = value / 3600
 
-    public fun toKWh(): Double = toWh() / 1000
+        public fun toKWh(): Double = toWh() / 1000
 
-    override fun toString(): String = fmtValue()
+        override fun toString(): String = fmtValue()
 
-    override fun fmtValue(fmt: String): String =
-        if (value >= 1000.0) {
-            "${toJoule().fmt(fmt)} Joule"
-        } else {
-            "${toKJoule().fmt(fmt)} KJoule"
+        override fun fmtValue(fmt: String): String =
+            if (value >= 1000.0) {
+                "${toJoule().fmt(fmt)} Joule"
+            } else {
+                "${toKJoule().fmt(fmt)} KJoule"
+            }
+
+        public operator fun div(time: Time): Power {
+            time.new(.0)
+            return Power.ofWatts(toWh() / time.toHours())
         }
 
-    public operator fun div(time: Time): Power = Power.ofWatts(toWh() / time.toHours())
+        public operator fun div(duration: Duration): Power = this / duration.toTime()
 
-    public operator fun div(duration: Duration): Power = this / duration.toTime()
+        public companion object : UnitType<Energy> {
+            override val zero: Energy = Energy(.0)
+            override val max: Energy = Energy(Double.MAX_VALUE)
 
-    public companion object : UnitType<Energy> {
-        override val zero: Energy = Energy(.0)
-        override val max: Energy = Energy(Double.MAX_VALUE)
+            @Unit.UnsafeUnitOperation
+            @RestrictedApi
+            override fun ofBase(value: Double): Energy = Energy(value)
 
-        @JvmStatic
-        @JvmName("ofJoule")
-        public fun ofJoule(joule: Number): Energy = Energy(joule.toDouble())
+            @JvmStatic
+            @JvmName("ofJoule")
+            public fun ofJoule(joule: Number): Energy = Energy(joule.toDouble())
 
-        @JvmStatic
-        @JvmName("ofKJoule")
-        public fun ofKJoule(kJoule: Number): Energy = ofJoule(kJoule.toDouble() * 1000)
+            @JvmStatic
+            @JvmName("ofKJoule")
+            public fun ofKJoule(kJoule: Number): Energy = ofJoule(kJoule.toDouble() * 1000)
 
-        @JvmStatic
-        @JvmName("ofWh")
-        public fun ofWh(wh: Number): Energy = ofJoule(wh.toDouble() * 3600)
+            @JvmStatic
+            @JvmName("ofWh")
+            public fun ofWh(wh: Number): Energy = ofJoule(wh.toDouble() * 3600)
 
-        @JvmStatic
-        @JvmName("ofKWh")
-        public fun ofKWh(kWh: Number): Energy = ofWh(kWh.toDouble() * 1000.0)
+            @JvmStatic
+            @JvmName("ofKWh")
+            public fun ofKWh(kWh: Number): Energy = ofWh(kWh.toDouble() * 1000.0)
 
-        private val JOULES = Regex("\\s*(?:j|(?:joule|Joule)(?:|s))")
+            private val JOULES = Regex("\\s*(?:j|(?:joule|Joule)(?:|s))")
 
-        /**
-         * Serializer for [Energy] value class. It needs to be a compile
-         * time constant in order to be used as serializer automatically,
-         * hence `object :` instead of class instantiation.
-         *
-         * ```json
-         * // e.g.
-         * "energy": "1 KWh"
-         * "energy": "  3    watts-hour  "
-         * "energy": "10.5 Joules"
-         * // etc.
-         * ```
-         */
-        internal object EnergySerializer : UnitSerializer<Energy>(
-            ifNumber = {
-                LOG.warn(
-                    "deserialization of number with no unit of measure, assuming it is in Joule" +
-                        "Keep in mind that you can also specify the value as '$it Joule'",
-                )
-                ofJoule(it.toDouble())
-            },
-            serializerFun = { this.encodeString(it.toString()) },
-            ifMatches("$NUM_GROUP$WATTS$PER$HOUR", IGNORE_CASE) { ofWh(json.decNumFromStr(groupValues[1])) },
-            ifMatches("$NUM_GROUP$KILO$WATTS$PER$HOUR", IGNORE_CASE) { ofKWh(json.decNumFromStr(groupValues[1])) },
-            ifMatches("$NUM_GROUP$JOULES", IGNORE_CASE) { ofJoule(json.decNumFromStr(groupValues[1])) },
-            ifMatches("$NUM_GROUP$KILO$JOULES", IGNORE_CASE) { ofKJoule(json.decNumFromStr(groupValues[1])) },
-        )
+            /**
+             * Serializer for [Energy] value class. It needs to be a compile
+             * time constant in order to be used as serializer automatically,
+             * hence `object :` instead of class instantiation.
+             *
+             * ```json
+             * // e.g.
+             * "energy": "1 KWh"
+             * "energy": "  3    watts-hour  "
+             * "energy": "10.5 Joules"
+             * // etc.
+             * ```
+             */
+            internal object EnergySerializer : UnitSerializer<Energy>(
+                ifNumber = {
+                    LOG.warn(
+                        "deserialization of number with no unit of measure, assuming it is in Joule" +
+                            "Keep in mind that you can also specify the value as '$it Joule'",
+                    )
+                    ofJoule(it.toDouble())
+                },
+                serializerFun = { this.encodeString(it.toString()) },
+                ifMatches("$NUM_GROUP$WATTS$PER$HOUR", IGNORE_CASE) { ofWh(json.decNumFromStr(groupValues[1])) },
+                ifMatches("$NUM_GROUP$KILO$WATTS$PER$HOUR", IGNORE_CASE) { ofKWh(json.decNumFromStr(groupValues[1])) },
+                ifMatches("$NUM_GROUP$JOULES", IGNORE_CASE) { ofJoule(json.decNumFromStr(groupValues[1])) },
+                ifMatches("$NUM_GROUP$KILO$JOULES", IGNORE_CASE) { ofKJoule(json.decNumFromStr(groupValues[1])) },
+            )
+        }
     }
-}
