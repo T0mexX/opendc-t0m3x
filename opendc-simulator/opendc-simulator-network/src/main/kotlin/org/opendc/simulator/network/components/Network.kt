@@ -28,14 +28,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Time
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker
-import org.opendc.simulator.network.components.stability.NetworkStabilityValidator
+import org.opendc.simulator.network.components.stability.NetworkStabilityBarrier
 import org.opendc.simulator.network.flow.FlowId
 import org.opendc.simulator.network.flow.NetFlow
 import org.opendc.simulator.network.utils.NonSerializable
@@ -48,9 +46,8 @@ import org.opendc.simulator.network.utils.warnAndNull
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-public sealed class Network : WithSpecs<Network> {
-    @Transient
-    internal val validator: NetworkStabilityValidator = NetworkStabilityValidator()
+public sealed class Network protected constructor() : WithSpecs<Network> {
+    internal val validator: NetworkStabilityBarrier = NetworkStabilityBarrier()
 
     private val networkScope =
         CoroutineScope(
@@ -62,22 +59,31 @@ public sealed class Network : WithSpecs<Network> {
     /**
      * Maps [NodeId]s to their corresponding [Node]s, which are part of the [Network]
      */
-    internal abstract val nodesById: Map<NodeId, Node>
+    internal open val nodesById: MutableMap<NodeId, EndPointNode> = mutableMapOf()
+    protected open val _nodesById: MutableMap<NodeId, Any> = mutableMapOf()
+
+
 
     /**
      * Maps [NodeId]s to their corresponding [EndPointNode]s, which are part of the [Network].
      * This map is a subset of [nodesById].
      */
-    internal abstract val endPointNodes: Map<NodeId, EndPointNode>
+    @Suppress("UNCHECKED_CAST")
+    internal open val endPointNodes: Map<NodeId, EndPointNode>
+        get() = _endPointNodes as Map<NodeId, EndPointNode>
+    protected open val _endPointNodes: MutableMap<NodeId, Any> = mutableMapOf()
+
 
     /**
      * Maps flow ids to their corresponding [NetFlow].
      */
-    @Transient
-    internal val flowsById = mutableMapOf<FlowId, NetFlow>()
+    internal val flowsById: Map<FlowId, NetFlow>
+        get() = _flowsById
+    protected open val _flowsById: MutableMap<FlowId, NetFlow> = mutableMapOf()
 
-    @Transient
-    internal val flowsByName = mutableMapOf<String, NetFlow>()
+    internal val flowsByName: Map<String, NetFlow>
+        get() = _flowsByName
+    protected open val _flowsByName: MutableMap<String, NetFlow> = mutableMapOf()
 
     internal abstract val internet: Internet
 
@@ -88,17 +94,36 @@ public sealed class Network : WithSpecs<Network> {
         get() = runnerJob?.isActive ?: false
 
     /**
+     * Launches a coroutine with a child coroutine for each node in the [networkScope].
+     * The [networkScope] is responsible for running the whole network.
+     *
+     * @return The [Job] associated with the coroutine.
+     */
+    internal fun launchNetwork(): Job = networkScope.launch {
+        runnerJob?.cancelAndJoin()
+        validator.reset()
+        nodesById.values.forEach { n ->
+            launch { n.run(validator.Invalidator()) }
+        }
+    }.also { runnerJob = it }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Start/Stop Flows
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
      * Starts a [NetFlow] if the flow can be established.
      * @param[flow] the flow to be established.
      * @return `null` if the flow could not be started, otherwise the flow itself.
      */
     internal suspend fun startFlow(flow: NetFlow): NetFlow? {
-        // If name defined and already exists.
+        // If name defined and already existed.
         if (flow.name != NetFlow.DEFAULT_NAME && flow.name in flowsByName) {
             return null
         }
 
-        if (flow.demand < DataRate.ZERO) {
+        if (flow.getDemand() < DataRate.ZERO) {
             return log.errAndNull("Unable to start flow, data rate should be >= 0.")
         }
 
@@ -110,9 +135,9 @@ public sealed class Network : WithSpecs<Network> {
             endPointNodes[flow.destinationId]
                 ?: return log.errAndNull("Unable to start flow $flow, receiver does not exist or it is not able to start a flow")
 
-        flowsById[flow.id] = flow
+        _flowsById[flow.id] = flow
         if (flow.name != NetFlow.DEFAULT_NAME) {
-            flowsByName[flow.name] = flow
+            _flowsByName[flow.name] = flow
         }
 
         receiver.addReceivingEtoEFlow(flow)
@@ -133,49 +158,32 @@ public sealed class Network : WithSpecs<Network> {
                 ?.let {
                     endPointNodes[eToEFlow.destinationId]
                         ?.rmReceivingEtoEFlow(eToEFlow.id)
-                    flowsById.remove(flowId)
+                    _flowsById.remove(flowId)
                     eToEFlow
                 }
         } ?: log.warnAndNull("unable to stop flow with id $flowId")
 
-    internal fun resetFlows() =
-        runBlocking {
-            flowsById.keys.toSet().forEach { stopFlow(it) }
-        }
 
-    /**
-     * Returns a string with all [nodesById] string representations, each in one line.
-     */
-    internal fun allNodesToString(): String {
-        val sb = StringBuilder()
-        nodesById.forEach { sb.append("\n$it") }
-        sb.append("\n")
-
-        return sb.toString()
-    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Virtual Simulation Time
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     internal suspend fun advanceBy(time: Time) {
+        validator.awaitStability()
         flowsById.values.forEach { it.advanceBy(time) }
     }
 
+    /**
+     * @see NetworkStabilityBarrier.awaitStability
+     */
     internal suspend fun awaitStability() {
         validator.awaitStability()
     }
 
-    internal fun launch(): Job {
-        runBlocking { runnerJob?.cancelAndJoin() }
-        validator.reset()
-        runnerJob =
-            networkScope.launch {
-                nodesById.forEach { (_, n) ->
-                    launch {
-                        n.run(validator.Invalidator())
-                    }
-                }
-            }
 
-        return runnerJob!!
-    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Info Formatting
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public fun fmtNodes(): String =
         "\n" +
@@ -186,7 +194,7 @@ public sealed class Network : WithSpecs<Network> {
             | num of nodes: ${nodesById.size} (including INTERNET abstract node)
             """.trimIndent()
 
-    public fun fmtFlows(): String =
+    public suspend fun fmtFlows(): String =
         buildString {
             appendLine("| ==== Flows ====")
             appendLine(
@@ -203,11 +211,16 @@ public sealed class Network : WithSpecs<Network> {
                         flow.id.toString().padEnd(5) +
                         flow.transmitterId.toString().padEnd(10) +
                         flow.destinationId.toString().padEnd(10) +
-                        flow.demand.fmtValue("%.3f").padEnd(20) +
-                        flow.throughput.fmtValue("%.3f").padEnd(20),
+                        flow.getDemand().fmtValue("%.3f").padEnd(20) +
+                        flow.getThroughput().fmtValue("%.3f").padEnd(20),
                 )
             }
         }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Other
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     internal operator fun get(nId: NodeId): Node? = nodesById[nId]
 
