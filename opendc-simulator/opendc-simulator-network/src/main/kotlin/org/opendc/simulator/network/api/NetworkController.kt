@@ -28,6 +28,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Time
+import org.opendc.simulator.network.api.node.NetworkInterface
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snapshot
 import org.opendc.simulator.network.api.workload.SimNetWorkload
@@ -42,6 +44,8 @@ import org.opendc.simulator.network.export.NetExportHandler
 import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.flow.FlowId
 import org.opendc.simulator.network.flow.NetFlow
+import org.opendc.simulator.network.utils.ChangeHndlrJava
+import org.opendc.simulator.network.utils.ChangeHndlr
 import org.opendc.simulator.network.utils.errAndNull
 import org.opendc.simulator.network.utils.infoNewLn
 import org.opendc.simulator.network.utils.logger
@@ -50,7 +54,6 @@ import java.io.File
 import java.time.Duration
 import java.time.Instant
 import java.time.InstantSource
-import java.util.UUID
 
 /**
  * Interface through which control the network.
@@ -67,34 +70,6 @@ public class NetworkController(
     instantSource: InstantSource? = null,
     exportConfig: NetworkExportConfig? = null,
 ) : AutoCloseable {
-    public companion object {
-        public val log: Logger by logger()
-
-        /**
-         * Secondary constructor that instantiate both the [Network] (from [file]),
-         * and the [NetworkController].
-         *
-         * @throws[NoSuchFileException]
-         */
-        @ExperimentalSerializationApi
-        public fun fromFile(
-            file: File,
-            instantSource: InstantSource? = null,
-        ): NetworkController {
-            val jsonReader = Json { ignoreUnknownKeys = true }
-            val netSpec = jsonReader.decodeFromStream<Specs<Network>>(file.inputStream())
-            return NetworkController(netSpec.build(), instantSource)
-        }
-
-        /**
-         * @see[fromFile]
-         */
-        @OptIn(ExperimentalSerializationApi::class)
-        public fun fromPath(
-            path: String,
-            instantSource: InstantSource? = null,
-        ): NetworkController = fromFile(File(path), instantSource)
-    }
 
     private var netExportHandler: NetExportHandler? =
         exportConfig?.let {
@@ -156,7 +131,7 @@ public class NetworkController(
     /**
      * Tracks the physical hosts that have been claimed.
      *
-     * The claiming process happens when for example a *Host* wants
+     * The claiming process happens when, for example, a *Host* wants
      * to be associated with a [HostNode] in the network, then it claims its [NetworkInterface].
      * Each node/interface can be claimed only once.
      *
@@ -173,22 +148,10 @@ public class NetworkController(
         log.info(network.fmtNodes())
     }
 
-    /**
-     * Sets [instantSource] as the external time source of the network. The network is then to be synchronized with [sync].
-     */
-    public fun setInstantSource(instantSource: InstantSource) {
-        instantSrc = NetworkInstantSrc(instantSource)
-        lastUpdate = instantSrc.time
-    }
 
-    /**
-     * Sets [time] as the internal time of the network. The network time is then to be advanced with [advanceBy].
-     * @throws[IllegalArgumentException] if the current [instantSrc] is external.
-     */
-    internal fun setInternalTime(time: Time) {
-        instantSrc.setInternalTime(time)
-        lastUpdate = time
-    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Export
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Sets [exportConfig] as the export configuration, replacing any previously set configuration.
@@ -202,6 +165,26 @@ public class NetworkController(
         netExportHandler =
             NetExportHandler(config = exportConfig)
     }
+
+    /**
+     * Waits until the network is stable and then exports according to the current [NetworkExportConfig].
+     * On return, the export has been completed.
+     */
+    @JvmSynthetic
+    public suspend fun exportNow() {
+        network.awaitStability()
+        TODO()
+    }
+
+    /**
+     * @see exportNow
+     */
+    public fun exportNowJava(): Unit = runBlocking { exportNow() }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Host-to-Node Mapping / Network Interface Retrieval
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * See [claimedHostIds] for an explanation of the *claiming process*.
@@ -236,11 +219,6 @@ public class NetworkController(
     }
 
     /**
-     * Invokes [claimNode] with [UUID.node] value as [NodeId].
-     */
-    public fun claimNode(uuid: UUID): NetworkInterface? = claimNode(uuid.node())
-
-    /**
      * @return the network interface of [Node] with id [nodeId] if it
      * exists (can start/receive flows) and it is yet unclaimed, `null` otherwise.
      */
@@ -253,7 +231,7 @@ public class NetworkController(
         // If node is host.
         network.getNodesById<HostNode>()[nodeId]
             ?.let {
-                _claimedHostIds.add(nodeId)
+                if (!_claimedHostIds.add(nodeId)) return@let
                 return getNetInterfaceOf(nodeId)
             }
 
@@ -265,23 +243,40 @@ public class NetworkController(
     }
 
     /**
+     * @return the network interface of node with id [nodeId] if it exists,
+     * independently of the fact that it was already claimed or not (used internally), `null` otherwise.
+     */
+    private fun getNetInterfaceOf(nodeId: NodeId): NetworkInterface? =
+        network.endPointNodes[nodeId]?.let {
+            NetworkInterface(node = it, netController = this, owner = "physical node $nodeId")
+        } ?: log.errAndNull(
+            "unable to retrieve network interface, " +
+                "node does not exist or does not provide an interface",
+        )
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Start/Stop Flows
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
      * Starts a [NetFlow] if it can be started with the provided parameters.
      *
-     * @param[name]                         name of the flow if any.
      * @param[transmitterId]                id of the [EndPointNode] that is to transmit the flow.
      * @param[destinationId]                id of the [EndPointNode] that is to receive the flow.
      * @param[demand]                       the initial demand of the flow (can then be updated with [NetFlow.setDemand]).
-     * @param[throughputOnChangeHandler]    a lambda to be invoked whenever the throughput of the flow changes, with the
+     * @param[throughputChangeHndlrJava]    a lambda to be invoked whenever the throughput of the flow changes, with the
      * flow itself as first param, the old value as second and the new value as third.
      *
      * @return the newly started flow if it was started successfully, `null` otherwise.
      */
+    @JvmSynthetic
     public suspend fun startFlow(
         transmitterId: NodeId,
         destinationId: NodeId = internetNetworkInterface.nodeId,
         demand: DataRate = DataRate.ZERO,
-        name: String = NetFlow.DEFAULT_NAME,
-        throughputOnChangeHandler: ((NetFlow, DataRate, DataRate) -> Unit)? = null,
+        throughputChangeHndlr: ChangeHndlr<NetFlow, DataRate>? = null,
+        throughputChangeHndlrJava: ChangeHndlrJava<NetFlow, DataRate>? = null,
     ): NetFlow? {
         val mappedTransmitterId: NodeId = mappedOrSelf(transmitterId)
         val mappedDestId: NodeId = mappedOrSelf(destinationId)
@@ -290,15 +285,31 @@ public class NetworkController(
             NetFlow(
                 transmitterId = mappedTransmitterId,
                 destinationId = mappedDestId,
-                name = name,
                 demand = demand,
             )
 
-        throughputOnChangeHandler?.let {
-            netFlow.withThroughputOnChangeHandler(throughputOnChangeHandler)
-        }
+        throughputChangeHndlrJava?.let { netFlow.withThroughputChangeHndlr(throughputChangeHndlrJava) }
 
-        return startFlow(netFlow)
+        throughputChangeHndlr?.let { netFlow.withThroughputChangeHndlr(throughputChangeHndlr) }
+
+        return doStartFlow(netFlow)
+    }
+
+    /**
+     * @see startFlowJava
+     */
+    public fun startFlowJava(
+        senderId: NodeId,
+        destinationId: NodeId = internetNetworkInterface.nodeId,
+        demand: DataRate = DataRate.ZERO,
+        throughputChangeHndlrJava: ChangeHndlrJava<NetFlow, DataRate>? = null,
+    ) : NetFlow? = runBlocking {
+        startFlow(
+            transmitterId = senderId,
+            destinationId = destinationId,
+            demand = demand,
+            throughputChangeHndlrJava = throughputChangeHndlrJava
+        )
     }
 
     /**
@@ -306,7 +317,7 @@ public class NetworkController(
      *
      * @return the flow itself if it has been started successfully, `null` otherwise.
      */
-    private suspend fun startFlow(netFlow: NetFlow): NetFlow? {
+    private fun doStartFlow(netFlow: NetFlow): NetFlow? {
         if (netFlow.transmitterId !in network.endPointNodes) {
             return log.errAndNull(
                 "unable to start network flow from node ${netFlow.transmitterId}, " +
@@ -338,26 +349,42 @@ public class NetworkController(
      *
      * @return the [NetFlow] that was terminated if any, `null` otherwise.
      */
+    @JvmSynthetic
     public suspend fun stopFlow(flowId: FlowId): NetFlow? = network.stopFlow(flowId)
 
     /**
-     * @return the network interface of node with id [nodeId] if it exists,
-     * independently of the fact that it was already claimed or not (used internally), `null` otherwise.
+     * @see stopFlow
      */
-    private fun getNetInterfaceOf(nodeId: NodeId): NetworkInterface? =
-        network.endPointNodes[nodeId]?.let {
-            NetworkInterface(node = it, netController = this, owner = "physical node $nodeId")
-        } ?: log.errAndNull(
-            "unable to retrieve network interface, " +
-                "node does not exist or does not provide an interface",
-        )
+    public fun stopFlowJava(flowId: FlowId): NetFlow? = runBlocking { stopFlow(flowId) }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Virtual Simulation Time
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Sets [instantSource] as the external time source of the network. The network is then to be synchronized with [sync].
+     */
+    public fun setInstantSource(instantSource: InstantSource) {
+        instantSrc = NetworkInstantSrc(instantSource)
+        lastUpdate = instantSrc.time
+    }
+
+    /**
+     * Sets [time] as the internal time of the network. The network time is then to be advanced with [advanceBy].
+     * @throws[IllegalArgumentException] if the current [instantSrc] is external.
+     */
+    internal fun setInternalTime(time: Time) {
+        instantSrc.setInternalTime(time)
+        lastUpdate = time
+    }
 
     /**
      * If the network time source is external (see [instantSrc]), the network time is advanced to sync with the source.
-     * At the end of this method the network is stable (meaning its flows are stable).
+     * At the end of this method, the network is stable (meaning its flows are stable).
      *
      * Avoid invoking this method when the external time source is set, and it
-     * did not change since last update, unless network stability is needed (for performance reasons).
+     * did not change since the last update, unless network stability is necessary (for performance reasons).
      * @param[logSnapshot]          if `true` it logs the [NetworkSnapshot] after the synchronization, at INFO level.
      * has a throughput higher than its demand.
      */
@@ -379,21 +406,17 @@ public class NetworkController(
     /**
      * Advances the network time by [duration], updating network related statistics.
      */
-    public fun advanceBy(duration: Duration) {
-        runBlocking { advanceBy(Time.ofDuration(duration)) }
-    }
+    public fun advanceBy(duration: Duration): Unit = advanceBy(Time.ofDuration(duration))
 
     /**
      * Advances the network time by [time] milliseconds, updating network related statistics.
      */
-    public suspend fun advanceBy(time: Time) {
-        advanceBy(time, suppressWarn = false)
-    }
+    public fun advanceBy(time: Time): Unit = advanceBy(time, suppressWarn = false)
 
-    private suspend fun advanceBy(
+    private fun advanceBy(
         time: Time,
         suppressWarn: Boolean,
-    ) {
+    ) = runBlocking {
         suspend fun advance(jump: Time) {
             network.awaitStability()
             network.validator.checkIsStableWhile {
@@ -415,12 +438,12 @@ public class NetworkController(
             )
         }
 
-        if (time < Time.ZERO) return log.error("advanceBy received negative time-span parameter($time), ignoring...")
-        if (time == Time.ZERO) return
+        if (time < Time.ZERO) return@runBlocking log.error("advanceBy received negative time-span parameter($time), ignoring...")
+        if (time == Time.ZERO) return@runBlocking
 
-        netExportHandler?.let { exprtHndl ->
+        netExportHandler?.let { exportHndlr ->
             // Advances time in multiple steps to allow all export deadlines.
-            with(exprtHndl) {
+            with(exportHndlr) {
                 var remaining: Time = time
                 while (remaining != Time.ZERO) {
                     val nextJump = timeUntilExport()?.let { it min remaining } ?: remaining
@@ -437,11 +460,45 @@ public class NetworkController(
      */
     private fun mappedOrSelf(id: NodeId): NodeId = virtualMapping[id] ?: let { id }
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Other
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
      * Cancels the coroutine that runs the network.
      */
     override fun close() {
         network.runnerJob?.cancel()
         netExportHandler?.close()
+    }
+
+    public companion object {
+        public val log: Logger by logger()
+
+        /**
+         * Secondary constructor that instantiate both the [Network] (from [file]),
+         * and the [NetworkController].
+         *
+         * @throws[NoSuchFileException]
+         */
+        @ExperimentalSerializationApi
+        public fun fromFile(
+            file: File,
+            instantSource: InstantSource? = null,
+        ): NetworkController {
+            val jsonReader = Json { ignoreUnknownKeys = true }
+            val netSpec = jsonReader.decodeFromStream<Specs<Network>>(file.inputStream())
+            return NetworkController(netSpec.build(), instantSource)
+        }
+
+        /**
+         * @see[fromFile]
+         */
+        @OptIn(ExperimentalSerializationApi::class)
+        public fun fromPath(
+            path: String,
+            instantSource: InstantSource? = null,
+        ): NetworkController = fromFile(File(path), instantSource)
     }
 }
