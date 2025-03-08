@@ -29,11 +29,11 @@ import org.jetbrains.annotations.VisibleForTesting
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.DataSize
 import org.opendc.common.units.Time
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
-import org.opendc.simulator.network.utils.OnChangeHandler
-import org.opendc.simulator.network.utils.SuspOnChangeHandler
+import org.opendc.simulator.network.utils.ChangeHndlr
+import org.opendc.simulator.network.utils.ChangeHndlrSus
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.coroutineContext
 
@@ -57,12 +57,14 @@ public class NetFlow internal constructor(
     /**
      * Functions [(NetFlow, Kbps, Kbps) -> Unit] invoked whenever the throughput of the flow changes.
      */
-    private val throughputOnChangeHandlers = mutableListOf<OnChangeHandler<NetFlow, DataRate>>()
+    private val throughputChangeHndlrsSus = mutableListOf<ChangeHndlrSus<NetFlow, DataRate>>()
+    private val throughputChangeHndlrs = mutableListOf<ChangeHndlr<NetFlow, DataRate>>()
 
     /**
      * Functions [(NetFlow, DataRate, Kbps) -> Unit] invoked whenever the demand of the flow changes.
      */
-    private val demandOnChangeHandlers = mutableListOf<SuspOnChangeHandler<NetFlow, DataRate>>()
+    private val demandChangeHndlrsSus = mutableListOf<ChangeHndlrSus<NetFlow, DataRate>>()
+    private val demandChangeHndlrs = mutableListOf<ChangeHndlr<NetFlow, DataRate>>()
 
     /**
      * Total data transmitted since the start of the flow (in Kb).
@@ -70,81 +72,23 @@ public class NetFlow internal constructor(
     private var totDataTransmitted: DataSize = DataSize.ZERO
 
     /**
-     * The current demand of the flow (in Kbps).
-     */
-    public var demand: DataRate = demand
-        private set
-    private val demandMutex = Mutex()
-
-    init {
-        // Sets up the static destination id retrieval for the flow.
-        _flowsDestIds[id] = destinationId
-    }
-
-    /**
-     * 'Sus' stands for suspending, see [setDemand] for java compatibility.
-     *
-     * Updates the data rate demand for ***this*** flow.
-     * Call observers change handlers, added with [withDemandOnChangeHandler].
-     */
-    @JvmSynthetic
-    public suspend fun setDemandSus(newDemand: DataRate): Unit =
-        demandMutex.withLock {
-            val oldDemand = demand
-            if (newDemand approx oldDemand) return
-            demand = newDemand
-
-            // calls observers handlers
-            demandOnChangeHandlers.forEach {
-                it.handleChange(this, oldDemand, newDemand)
-            }
-        }
-
-    /**
-     * Non suspending overload for java interoperability.
-     */
-    @JvmName("setDemand")
-    public fun setDemand(newDemand: DataRate) {
-        runBlocking { setDemandSus(newDemand) }
-    }
-
-    /**
      * The end-to-end throughput of the flow.
      *
      * This property should be updated only by the receiver node
      * coroutine job, hence synchronized update should be guaranteed.
      */
-    public var throughput: DataRate = DataRate.ZERO
-        internal set(new) =
-            runBlocking {
-                throughputMutex.withLock {
-                    if (new == field) return@runBlocking
-                    val old = field
-                    field = if (new approx demand) demand else new.roundToIfWithinEpsilon(DataRate.ZERO)
-
-                    throughputOnChangeHandlers.forEach {
-                        it.handleChange(obj = this@NetFlow, oldValue = old, newValue = field)
-                    }
-                }
-            }
-    private val throughputMutex = Mutex()
+    private var throughput: DataRate = DataRate.ZERO
+    private val throughputMtx = Mutex()
 
     /**
-     * Adds [f] among the functions invoked whenever the throughput of the flow changes.
+     * The current demand of the flow (in Kbps).
      */
-    public fun withThroughputOnChangeHandler(f: (NetFlow, DataRate, DataRate) -> Unit): NetFlow {
-        throughputOnChangeHandlers.add(f)
+    private var demand: DataRate = demand
+    private val demandMtx = Mutex()
 
-        return this
-    }
-
-    /**
-     * Adds [f] among the functions invoked whenever the demand of the flow changes.
-     */
-    internal fun withDemandOnChangeHandler(f: SuspOnChangeHandler<NetFlow, DataRate>): NetFlow {
-        demandOnChangeHandlers.add(f)
-
-        return this
+    init {
+        // Sets up the static destination id retrieval for the flow.
+        _flowsDestIds[id] = destinationId
     }
 
     /**
@@ -156,6 +100,98 @@ public class NetFlow internal constructor(
             totDataTransmitted += throughput * time
         }
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Demand Getters and Setters
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @JvmSynthetic
+    public suspend fun setDemand(newDemand: DataRate): Unit =
+        demandMtx.withLock {
+            val oldDemand = demand
+            if (newDemand approx oldDemand) return
+            demand = newDemand
+
+            // calls observer handlers
+            demandChangeHndlrs.forEach {
+                it.handle(this, oldDemand, newDemand)
+            }
+        }
+
+    public fun setDemandJava(newDemand: DataRate) {
+        runBlocking { setDemand(newDemand) }
+    }
+
+    @JvmSynthetic
+    internal suspend fun getDemand() = demandMtx.withLock { demand }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Throughput Getters and Setters
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @JvmSynthetic
+    internal suspend fun setThroughput(new: DataRate) {
+        throughputMtx.withLock {
+            if (new == throughput) return
+            val old = throughput
+            throughput = if (new approx demand) demand else new.roundToIfWithinEpsilon(DataRate.ZERO)
+
+            throughputChangeHndlrs.forEach {
+                it.handle(obj = this@NetFlow, oldValue = old, newValue = field)
+            }
+        }
+    }
+
+    @JvmSynthetic
+    public suspend fun getThroughput(): DataRate =
+        throughputMtx.withLock { throughput }
+
+    public fun getThroughputJava(): DataRate = runBlocking {
+        throughputMtx.withLock { throughput }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Observers
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Adds [hndlr] among the functions invoked whenever the throughput of the flow changes.
+     */
+    public fun withThroughputChangeHndlr(hndlr: ChangeHndlrSus<NetFlow, DataRate>): NetFlow {
+        throughputChangeHndlrsSus.add(hndlr)
+        return this
+    }
+
+    /**
+     * @see withThroughputChangeHndlr
+     */
+    public fun withThroughputChangeHndlr(hndlr: ChangeHndlr<NetFlow, DataRate>): NetFlow {
+        throughputChangeHndlrs.add(hndlr)
+        return this
+    }
+
+    /**
+     * Adds [f] among the functions invoked whenever the demand of the flow changes.
+     */
+    internal fun withDemandChangeHndlr(f: ChangeHndlrSus<NetFlow, DataRate>): NetFlow {
+        demandChangeHndlrsSus.add(f)
+        return this
+    }
+
+    /**
+     * Adds [f] among the functions invoked whenever the demand of the flow changes.
+     */
+    internal  fun withDemandChangeHndlr(f: ChangeHndlr<NetFlow, DataRate>): NetFlow {
+        demandChangeHndlrs.add(f)
+        return this
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Other
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override fun toString(): String =
         "NetFlow(id=$id, name=$name, transmitterId=$transmitterId, destinationId=$destinationId, currentDemand=$demand)"
@@ -185,14 +221,6 @@ public class NetFlow internal constructor(
          */
         private var nextId: FlowId = 0
         private val nextIdLock = Mutex()
-
-//            get() {
-//                if (field == FlowId.MAX_VALUE)
-//                    throw RuntimeException("flow id reached its maximum value")
-//                field++
-//                return field - 1
-//            }
-//            private set
 
         suspend fun nextId(): FlowId =
             nextIdLock.withLock {
