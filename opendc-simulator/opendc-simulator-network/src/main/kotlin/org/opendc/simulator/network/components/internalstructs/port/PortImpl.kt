@@ -23,6 +23,7 @@
 package org.opendc.simulator.network.components.internalstructs.port
 
 import org.opendc.common.units.DataRate
+import org.opendc.common.units.plus
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
 import org.opendc.simulator.network.components.link.ReceiveLink

@@ -32,9 +32,9 @@ import org.opendc.simulator.network.utils.logger
  * Node you can start a [NetFlow] from or direct a [NetFlow] to.
  */
 internal interface EndPointNode : Node {
-    companion object {
-        private val log by logger()
-    }
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Start/Stop Flows
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Starts a [NetFlow] from ***this*** node.
@@ -46,7 +46,7 @@ internal interface EndPointNode : Node {
             return
         }
 
-        with(flowHandler) { generateFlow(newFlow) }
+        flowHandler.generateFlow(newFlow)
     }
 
     /**
@@ -60,7 +60,7 @@ internal interface EndPointNode : Node {
      * Stores a reference to an incoming [NetFlow] so that its end-to-end data rate can be updated.
      * @param[f]  the [NetFlow] to store the reference of.
      */
-    fun addReceivingEtoEFlow(f: NetFlow) {
+    suspend fun addReceivingEtoEFlow(f: NetFlow) {
         flowHandler.addConsumingFlow(f)
     }
 
@@ -69,18 +69,26 @@ internal interface EndPointNode : Node {
      * flow is no longer running through the network.
      * @param[flowId]   id of the end-to-end flow whose reference is to be removed.
      */
-    fun rmReceivingEtoEFlow(flowId: FlowId) {
+    suspend fun rmReceivingEtoEFlow(flowId: FlowId) {
         flowHandler.rmConsumingFlow(flowId)
     }
 
-    override fun totIncomingDataRateOf(fId: FlowId): DataRate =
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Other
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    override suspend fun totIncomingDataRateOf(fId: FlowId): DataRate =
         with(flowHandler) {
             if (fId in generatingFlows) {
                 DataRate.ZERO
             } else {
-                consumingFlows[fId]?.throughput
+                consumingFlows[fId]?.getThroughput()
                     ?: let { outgoingFlows[fId]?.demand }
                         .ifNull0()
             }
         }
+
+    companion object {
+        private val log by logger()
+    }
 }

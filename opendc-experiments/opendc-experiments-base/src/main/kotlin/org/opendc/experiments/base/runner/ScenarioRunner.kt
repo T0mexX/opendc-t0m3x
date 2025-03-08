@@ -26,12 +26,17 @@ import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.compute.simulator.provisioner.Provisioner
 import org.opendc.compute.simulator.provisioner.registerComputeMonitor
+import org.opendc.compute.simulator.provisioner.setUpNetwork
 import org.opendc.compute.simulator.provisioner.setupComputeService
 import org.opendc.compute.simulator.provisioner.setupHosts
 import org.opendc.compute.simulator.scheduler.createComputeScheduler
 import org.opendc.compute.simulator.service.ComputeService
 import org.opendc.compute.simulator.telemetry.parquet.ParquetComputeMonitor
-import org.opendc.compute.topology.clusterTopology
+import org.opendc.compute.topology.fromInputStream
+import org.opendc.compute.topology.fromPath
+import org.opendc.compute.topology.specs.ClusterSpec
+import org.opendc.compute.topology.specs.TopologySpec
+import org.opendc.compute.topology.toClusterSpec
 import org.opendc.experiments.base.experiment.Scenario
 import org.opendc.experiments.base.experiment.specs.getScalingPolicy
 import org.opendc.experiments.base.experiment.specs.getWorkloadLoader
@@ -98,7 +103,10 @@ public fun runScenario(
             val startTimeLong = workload.minOf { it.submissionTime }.toEpochMilli()
             val startTime = Duration.ofMillis(startTimeLong)
 
-            val topology = clusterTopology(scenario.topologySpec.pathToFile)
+            val topologySpec: TopologySpec = TopologySpec.fromPath(scenario.topologySpec.pathToFile)
+            val topology: List<ClusterSpec> = topologySpec.toClusterSpec()
+            val runOutputFolder = File("${scenario.outputFolder}/raw-output/${scenario.id}", "seed=$seed")
+
             provisioner.runSteps(
                 setupComputeService(
                     serviceDomain,
@@ -106,9 +114,14 @@ public fun runScenario(
                     maxNumFailures = scenario.maxNumFailures,
                 ),
                 setupHosts(serviceDomain, topology, startTimeLong),
+                setUpNetwork(
+                    topologySpec.netwController,
+                    scenario.exportModelSpec.networkExportConfig,
+                    runOutputFolder
+                )
             )
 
-            addExportModel(provisioner, serviceDomain, scenario, seed, startTime, scenario.id)
+            addExportModel(runOutputFolder, provisioner, serviceDomain, scenario, startTime)
 
             val service = provisioner.registry.resolve(serviceDomain, ComputeService::class.java)!!
             service.setTasksExpected(workload.size)
@@ -133,19 +146,17 @@ public fun runScenario(
  * @param startTime The start time of the simulation given by the workload trace.
  */
 public fun addExportModel(
+    outputFolder: File,
     provisioner: Provisioner,
     serviceDomain: String,
     scenario: Scenario,
-    seed: Long,
     startTime: Duration,
-    index: Int,
 ) {
     provisioner.runStep(
         registerComputeMonitor(
             serviceDomain,
             ParquetComputeMonitor(
-                File("${scenario.outputFolder}/raw-output/$index"),
-                "seed=$seed",
+                outputFolder = outputFolder,
                 bufferSize = 4096,
                 scenario.exportModelSpec.filesToExportDict,
                 computeExportConfig = scenario.exportModelSpec.computeExportConfig,

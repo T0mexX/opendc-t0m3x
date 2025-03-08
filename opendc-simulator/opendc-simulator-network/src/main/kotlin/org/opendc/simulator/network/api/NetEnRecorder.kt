@@ -25,14 +25,16 @@ package org.opendc.simulator.network.api
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.Time
+import org.opendc.common.units.plus
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.CustomNetwork
 import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
 import org.opendc.simulator.network.energy.EnMonitor
 import org.opendc.simulator.network.energy.EnergyConsumer
+import org.opendc.simulator.network.utils.ChangeHndlr
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
-import org.opendc.simulator.network.utils.OnChangeHandler
 import org.opendc.simulator.network.utils.logger
 import kotlin.coroutines.coroutineContext
 
@@ -53,29 +55,29 @@ public class NetEnRecorder internal constructor(network: Network) {
     private val consumersById: MutableMap<NodeId, EnergyConsumer<*>> =
         network.nodesById.values.filterIsInstance<EnergyConsumer<*>>().associateBy { it.id }.toMutableMap()
 
-    private val powerUseOnChangeHandler =
-        OnChangeHandler<EnMonitor<*>, Power> { _, oldValue, newValue ->
+    private val powerUseChangeHndlr =
+        ChangeHndlr<EnMonitor<*>, Power> { _, oldValue, newValue ->
             currPwrUsage += newValue - oldValue
         }
 
     init {
         // Sets up listeners on the energy consuming nodes.
-        consumersById.values.forEach { it.enMonitor.onPwrUseChange(powerUseOnChangeHandler) }
+        consumersById.values.forEach { it.enMonitor.onPwrUseChange(powerUseChangeHndlr) }
         consumersById.values.forEach { it.enMonitor.update() }
 
         // Sets up callback for whenever a node is added to the network.
         (network as? CustomNetwork)?.onNodeAdded { _, node ->
             (node as? EnergyConsumer<*>)?.let { newConsumer ->
-                newConsumer.enMonitor.onPwrUseChange(powerUseOnChangeHandler)
+                newConsumer.enMonitor.onPwrUseChange(powerUseChangeHndlr)
                 consumersById.compute(newConsumer.id) { _, oldConsumer ->
-                    // If new consumer replaces an old one log warning msg
+                    // If new consumer replaces an old one-log warning msg
                     oldConsumer?.let {
                         if (oldConsumer !== newConsumer) {
                             log.warn("energy consumer $oldConsumer is being replaced by $newConsumer which has the same id")
                         }
                     }
                     newConsumer.also {
-                        it.enMonitor.onPwrUseChange(powerUseOnChangeHandler)
+                        it.enMonitor.onPwrUseChange(powerUseChangeHndlr)
                         it.enMonitor.update()
                     }
                 }

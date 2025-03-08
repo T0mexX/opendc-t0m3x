@@ -26,7 +26,7 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 

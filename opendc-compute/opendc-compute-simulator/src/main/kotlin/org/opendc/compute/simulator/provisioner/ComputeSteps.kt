@@ -29,6 +29,9 @@ import org.opendc.compute.simulator.telemetry.ComputeMonitor
 import org.opendc.compute.simulator.telemetry.OutputFiles
 import org.opendc.compute.topology.specs.ClusterSpec
 import org.opendc.compute.topology.specs.HostSpec
+import org.opendc.simulator.network.api.NetworkController
+import org.opendc.simulator.network.export.NetworkExportConfig
+import java.io.File
 import java.time.Duration
 
 /**
@@ -87,3 +90,24 @@ public fun setupHosts(
 ): ProvisioningStep {
     return HostsProvisioningStep(serviceDomain, specs, startTime)
 }
+
+/**
+ * Returns a [ProvisioningStep] that sets up the network environment (if any).
+ * @param networkController the network controller used by the simulation.
+ * If `null` network environment is not set up.
+ * @param networkExportConfig the network export configuration for the simulation.
+ * If `null` no network output file will be produced (network related columns can still
+ * be present in host, task, service outputs)
+ * @param runOutputFolder the output folder of the current simulation instance.
+ * If [networkExportConfig] does not provide an output folder, this one is used.
+ */
+public fun setUpNetwork(
+    networkController: NetworkController? = null,
+    networkExportConfig: NetworkExportConfig? = null,
+    runOutputFolder: File,
+): ProvisioningStep =
+    NetworkProvisioningStep(
+        netController = networkController,
+        netExportConfig = networkExportConfig,
+        seedOutputFolder = runOutputFolder,
+    )

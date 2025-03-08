@@ -23,6 +23,8 @@
 package org.opendc.simulator.network.flow
 
 import org.opendc.common.units.DataRate
+import org.opendc.common.units.Unit.Companion.sumOfUnit
+import org.opendc.common.units.plus
 import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.internalstructs.port.Port
@@ -34,7 +36,7 @@ import org.opendc.simulator.network.utils.logger
 /**
  * Handles all incoming and outgoing flows of the node this handler belongs to,
  * keeping track of their demand and output rates.
- * Allows to generate and stop flows.
+ * Allows generating and stop flows.
  *
  * Check properties and methods for more details.
  *
@@ -42,16 +44,12 @@ import org.opendc.simulator.network.utils.logger
  * Only used to provide the [availableBW].
  */
 internal class FlowHandler(internal val ports: Collection<Port>) {
-    private companion object {
-        val log by logger()
-    }
-
     /**
      * The current total available bandwidth on the switch,
      * as the sum of the available bw of the connected active ports.
      */
     val availableBW: DataRate
-        get() = DataRate.ofKbps(ports.sumOf { it.sendLink?.availableBW?.toKbps() ?: .0 })
+        get() = ports.sumOfUnit { it.sendLink?.availableBW ?: DataRate.ZERO }
 
     /**
      * [NetFlow]s whose sender is the node to which this flow handler belongs.
@@ -117,24 +115,25 @@ internal class FlowHandler(internal val ports: Collection<Port>) {
      * an update itself. An observer on [newFlow] for changes of [NetFlow.demand],
      * is set up. This observer queues a demand update whenever a change occurs.
      */
-    suspend fun Node.generateFlow(newFlow: NetFlow) {
+    context(Node)
+    suspend fun generateFlow(newFlow: NetFlow) {
         val updt =
             RateUpdt(
                 _generatingFlows.putIfAbsent(newFlow.id, newFlow)
-                    // If flow with same id already present
+                    // If flow with the same id already present
                     ?. let { currFlow ->
                         log.error("adding generated flow whose id is already present. Replacing...")
                         _generatingFlows[newFlow.id] = newFlow
-                        mapOf(newFlow.id to (newFlow.demand - currFlow.demand))
+                        mapOf(newFlow.id to (newFlow.getDemand() - currFlow.getDemand()))
                         // Else
-                    } ?: mapOf(newFlow.id to newFlow.demand),
+                    } ?: mapOf(newFlow.id to newFlow.getDemand()),
             )
 
         // Sets up the handler of any data rate changes, propagating updates to other nodesById
         // changes of this flow data rate can be performed through a NetworkController,
         // the NetworkInterface of this node, or through the instance of the NetFlow itself.
-        newFlow.withDemandOnChangeHandler { _, old, new ->
-            if (old == new) return@withDemandOnChangeHandler
+        newFlow.withDemandChangeHndlr { _, old, new ->
+            if (old == new) return@withDemandChangeHndlr
 
             if (new < DataRate.ZERO) {
                 log.warn(
@@ -150,7 +149,8 @@ internal class FlowHandler(internal val ports: Collection<Port>) {
         updtChl.send(updt)
     }
 
-    suspend fun Node.stopGeneratedFlow(fId: FlowId) {
+    context(Node)
+    suspend fun stopGeneratedFlow(fId: FlowId) {
         val removedFlow =
             _generatingFlows.remove(fId)
                 ?: let {
@@ -162,7 +162,7 @@ internal class FlowHandler(internal val ports: Collection<Port>) {
                 }
 
         // Update to be processed by the node runner coroutine
-        updtChl.send(RateUpdt(fId, -removedFlow.demand))
+        updtChl.send(RateUpdt(fId, -removedFlow.getDemand()))
     }
 
     /**
@@ -175,14 +175,15 @@ internal class FlowHandler(internal val ports: Collection<Port>) {
      * outgoing ports for new flows. The node [FairnessPolicy] is applied
      * afterwords to determine the outgoing data rate for each flow.
      */
-    suspend fun Node.updtFlows(updt: RateUpdt) {
+    context(Node)
+    suspend fun updtFlows(updt: RateUpdt) {
         updt.forEach { (fId, dr) ->
             val deltaRate = dr.roundToIfWithinEpsilon(DataRate.ZERO)
             if (deltaRate.isZero()) return@forEach
 
             // if this node is the destination
             _consumingFlows[fId]?.let {
-                it.throughput += deltaRate
+                it.increaseThroughputBy(deltaRate)
                 return@forEach
             }
 
@@ -195,13 +196,13 @@ internal class FlowHandler(internal val ports: Collection<Port>) {
             _outgoingFlows.getOrPut(fId) {
                 // if flow is new
                 val newFlow = OutFlow(id = fId, nodeFlowTracker = nodeFlowTracker)
-                val outputPorts = with(this.portSelectionPolicy) { selectPorts(fId) }
+                val outputPorts = portSelectionPolicy.selectPorts(fId)
                 newFlow.setOutPorts(outputPorts)
                 newFlow
             }.let {
                 it.demand += deltaRate
 
-                check(it.demand >= DataRate.ZERO) { "flowId=$fId, nodeId=${this.id}, demand=${it.demand}" }
+                check(it.demand >= DataRate.ZERO) { "flowId=$fId, nodeId=$id, demand=${it.demand}" }
 
                 // if demand is 0 the entry is removed
                 if (it.demand.roundToIfWithinEpsilon(DataRate.ZERO).isZero()) {
@@ -211,7 +212,7 @@ internal class FlowHandler(internal val ports: Collection<Port>) {
             }
         }
 
-        with(this.fairnessPolicy) { applyPolicy(updt) }
+        fairnessPolicy.applyPolicy(updt)
     }
 
     /**
@@ -224,5 +225,9 @@ internal class FlowHandler(internal val ports: Collection<Port>) {
             val selectedPorts = with(portSelectionPolicy) { selectPorts(it.id) }
             it.setOutPorts(selectedPorts)
         }
+    }
+
+    private companion object {
+        val log by logger()
     }
 }

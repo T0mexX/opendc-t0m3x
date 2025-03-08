@@ -24,11 +24,11 @@ package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.yield
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
 import org.opendc.simulator.network.components.internalstructs.port.Port
-import org.opendc.simulator.network.components.stability.NetworkStabilityValidator
+import org.opendc.simulator.network.components.stability.NetworkStabilityBarrier
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.flow.FlowId
 import org.opendc.simulator.network.flow.RateUpdt
@@ -40,9 +40,6 @@ import org.opendc.simulator.network.utils.ifNull0
  * Interface representing a node in a [Network].
  */
 internal interface Node : FlowView, WithSpecs<Node> {
-    // TODO: allow connection between nodesById without immediate vector routing forwarding,
-    //  to optimize network building
-
     /**
      * ID of the node. Uniquely identifies the node in the [Network].
      */
@@ -109,7 +106,7 @@ internal interface Node : FlowView, WithSpecs<Node> {
      * Processes incoming updates.
      * @param[invalidator] used to invalidate the network stability while updates are pending or being processed.
      */
-    suspend fun run(invalidator: NetworkStabilityValidator.Invalidator? = null) {
+    suspend fun run(invalidator: NetworkStabilityBarrier.Invalidator? = null) {
         invalidator?.let { updtChl.withInvalidator(invalidator) }
         updtChl.clear()
 
@@ -132,7 +129,7 @@ internal interface Node : FlowView, WithSpecs<Node> {
                 ?: break
         }
 
-        with(flowHandler) { updtFlows(updt) }
+        flowHandler.updtFlows(updt)
 
         notifyAdjNodes()
     }
@@ -151,7 +148,7 @@ internal interface Node : FlowView, WithSpecs<Node> {
         updtChl.send(RateUpdt(allTransitingFlowsIds().associateWith { DataRate.ZERO })) // TODO: change
     }
 
-    override fun totIncomingDataRateOf(fId: FlowId): DataRate = flowHandler.outgoingFlows[fId]?.demand.ifNull0()
+    override suspend fun totIncomingDataRateOf(fId: FlowId): DataRate = flowHandler.outgoingFlows[fId]?.demand.ifNull0()
 
     override fun totOutgoingDataRateOf(fId: FlowId): DataRate = flowHandler.outgoingFlows[fId]?.totRateOut.ifNull0()
 

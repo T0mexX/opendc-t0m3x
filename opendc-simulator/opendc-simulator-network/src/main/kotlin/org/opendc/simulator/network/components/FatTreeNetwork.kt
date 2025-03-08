@@ -20,22 +20,25 @@
  * SOFTWARE.
  */
 
+@file:OptIn(SealedProtectedUse::class)
+
 package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.logger.logger
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.HostNode.HostNodeSpecs
 import org.opendc.simulator.network.components.Switch.SwitchSpecs
 import org.opendc.simulator.network.utils.NonSerializable
+import org.opendc.simulator.network.utils.SealedProtectedUse
 import kotlin.math.min
 import kotlin.math.pow
 
 /**
  * Fat-tree network topology built based on the number of ports of the [SwitchSpecs] passed as parameter.
- * The number of ports is usually referred as ***k*** and should be a multiple of 2 and larger than 2.
+ * The number of ports is usually referred to as ***k*** and should be a multiple of 2 and larger than 2.
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
@@ -45,16 +48,13 @@ internal class FatTreeNetwork(
     private val torSpecs: SwitchSpecs,
     private val hostNodeSpecs: HostNodeSpecs,
 ) : Network() {
-    constructor(allSwitchSpecs: SwitchSpecs, hostNodeSpecs: HostNodeSpecs) :
-        this(allSwitchSpecs, allSwitchSpecs, allSwitchSpecs, hostNodeSpecs)
-
-    override val nodesById: Map<NodeId, Node>
-    override val endPointNodes: Map<NodeId, EndPointNode>
+    override val nodesById: MutableMap<NodeId, Node>
+    override val endPointNodes: MutableMap<NodeId, EndPointNode>
 
     /**
      * Parameter that determines the topology which is defined as
      * equal to the minimum number of ports of all switches rounded down to even number.
-     * Ideally all switches should have the same number of ports.
+     * Ideally, all switches should have the same number of ports.
      * This value has to be even and larger than 2.
      */
     private val k: Int = minOf(coreSpecs.numOfPorts, aggrSpecs.numOfPorts, torSpecs.numOfPorts) / 2 * 2
@@ -123,9 +123,9 @@ internal class FatTreeNetwork(
                     internet.id !in this,
                 ) { "unable to create network: one node has id $INTERNET_ID, which is reserved for internet abstraction" }
                 put(internet.id, internet)
-            }
+            }.toMutableMap()
 
-        endPointNodes = (coreSwitches + leafs + internet).associateBy { it.id }
+        endPointNodes = (coreSwitches + leafs + internet).associateBy { it.id }.toMutableMap()
     }
 
     override fun toSpecs(): Specs<FatTreeNetwork> =
@@ -137,7 +137,7 @@ internal class FatTreeNetwork(
         )
 
     /**
-     * A pod that belongs tot the enclosing [FatTreeNetwork] instance.
+     * A pod that belongs to the enclosing [FatTreeNetwork] instance.
      * @param[aggrSpecs]    specifications of the switches in the *aggregation layer*.
      * @param[torSpecs]     specifications of the switches in the *access layer* (also called Top of Rack switches).
      */

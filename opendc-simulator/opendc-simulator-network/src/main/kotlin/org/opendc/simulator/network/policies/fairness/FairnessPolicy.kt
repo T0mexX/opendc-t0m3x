@@ -30,18 +30,21 @@ import org.opendc.simulator.network.utils.logger
 
 @Serializable
 internal sealed interface FairnessPolicy {
-    fun FlowHandler.applyPolicy(updt: RateUpdt)
+    context(FlowHandler)
+    fun applyPolicy(updt: RateUpdt)
 
     /**
      * Executes the data rate reductions of the [updt].
      *
      * Every policy should always execute this method first,
      * since rate reductions are always possible and it frees
-     * bandwidth for other flows rate increases.
+     * bandwidth for other flow rate increases.
      */
     fun FlowHandler.execRateReductions(updt: RateUpdt) {
         updt.forEach { fId, deltaRate ->
-            if (deltaRate < DataRate.ZERO) outgoingFlows[fId]?.tryUpdtRate()
+            if (deltaRate < DataRate.ZERO)
+                outgoingFlows[fId]
+                    ?.tryUpdtRate()
         }
     }
 

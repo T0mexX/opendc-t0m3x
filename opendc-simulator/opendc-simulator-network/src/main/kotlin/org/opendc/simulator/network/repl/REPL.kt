@@ -54,7 +54,7 @@ import org.opendc.simulator.network.repl.cmds.node.NodeRmCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeSnapCmd
 import java.time.Instant
 
-public fun main(args: Array<String>) {
+public fun main() {
     val network: Network = CustomNetwork()
 
     val energyRecorder = NetEnRecorder(network)
@@ -64,6 +64,9 @@ public fun main(args: Array<String>) {
             energyRecorder = energyRecorder,
             tmSrc = REPLTmSrc(Instant.now()),
         )
+    runBlocking {
+        network.launchNetwork()
+    }
 
     while (true) {
         val input: String = readln()
@@ -105,10 +108,10 @@ private class MainCmd(private val env: REPLEnv) : NoOpCliktCommand() {
             allowInterspersedArgs = true
         }
         currentContext.findOrSetObject { env }
-        runBlocking {
-            env.network.launch()
-            env.network.awaitStability()
-        }
+//        runBlocking {
+//            env.network.launchNetwork()
+//            env.network.awaitStability()
+//        }
     }
 
     override fun aliases(): Map<String, List<String>> =

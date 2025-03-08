@@ -22,6 +22,7 @@
 
 package org.opendc.compute.simulator.provisioner
 
+import org.opendc.common.logger.warnAndNull
 import org.opendc.compute.carbon.getCarbonFragments
 import org.opendc.compute.simulator.host.SimHost
 import org.opendc.compute.simulator.service.ComputeService
@@ -34,6 +35,8 @@ import org.opendc.simulator.compute.power.batteries.SimBattery
 import org.opendc.simulator.compute.power.batteries.policy.SingleThresholdBatteryPolicy
 import org.opendc.simulator.engine.engine.FlowEngine
 import org.opendc.simulator.engine.graph.FlowDistributor
+import org.opendc.simulator.network.api.NetworkController
+import org.opendc.simulator.network.api.node.NetworkInterface
 
 /**
  * A [ProvisioningStep] that provisions a list of hosts for a [ComputeService].
@@ -46,6 +49,7 @@ public class HostsProvisioningStep internal constructor(
     private val serviceDomain: String,
     private val clusterSpecs: List<ClusterSpec>,
     private val startTime: Long = 0L,
+    private val netController: NetworkController? = null,
 ) : ProvisioningStep {
     override fun apply(ctx: ProvisioningContext): AutoCloseable {
         val service =
@@ -119,6 +123,30 @@ public class HostsProvisioningStep internal constructor(
 
             // Create hosts, they are connected to the powerMux when SimMachine is created
             for (hostSpec in cluster.hostSpecs) {
+                val networkInterface: NetworkInterface? =
+                    // networkController != null  => network specifications were provided and network simulation is requested.
+                    netController?.let { controller ->
+                        // The id specified in the "nodeIds" property in the Host JSON schema if any.
+                        hostSpec.nodeId?.let jsonIdTry@{
+                            // The network interface of the node with id corresponding to jsonNodeId if exists.
+                            controller.claimNode(nodeId = it)
+                                ?: NetworkController.log.warnAndNull(
+                                    "nodeId $it provided in JSON topology file " +
+                                        "does not correspond to any node id of the network defined in the " +
+                                        "'networkFile' property (or duplicate ids are provided). Falling back to " +
+                                        "first unclaimed host node (might cause a chain of claiming each other node ids)",
+                                )
+                        }
+                        // The network interface of any unclaimed host node in the network.
+                            ?: controller.claimNextHostNode()
+                            // Network controller not null (network simulation required), but no unclaimed host available.
+                            ?: throw RuntimeException(
+                                "'networkFile' property defined in topology file, " +
+                                    "however not enough host nodes available. Either a different network with a higher " +
+                                    "number of host nodes has to be provided, or the number of hosts shall be lowered",
+                            )
+                    } // networkController == null ⇒ not network interface and no network simulation.
+
                 val simHost =
                     SimHost(
                         hostSpec.name,
@@ -128,6 +156,7 @@ public class HostsProvisioningStep internal constructor(
                         hostSpec.model,
                         hostSpec.cpuPowerModel,
                         hostDistributor,
+                        networkInterface,
                     )
 
                 require(simHosts.add(simHost)) { "Host with name ${hostSpec.name} already exists" }

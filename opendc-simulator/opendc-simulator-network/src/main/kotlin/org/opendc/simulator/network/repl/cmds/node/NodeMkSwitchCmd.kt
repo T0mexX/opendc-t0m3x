@@ -25,7 +25,7 @@ package org.opendc.simulator.network.repl.cmds.node
 import com.github.ajalt.clikt.core.requireObject
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.CustomNetwork
 import org.opendc.simulator.network.components.Switch
 import org.opendc.simulator.network.repl.cmds.REPLCmd

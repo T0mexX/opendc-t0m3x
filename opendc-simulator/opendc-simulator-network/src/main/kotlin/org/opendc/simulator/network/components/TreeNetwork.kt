@@ -26,7 +26,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.logger.logger
-import org.opendc.simulator.network.api.NodeId
 import org.opendc.simulator.network.components.HostNode.HostNodeSpecs
 import org.opendc.simulator.network.components.Switch.SwitchSpecs
 import org.opendc.simulator.network.utils.NonSerializable
@@ -42,8 +41,6 @@ internal class TreeNetwork(
     private val accessSpecs: SwitchSpecs,
     private val hostNodeSpecs: HostNodeSpecs,
 ) : Network() {
-    override val nodesById: Map<NodeId, Node>
-    override val endPointNodes: Map<NodeId, EndPointNode>
     override val internet: Internet
 
     val n: Int = minOf(coreSpecs.numOfPorts, aggrSpecs.numOfPorts, accessSpecs.numOfPorts) - 1
@@ -99,16 +96,16 @@ internal class TreeNetwork(
                 }
             }
 
-        nodesById =
+        nodesById +=
             buildMap {
                 putAll((hosts + accessSwitches + aggrSwitches + coreSwitches).associateBy { it.id })
                 check(
                     internet.id !in this,
                 ) { "unable to create network: one node has id $INTERNET_ID, which is reserved for internet abstraction" }
                 put(internet.id, internet)
-            }
+            }.toMutableMap()
 
-        endPointNodes = (coreSwitches + hosts + internet).associateBy { it.id }
+        endPointNodes += (coreSwitches + hosts + internet).associateBy { it.id }.toMutableMap()
     }
 
     override fun toSpecs(): Specs<Network> =

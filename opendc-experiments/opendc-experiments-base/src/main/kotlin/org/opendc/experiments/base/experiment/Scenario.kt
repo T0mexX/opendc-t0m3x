@@ -56,4 +56,6 @@ public data class Scenario(
     val failureModelSpec: FailureModelSpec?,
     val checkpointModelSpec: CheckpointModelSpec?,
     val maxNumFailures: Int = 10,
-)
+) {
+
+}

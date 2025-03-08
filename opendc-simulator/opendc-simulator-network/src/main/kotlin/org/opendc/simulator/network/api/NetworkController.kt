@@ -28,6 +28,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Time
+import org.opendc.common.units.plus
 import org.opendc.simulator.network.api.node.NetworkInterface
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot
@@ -44,14 +45,13 @@ import org.opendc.simulator.network.export.NetExportHandler
 import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.flow.FlowId
 import org.opendc.simulator.network.flow.NetFlow
-import org.opendc.simulator.network.utils.ChangeHndlrJava
 import org.opendc.simulator.network.utils.ChangeHndlr
+import org.opendc.simulator.network.utils.SusChangeHndlr
 import org.opendc.simulator.network.utils.errAndNull
 import org.opendc.simulator.network.utils.infoNewLn
 import org.opendc.simulator.network.utils.logger
 import org.slf4j.Logger
 import java.io.File
-import java.time.Duration
 import java.time.Instant
 import java.time.InstantSource
 
@@ -70,7 +70,6 @@ public class NetworkController(
     instantSource: InstantSource? = null,
     exportConfig: NetworkExportConfig? = null,
 ) : AutoCloseable {
-
     private var netExportHandler: NetExportHandler? =
         exportConfig?.let {
             NetExportHandler(config = it)
@@ -144,14 +143,13 @@ public class NetworkController(
     init {
         instantSource?.let { lastUpdate = Time.ofInstantFromEpoch(it.instant()) }
 
-        network.launch()
+        network.launchNetwork()
         log.info(network.fmtNodes())
     }
 
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Export
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Sets [exportConfig] as the export configuration, replacing any previously set configuration.
@@ -181,10 +179,9 @@ public class NetworkController(
      */
     public fun exportNowJava(): Unit = runBlocking { exportNow() }
 
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Host-to-Node Mapping / Network Interface Retrieval
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * See [claimedHostIds] for an explanation of the *claiming process*.
@@ -254,10 +251,14 @@ public class NetworkController(
                 "node does not exist or does not provide an interface",
         )
 
+    /**
+     * @return the physical [NodeId] to which [id] is mapped if any, [id] otherwise.
+     */
+    private fun mappedOrSelf(id: NodeId): NodeId = virtualMapping[id] ?: let { id }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Start/Stop Flows
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Starts a [NetFlow] if it can be started with the provided parameters.
@@ -265,7 +266,7 @@ public class NetworkController(
      * @param[transmitterId]                id of the [EndPointNode] that is to transmit the flow.
      * @param[destinationId]                id of the [EndPointNode] that is to receive the flow.
      * @param[demand]                       the initial demand of the flow (can then be updated with [NetFlow.setDemand]).
-     * @param[throughputChangeHndlrJava]    a lambda to be invoked whenever the throughput of the flow changes, with the
+     * @param[throughputChangeHndlr]    a lambda to be invoked whenever the throughput of the flow changes, with the
      * flow itself as first param, the old value as second and the new value as third.
      *
      * @return the newly started flow if it was started successfully, `null` otherwise.
@@ -275,8 +276,8 @@ public class NetworkController(
         transmitterId: NodeId,
         destinationId: NodeId = internetNetworkInterface.nodeId,
         demand: DataRate = DataRate.ZERO,
+        throughputSusChangeHndlr: SusChangeHndlr<NetFlow, DataRate>? = null,
         throughputChangeHndlr: ChangeHndlr<NetFlow, DataRate>? = null,
-        throughputChangeHndlrJava: ChangeHndlrJava<NetFlow, DataRate>? = null,
     ): NetFlow? {
         val mappedTransmitterId: NodeId = mappedOrSelf(transmitterId)
         val mappedDestId: NodeId = mappedOrSelf(destinationId)
@@ -288,9 +289,9 @@ public class NetworkController(
                 demand = demand,
             )
 
-        throughputChangeHndlrJava?.let { netFlow.withThroughputChangeHndlr(throughputChangeHndlrJava) }
-
         throughputChangeHndlr?.let { netFlow.withThroughputChangeHndlr(throughputChangeHndlr) }
+
+        throughputSusChangeHndlr?.let { netFlow.withThroughputSusChangeHndlr(throughputSusChangeHndlr) }
 
         return doStartFlow(netFlow)
     }
@@ -302,22 +303,23 @@ public class NetworkController(
         senderId: NodeId,
         destinationId: NodeId = internetNetworkInterface.nodeId,
         demand: DataRate = DataRate.ZERO,
-        throughputChangeHndlrJava: ChangeHndlrJava<NetFlow, DataRate>? = null,
-    ) : NetFlow? = runBlocking {
-        startFlow(
-            transmitterId = senderId,
-            destinationId = destinationId,
-            demand = demand,
-            throughputChangeHndlrJava = throughputChangeHndlrJava
-        )
-    }
+        throughputChangeHndlr: ChangeHndlr<NetFlow, DataRate>? = null,
+    ): NetFlow? =
+        runBlocking {
+            startFlow(
+                transmitterId = senderId,
+                destinationId = destinationId,
+                demand = demand,
+                throughputChangeHndlr = throughputChangeHndlr,
+            )
+        }
 
     /**
      * Starts [netFlow] if it can be started.
      *
      * @return the flow itself if it has been started successfully, `null` otherwise.
      */
-    private fun doStartFlow(netFlow: NetFlow): NetFlow? {
+    private suspend fun doStartFlow(netFlow: NetFlow): NetFlow? {
         if (netFlow.transmitterId !in network.endPointNodes) {
             return log.errAndNull(
                 "unable to start network flow from node ${netFlow.transmitterId}, " +
@@ -357,10 +359,9 @@ public class NetworkController(
      */
     public fun stopFlowJava(flowId: FlowId): NetFlow? = runBlocking { stopFlow(flowId) }
 
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Virtual Simulation Time
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Sets [instantSource] as the external time source of the network. The network is then to be synchronized with [sync].
@@ -388,8 +389,8 @@ public class NetworkController(
      * @param[logSnapshot]          if `true` it logs the [NetworkSnapshot] after the synchronization, at INFO level.
      * has a throughput higher than its demand.
      */
-    @JvmOverloads
-    public fun sync(logSnapshot: Boolean = false) {
+    @JvmSynthetic
+    public suspend fun sync(logSnapshot: Boolean = false) {
         val syncTo = instantSrc.time
         if (instantSrc.isExternalSource) {
             runBlocking(network.validator) { network.awaitStability() }
@@ -403,20 +404,20 @@ public class NetworkController(
         }
     }
 
-    /**
-     * Advances the network time by [duration], updating network related statistics.
-     */
-    public fun advanceBy(duration: Duration): Unit = advanceBy(Time.ofDuration(duration))
+    @JvmOverloads
+    public fun syncJava(logSnapshot: Boolean = false): Unit = runBlocking { sync(logSnapshot) }
 
     /**
      * Advances the network time by [time] milliseconds, updating network related statistics.
      */
-    public fun advanceBy(time: Time): Unit = advanceBy(time, suppressWarn = false)
+    public suspend fun advanceBy(time: Time): Unit = advanceBy(time, suppressWarn = false)
 
-    private fun advanceBy(
+    public fun advanceByJava(time: Time): Unit = runBlocking { advanceBy(time, suppressWarn = false) }
+
+    private suspend fun advanceBy(
         time: Time,
         suppressWarn: Boolean,
-    ) = runBlocking {
+    ) {
         suspend fun advance(jump: Time) {
             network.awaitStability()
             network.validator.checkIsStableWhile {
@@ -438,8 +439,8 @@ public class NetworkController(
             )
         }
 
-        if (time < Time.ZERO) return@runBlocking log.error("advanceBy received negative time-span parameter($time), ignoring...")
-        if (time == Time.ZERO) return@runBlocking
+        if (time < Time.ZERO) return log.error("advanceBy received negative time-span parameter($time), ignoring...")
+        if (time == Time.ZERO) return
 
         netExportHandler?.let { exportHndlr ->
             // Advances time in multiple steps to allow all export deadlines.
@@ -455,15 +456,9 @@ public class NetworkController(
         } ?: advance(time)
     }
 
-    /**
-     * @return the physical [NodeId] to which [id] is mapped if any, [id] otherwise.
-     */
-    private fun mappedOrSelf(id: NodeId): NodeId = virtualMapping[id] ?: let { id }
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Other
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Cancels the coroutine that runs the network.

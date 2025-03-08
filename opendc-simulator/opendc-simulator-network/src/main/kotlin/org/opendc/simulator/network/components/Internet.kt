@@ -24,7 +24,7 @@ package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Network.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.UpdateChl

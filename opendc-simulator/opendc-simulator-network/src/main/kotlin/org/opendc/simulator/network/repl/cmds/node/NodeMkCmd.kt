@@ -29,7 +29,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.long
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.CustomNetwork
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 

@@ -25,7 +25,7 @@ package org.opendc.simulator.network.components
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
 import org.opendc.simulator.network.components.internalstructs.port.Port

@@ -36,7 +36,8 @@ import org.opendc.simulator.network.utils.isSorted
 @Serializable
 @SerialName("max-min")
 internal data object MaxMinPerPort : FairnessPolicy {
-    override fun FlowHandler.applyPolicy(updt: RateUpdt) {
+    context(FlowHandler)
+    override fun applyPolicy(updt: RateUpdt) {
         resetAll()
 
         if (FairnessPolicy.VERIFY) {
@@ -62,8 +63,8 @@ internal data object MaxMinPerPort : FairnessPolicy {
                 }
             }.toMutableMap()
 
-        // Max-min for each port multiple ports.
-        flows.forEachIndexed { idx, outFlow ->
+        // Max-min for each port multiple.
+        flows.forEach { outFlow ->
             val targetPorts: Collection<Port> = outFlow.outRatesByPort.keys
             val flowDmPerPort: DataRate = outFlow.demand / targetPorts.size
 

@@ -29,7 +29,7 @@ import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.NetworkController
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.energy.EnergyConsumer
@@ -235,11 +235,12 @@ public class NodeSnapshot internal constructor(
         internal fun Node.snapshot(
             instant: Instant,
             withStableNetwork: Network? = null,
-            noCache: Boolean = false,
+            noCache: Boolean = true,
         ): NodeSnapshot {
             // If snapshot with same timestamp in cache
-            if (noCache.not()) {
-                cache[id]?.let {
+            if (!noCache) {
+                cache[id]
+                    ?.let {
                     if (it.instant == instant) return it
                 }
             }
@@ -252,7 +253,7 @@ public class NodeSnapshot internal constructor(
             }
 
             val fh: FlowHandler = this.flowHandler
-            val flows: List<OutFlow> = fh.nodeFlowTracker[AllByUnsatisfaction]
+            val flows: Collection<OutFlow> = fh.outgoingFlows.values
             val totNodeTput: DataRate = DataRate.ofKbps(flows.sumOf { it.totRateOut.toKbps() })
 
             return NodeSnapshot(

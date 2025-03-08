@@ -60,7 +60,7 @@ import java.io.File
 public data class NetworkExportConfig(
     val networkExportColumns: List<ExportColumn<NetworkSnapshot>>,
     val nodeExportColumns: List<ExportColumn<NodeSnapshot>>,
-    val outputFolder: File?,
+    val outputFolder: File? = null,
     val exportInterval: Time? = null,
     val startTime: Time? = null,
 ) {
@@ -86,6 +86,17 @@ public data class NetworkExportConfig(
         public fun loadDfltColumns() {
             DfltNetworkExportColumns
             DfltNodeExportColumns
+        }
+
+        /**
+         * Config that includes all columns defined in [DfltNetworkExportColumns] and [DfltNodeExportColumns],
+         */
+        public val ALL_COLUMNS: NetworkExportConfig by lazy {
+            loadDfltColumns()
+            NetworkExportConfig(
+                networkExportColumns = ExportColumn.getAllLoadedColumns(),
+                nodeExportColumns = ExportColumn.getAllLoadedColumns(),
+            )
         }
 
         /**

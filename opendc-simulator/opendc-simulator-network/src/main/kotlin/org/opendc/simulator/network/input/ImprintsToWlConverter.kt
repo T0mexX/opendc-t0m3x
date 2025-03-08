@@ -22,7 +22,8 @@
 
 package org.opendc.simulator.network.input
 
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.common.units.plus
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.workload.NetworkEvent
 import org.opendc.simulator.network.api.workload.NetworkEvent.FlowStart
 import org.opendc.simulator.network.api.workload.NetworkEvent.FlowStop

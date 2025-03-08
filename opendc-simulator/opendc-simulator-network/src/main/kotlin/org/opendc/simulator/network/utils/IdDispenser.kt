@@ -22,7 +22,7 @@
 
 package org.opendc.simulator.network.utils
 
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node
 
 /**

@@ -26,17 +26,28 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataSize
 import org.opendc.common.units.Frequency
 import org.opendc.common.units.Power
+import org.opendc.simulator.network.api.NetworkController
+import org.opendc.simulator.network.api.node.NodeId
 
 /**
  * Definition of a Topology modeled in the simulation.
  *
  * @param clusters List of the clusters in this topology
+ * @param networkSpecPath Path to the network specs, if any.
  */
 @Serializable
 public data class TopologySpec(
     val clusters: List<ClusterJSONSpec>,
     val schemaVersion: Int = 1,
-)
+    private val networkSpecPath: String? = null,
+) {
+    /**
+     * The network controller used for the simulation run if any.
+     */
+    val netwController: NetworkController? by lazy {
+        networkSpecPath?.let { NetworkController.fromPath(it) }
+    }
+}
 
 /**
  * Definition of a compute cluster modeled in the simulation.
@@ -63,6 +74,7 @@ public data class ClusterJSONSpec(
  * @param memory The amount of RAM memory available in Byte
  * @param powerModel The power model used to determine the power draw of a host
  * @param count The power model used to determine the power draw of a host
+ * @param nodeIds The list of the node ids the hosts should be mapped to (should be of [count] length)
  */
 @Serializable
 public data class HostJSONSpec(
@@ -71,7 +83,14 @@ public data class HostJSONSpec(
     val memory: MemoryJSONSpec,
     val powerModel: PowerModelSpec = PowerModelSpec.DFLT,
     val count: Int = 1,
-)
+    val nodeIds: List<NodeId>? = null,
+) {
+    init {
+        require(nodeIds?.size == count || nodeIds == null) {
+            "Invalid `HostJsonSpec`, the `nodeIds` list should be of `count` length"
+        }
+    }
+}
 
 /**
  * Definition of a compute CPU modeled in the simulation.

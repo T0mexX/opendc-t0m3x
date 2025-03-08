@@ -27,7 +27,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.opendc.simulator.network.components.stability.NetworkStabilityValidator.Invalidator
+import org.opendc.simulator.network.components.stability.NetworkStabilityBarrier.Invalidator
 import org.opendc.simulator.network.flow.RateUpdt
 import org.opendc.simulator.network.utils.logger
 

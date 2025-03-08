@@ -26,7 +26,7 @@ import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Time
 import org.opendc.simulator.network.api.NetworkController
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.flow.FlowId
 import org.opendc.simulator.network.flow.NetFlow

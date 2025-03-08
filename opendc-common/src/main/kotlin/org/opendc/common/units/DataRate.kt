@@ -36,12 +36,12 @@ import java.time.Duration
  */
 @JvmInline
 @Serializable(with = DataRate.Companion.DataRateSerializer::class)
-public value class DataRate private constructor(
+public value class DataRate public constructor(
     // In bits/s.
     override val value: Double,
 ) : Unit<DataRate> {
     @InternalUse
-    override fun new(value: Double): DataRate = DataRate(value.ifNeg0thenPos0())
+    inline override fun new(value: Double): DataRate = DataRate(value)
 
     public fun tobps(): Double = value
 

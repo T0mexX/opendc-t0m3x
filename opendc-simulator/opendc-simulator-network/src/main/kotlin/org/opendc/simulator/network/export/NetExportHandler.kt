@@ -23,6 +23,7 @@
 package org.opendc.simulator.network.export
 
 import org.opendc.common.units.Time
+import org.opendc.common.units.plus
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snapshot
@@ -90,7 +91,7 @@ internal class NetExportHandler(
 
     internal fun NetworkController.timeUntilExport(): Time? = getNextDeadline()?.minus(lastUpdate)
 
-    internal fun NetworkController.exportIfNeeded() {
+    internal suspend fun NetworkController.exportIfNeeded() {
         // Non-mutable for smart cast.
         val exportDeadline = getNextDeadline()
 
@@ -107,14 +108,16 @@ internal class NetExportHandler(
         networkExporter?.write(snapshot())
 
         // Write each node's snapshot to the output file.
-        network.nodesById.values.forEach {
-            if (it.id == INTERNET_ID) return@forEach
-            nodeExporter?.write(
-                it.snapshot(
-                    instant = currentInstant,
+        nodeExporter?.let {
+            network.nodesById.values.forEach {
+                if (it.id == INTERNET_ID) return@forEach
+                nodeExporter.write(
+                    it.snapshot(
+                        instant = currentInstant,
 //                        withStableNetwork = network,
-                ),
-            )
+                    ),
+                )
+            }
         }
 
         lastExportTime = lastUpdate

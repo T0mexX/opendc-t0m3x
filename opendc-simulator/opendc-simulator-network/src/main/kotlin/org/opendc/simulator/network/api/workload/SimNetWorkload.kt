@@ -24,7 +24,7 @@ package org.opendc.simulator.network.api.workload
 
 import org.opendc.common.units.Time
 import org.opendc.simulator.network.api.NetworkController
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.utils.logger
 import java.time.Duration

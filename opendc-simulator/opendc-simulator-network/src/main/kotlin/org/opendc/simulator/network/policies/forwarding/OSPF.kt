@@ -24,7 +24,7 @@ package org.opendc.simulator.network.policies.forwarding
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.flow.FlowId
@@ -34,7 +34,8 @@ import org.opendc.simulator.network.flow.NetFlow
 @Serializable
 @SerialName("ospf")
 internal data object OSPF : PortSelectionPolicy {
-    override suspend fun Node.selectPorts(flowId: FlowId): Set<Port> {
+    context(Node)
+    override suspend fun selectPorts(flowId: FlowId): Set<Port> {
         val finalDestId: NodeId =
             NetFlow.flowsDestIds[flowId]
                 ?: throw IllegalStateException("unable to forward flow, flow id $flowId not recognized")
@@ -42,7 +43,7 @@ internal data object OSPF : PortSelectionPolicy {
         return routingTable.getPossiblePathsTo(finalDestId)
             .onlyMinimal()
             .firstOrNull()
-            ?.associatedPort(this@selectPorts)
+            ?.associatedPort(this@Node)
             ?.let { setOf(it) }
             ?: emptySet()
     }

@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.api
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable

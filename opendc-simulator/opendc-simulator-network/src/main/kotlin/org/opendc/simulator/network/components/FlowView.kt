@@ -34,7 +34,7 @@ internal interface FlowView {
      * Returns the total incoming data rate corresponding
      * to [fId] (generated flows are not included).
      */
-    fun totIncomingDataRateOf(fId: FlowId): DataRate
+    suspend fun totIncomingDataRateOf(fId: FlowId): DataRate
 
     /**
      * Returns the total outgoing data rate corresponding to [fId] (not the throughput).
@@ -56,7 +56,7 @@ internal interface FlowView {
      * Returns a formatted [String] representation of all the flows
      * that transit through ***this***, both incoming and outgoing.
      */
-    fun fmtFlows(): String =
+    suspend fun fmtFlows(): String =
         buildString {
             appendLine("| ==== Node Flows ====")
             appendLine(

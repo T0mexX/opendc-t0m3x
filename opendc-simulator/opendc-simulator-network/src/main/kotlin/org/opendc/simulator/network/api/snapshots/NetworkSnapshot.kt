@@ -204,19 +204,19 @@ public class NetworkSnapshot private constructor(
          * @param[noCache] if `true` prevents the use of cache. Cache use needs to
          * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
          */
-        public fun NetworkController.snapshot(noCache: Boolean = false): NetworkSnapshot {
+        public suspend fun NetworkController.snapshot(noCache: Boolean = false): NetworkSnapshot {
             if (noCache.not()) {
                 lastSnapshot?.let {
                     if (it.instant == currentInstant) return it
                 }
             }
 
+            network.awaitStability()
             val flows: Collection<NetFlow> = network.flowsById.values
-            val activeFlows: Collection<NetFlow> = flows.filterNot { it.demand.isZero() }
-            val totDemand: DataRate = flows.sumOfUnit { it.demand }
-            val totThroughput: DataRate = flows.sumOfUnit { it.throughput }
+            val activeFlows: Collection<NetFlow> = flows.filterNot { it.getDemand().isZero() }
+            val totDemand: DataRate = flows.sumOfUnit { it.getDemand() }
+            val totThroughput: DataRate = flows.sumOfUnit { it.getThroughput() }
 
-            runBlocking { network.awaitStability() }
 
             return NetworkSnapshot(
                 instant = currentInstant,
@@ -232,7 +232,7 @@ public class NetworkSnapshot private constructor(
                         if (activeFlows.isEmpty()) {
                             null
                         } else {
-                            activeFlows.sumOfUnit { it.throughput roundedPercentageOf it.demand } / activeFlows.size
+                            activeFlows.sumOfUnit { it.getThroughput() roundedPercentageOf it.getDemand() } / activeFlows.size
                         }
                     },
                 worstTputPerc =
@@ -240,7 +240,7 @@ public class NetworkSnapshot private constructor(
                         if (activeFlows.isEmpty()) {
                             null
                         } else {
-                            activeFlows.minOf { it.throughput roundedPercentageOf it.demand }
+                            activeFlows.minOf { it.getThroughput() roundedPercentageOf it.getDemand() }
                         }
                     },
                 currPwrUse = energyRecorder.currPwrUsage,
@@ -254,7 +254,7 @@ public class NetworkSnapshot private constructor(
          * @param[noCache] if `true` prevents the use of cache. Cache use needs to
          * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
          */
-        public fun Network.snapshot(
+        public suspend fun Network.snapshot(
             noCache: Boolean = false,
             instant: Instant,
             enRecorder: NetEnRecorder,
@@ -266,11 +266,11 @@ public class NetworkSnapshot private constructor(
             }
 
             val flows: Collection<NetFlow> = this.flowsById.values
-            val activeFlows: Collection<NetFlow> = flows.filterNot { it.demand.isZero() }
-            val totDemand: DataRate = flows.sumOfUnit { it.demand }
-            val totThroughput: DataRate = flows.sumOfUnit { it.throughput }
+            val activeFlows: Collection<NetFlow> = flows.filterNot { it.getDemand().isZero() }
+            val totDemand: DataRate = flows.sumOfUnit { it.getDemand() }
+            val totThroughput: DataRate = flows.sumOfUnit { it.getThroughput() }
 
-            runBlocking { this@snapshot.awaitStability() }
+             this@snapshot.awaitStability()
 
             return NetworkSnapshot(
                 instant = instant,
@@ -286,7 +286,7 @@ public class NetworkSnapshot private constructor(
                         if (activeFlows.isEmpty()) {
                             null
                         } else {
-                            activeFlows.sumOfUnit { it.throughput roundedPercentageOf it.demand } / activeFlows.size
+                            activeFlows.sumOfUnit { it.getThroughput() roundedPercentageOf it.getDemand() } / activeFlows.size
                         }
                     },
                 worstTputPerc =
@@ -294,7 +294,7 @@ public class NetworkSnapshot private constructor(
                         if (activeFlows.isEmpty()) {
                             null
                         } else {
-                            activeFlows.minOf { it.throughput roundedPercentageOf it.demand }
+                            activeFlows.minOf { it.getThroughput() roundedPercentageOf it.getDemand() }
                         }
                     },
                 currPwrUse = enRecorder.currPwrUsage,

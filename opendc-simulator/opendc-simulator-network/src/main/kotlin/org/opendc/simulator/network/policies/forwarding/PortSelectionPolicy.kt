@@ -31,7 +31,8 @@ import org.opendc.simulator.network.flow.FlowId
 // TODO: documentation
 @Serializable
 internal sealed interface PortSelectionPolicy {
-    suspend fun Node.selectPorts(flowId: FlowId): Set<Port>
+    context(Node)
+    suspend fun selectPorts(flowId: FlowId): Set<Port>
 
     /**
      * Filters ***this*** collection of [RoutingTable.PossiblePath], keeping only those that are minimal.

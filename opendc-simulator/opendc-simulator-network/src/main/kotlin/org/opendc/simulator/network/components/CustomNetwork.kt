@@ -20,6 +20,8 @@
  * SOFTWARE.
  */
 
+@file:OptIn(SealedProtectedUse::class)
+
 package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.Job
@@ -39,17 +41,16 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonUnquotedLiteral
 import kotlinx.serialization.serializer
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.flow.NetFlow
 import org.opendc.simulator.network.utils.NonSerializable
+import org.opendc.simulator.network.utils.SealedProtectedUse
 import org.opendc.simulator.network.utils.errAndNull
 import org.opendc.simulator.network.utils.logger
 
-private const val SERIAL_NAME: String = "custom-network-specs"
-
 /**
  * Network that is not built following a specific algorithm.
- * It can be built from json with specific format.
+ * It can be built from JSON with specific format.
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
@@ -60,8 +61,7 @@ internal class CustomNetwork(
         val log by logger()
     }
 
-    override val nodesById: MutableMap<NodeId, Node> =
-        nodes.associateBy { it.id }.toMutableMap()
+    override val nodesById: MutableMap<NodeId, Node> = nodes.associateBy { it.id }.toMutableMap()
 
     override val endPointNodes: MutableMap<NodeId, EndPointNode> =
         nodes.filterIsInstance<EndPointNode>()
@@ -78,7 +78,7 @@ internal class CustomNetwork(
 
     init {
         this.nodesById[internet.id] = internet
-        endPointNodes[internet.id] = internet
+        this.endPointNodes[internet.id] = internet
     }
 
     internal fun onNodeAdded(callback: (Network, Node) -> Unit) {
@@ -196,7 +196,7 @@ internal class CustomNetwork(
     }
 
     /**
-     * [Specs] of [CustomNetwork], deserializable from json.
+     * [Specs] of [CustomNetwork], deserializable from JSON.
      * From ***this*** the corresponding custom network can be built.
      */
     @Serializable
@@ -223,7 +223,7 @@ internal class CustomNetwork(
     }
 
     /**
-     * Deserializer of a json array of array (**size 2**) of ints `[[1, 2], [2, 3]]`,
+     * Deserializer of a JSON array of array (**size 2**) of ints `[[1, 2], [2, 3]]`,
      * into a link list (`List<Pair<NodeID, NodeId>>`).
      * - Filters out arrays (links) with size not equal to 2.
      * - Filters out links that try to connect a node to itself.
@@ -234,7 +234,6 @@ internal class CustomNetwork(
         }
 
         override val descriptor: SerialDescriptor = serialDescriptor<List<Pair<NodeId, NodeId>>>()
-//            PrimitiveSerialDescriptor("link-list", PrimitiveKind.STRING)
 
         override fun deserialize(decoder: Decoder): List<Pair<NodeId, NodeId>> {
             val listOfArrays: List<List<NodeId>> =

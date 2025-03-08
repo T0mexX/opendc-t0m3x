@@ -25,8 +25,9 @@ package org.opendc.simulator.network.energy
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.Time
+import org.opendc.common.units.plus
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
-import org.opendc.simulator.network.utils.OnChangeHandler
+import org.opendc.simulator.network.utils.ChangeHndlr
 import kotlin.coroutines.coroutineContext
 import kotlin.properties.Delegates
 
@@ -42,13 +43,13 @@ internal class EnMonitor<T : EnergyConsumer<T>>(
     /**
      * Callback functions of the observers of the [currPwrUsage] field.
      */
-    private val obs: MutableList<OnChangeHandler<EnMonitor<T>, Power>> = mutableListOf()
+    private val obs: MutableList<ChangeHndlr<in EnMonitor<T>, Power>> = mutableListOf()
 
     /**
      * The current energy consumption of the [monitored] network component.
      */
     var currPwrUsage: Power by Delegates.observable(Power.ZERO) { _, oldValue, newValue ->
-        obs.forEach { it.handleChange(this, oldValue, newValue) }
+        obs.forEach { it.handle(this, oldValue, newValue) }
     }
         private set
 
@@ -63,7 +64,7 @@ internal class EnMonitor<T : EnergyConsumer<T>>(
      * Adds an observer callback function.
      * @param[f]    callback function of the new observer.
      */
-    fun onPwrUseChange(f: OnChangeHandler<EnMonitor<T>, Power>) {
+    fun onPwrUseChange(f: ChangeHndlr<in EnMonitor<T>, Power>) {
         obs.add(f)
     }
 

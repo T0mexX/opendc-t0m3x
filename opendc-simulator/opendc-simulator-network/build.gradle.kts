@@ -42,7 +42,7 @@ val cliktVersion = "2.8.0"
 
 dependencies {
     implementation(libs.progressbar)
-
+    implementation(projects.opendcSimulator.opendcSimulatorFlow)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
     implementation(projects.opendcSimulator.opendcSimulatorCore)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")

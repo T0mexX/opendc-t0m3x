@@ -31,7 +31,7 @@ import com.github.ajalt.clikt.parameters.options.unique
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.connect
 import org.opendc.simulator.network.repl.cmds.REPLCmd

@@ -39,7 +39,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.NodeId
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.CustomNetwork
 import org.opendc.simulator.network.components.CustomNetwork.CustomNetworkSpecs
 import org.opendc.simulator.network.components.Network

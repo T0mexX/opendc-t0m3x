@@ -24,6 +24,7 @@ package org.opendc.simulator.network.energy.emodels
 
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Power
+import org.opendc.common.units.plus
 import org.opendc.simulator.network.components.Switch
 import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.energy.EnModel
