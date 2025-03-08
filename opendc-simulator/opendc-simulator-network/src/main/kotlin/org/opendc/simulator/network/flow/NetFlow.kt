@@ -32,8 +32,8 @@ import org.opendc.common.units.Time
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
+import org.opendc.simulator.network.utils.ChangeHndlrJava
 import org.opendc.simulator.network.utils.ChangeHndlr
-import org.opendc.simulator.network.utils.ChangeHndlrSus
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.coroutineContext
 
@@ -57,14 +57,14 @@ public class NetFlow internal constructor(
     /**
      * Functions [(NetFlow, Kbps, Kbps) -> Unit] invoked whenever the throughput of the flow changes.
      */
-    private val throughputChangeHndlrsSus = mutableListOf<ChangeHndlrSus<NetFlow, DataRate>>()
-    private val throughputChangeHndlrs = mutableListOf<ChangeHndlr<NetFlow, DataRate>>()
+    private val throughputChangeHndlrsSus = mutableListOf<ChangeHndlr<NetFlow, DataRate>>()
+    private val throughputChangeHndlrJavas = mutableListOf<ChangeHndlrJava<NetFlow, DataRate>>()
 
     /**
      * Functions [(NetFlow, DataRate, Kbps) -> Unit] invoked whenever the demand of the flow changes.
      */
-    private val demandChangeHndlrsSus = mutableListOf<ChangeHndlrSus<NetFlow, DataRate>>()
-    private val demandChangeHndlrs = mutableListOf<ChangeHndlr<NetFlow, DataRate>>()
+    private val demandChangeHndlrsSus = mutableListOf<ChangeHndlr<NetFlow, DataRate>>()
+    private val demandChangeHndlrJavas = mutableListOf<ChangeHndlrJava<NetFlow, DataRate>>()
 
     /**
      * Total data transmitted since the start of the flow (in Kb).
@@ -114,7 +114,7 @@ public class NetFlow internal constructor(
             demand = newDemand
 
             // calls observer handlers
-            demandChangeHndlrs.forEach {
+            demandChangeHndlrJavas.forEach {
                 it.handle(this, oldDemand, newDemand)
             }
         }
@@ -138,8 +138,8 @@ public class NetFlow internal constructor(
             val old = throughput
             throughput = if (new approx demand) demand else new.roundToIfWithinEpsilon(DataRate.ZERO)
 
-            throughputChangeHndlrs.forEach {
-                it.handle(obj = this@NetFlow, oldValue = old, newValue = field)
+            throughputChangeHndlrJavas.forEach {
+                it.handle(obj = this@NetFlow, oldValue = old, newValue = throughput)
             }
         }
     }
@@ -147,6 +147,11 @@ public class NetFlow internal constructor(
     @JvmSynthetic
     public suspend fun getThroughput(): DataRate =
         throughputMtx.withLock { throughput }
+
+    @JvmSynthetic
+    public suspend fun increaseThroughputBy(amount: DataRate) {
+        throughputMtx.withLock { throughput += amount }
+    }
 
     public fun getThroughputJava(): DataRate = runBlocking {
         throughputMtx.withLock { throughput }
@@ -159,7 +164,7 @@ public class NetFlow internal constructor(
     /**
      * Adds [hndlr] among the functions invoked whenever the throughput of the flow changes.
      */
-    public fun withThroughputChangeHndlr(hndlr: ChangeHndlrSus<NetFlow, DataRate>): NetFlow {
+    public fun withThroughputChangeHndlr(hndlr: ChangeHndlr<NetFlow, DataRate>): NetFlow {
         throughputChangeHndlrsSus.add(hndlr)
         return this
     }
@@ -167,15 +172,15 @@ public class NetFlow internal constructor(
     /**
      * @see withThroughputChangeHndlr
      */
-    public fun withThroughputChangeHndlr(hndlr: ChangeHndlr<NetFlow, DataRate>): NetFlow {
-        throughputChangeHndlrs.add(hndlr)
+    public fun withThroughputChangeHndlrJava(hndlr: ChangeHndlrJava<NetFlow, DataRate>): NetFlow {
+        throughputChangeHndlrJavas.add(hndlr)
         return this
     }
 
     /**
      * Adds [f] among the functions invoked whenever the demand of the flow changes.
      */
-    internal fun withDemandChangeHndlr(f: ChangeHndlrSus<NetFlow, DataRate>): NetFlow {
+    internal fun withDemandChangeHndlr(f: ChangeHndlr<NetFlow, DataRate>): NetFlow {
         demandChangeHndlrsSus.add(f)
         return this
     }
@@ -183,8 +188,8 @@ public class NetFlow internal constructor(
     /**
      * Adds [f] among the functions invoked whenever the demand of the flow changes.
      */
-    internal  fun withDemandChangeHndlr(f: ChangeHndlr<NetFlow, DataRate>): NetFlow {
-        demandChangeHndlrs.add(f)
+    internal  fun withDemandChangeHndlrJava(f: ChangeHndlrJava<NetFlow, DataRate>): NetFlow {
+        demandChangeHndlrJavas.add(f)
         return this
     }
 
