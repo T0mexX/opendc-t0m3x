@@ -24,7 +24,6 @@ package org.opendc.simulator.network.flow
 
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Unit.Companion.sumOfUnit
-import org.opendc.common.units.plus
 import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.internalstructs.port.Port

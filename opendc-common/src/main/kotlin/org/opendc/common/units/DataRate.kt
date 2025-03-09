@@ -71,6 +71,8 @@ public value class DataRate public constructor(
 
     override fun toString(): String = fmtValue()
 
+    public inline override operator fun plus(other : DataRate): DataRate = DataRate(this.value + other.value)
+
     public override fun fmtValue(fmt: String): String =
         when (abs()) {
             in ZERO..ofBps(100) -> "${String.format(fmt, tobps())} bps"

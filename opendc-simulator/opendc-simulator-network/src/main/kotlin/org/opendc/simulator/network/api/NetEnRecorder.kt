@@ -25,7 +25,6 @@ package org.opendc.simulator.network.api
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.Time
-import org.opendc.common.units.plus
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.CustomNetwork
 import org.opendc.simulator.network.components.Network

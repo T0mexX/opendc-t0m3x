@@ -25,7 +25,6 @@ package org.opendc.simulator.network.energy
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.Time
-import org.opendc.common.units.plus
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
 import org.opendc.simulator.network.utils.ChangeHndlr
 import kotlin.coroutines.coroutineContext

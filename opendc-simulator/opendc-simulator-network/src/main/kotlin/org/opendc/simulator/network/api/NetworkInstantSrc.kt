@@ -23,7 +23,6 @@
 package org.opendc.simulator.network.api
 
 import org.opendc.common.units.Time
-import org.opendc.common.units.plus
 import org.opendc.simulator.network.api.NetworkController.Companion.log
 import java.time.Instant
 import java.time.InstantSource

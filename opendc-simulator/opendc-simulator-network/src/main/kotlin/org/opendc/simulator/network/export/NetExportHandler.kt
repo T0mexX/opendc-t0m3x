@@ -23,7 +23,6 @@
 package org.opendc.simulator.network.export
 
 import org.opendc.common.units.Time
-import org.opendc.common.units.plus
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snapshot

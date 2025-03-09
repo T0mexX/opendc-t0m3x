@@ -23,7 +23,6 @@
 package org.opendc.simulator.network.repl
 
 import org.opendc.common.units.Time
-import org.opendc.common.units.plus
 import java.time.Instant
 
 internal class REPLTmSrc(private val initialInstant: Instant) {

@@ -28,7 +28,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Time
-import org.opendc.common.units.plus
 import org.opendc.simulator.network.api.node.NetworkInterface
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot

@@ -121,7 +121,6 @@ internal interface Node : FlowView, WithSpecs<Node> {
      */
     suspend fun consumeUpdt() {
         var updt: RateUpdt = updtChl.receive()
-
         while (true) {
             yield()
             updtChl.tryReceiveSus().getOrNull()

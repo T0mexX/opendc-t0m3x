@@ -4,7 +4,7 @@
         "numOfPorts": 8,
         "portSpeed": "1Gbps",
         "fairnessPolicy": { "type": "first_come_first_served" },
-        "portSelectionPolicy": { "type": "static-ecmp" }
+        "portSelectionPolicy": { "type": "ospf" }
     },
     "hostNodeSpecs": {
         "numOfPorts": 1,

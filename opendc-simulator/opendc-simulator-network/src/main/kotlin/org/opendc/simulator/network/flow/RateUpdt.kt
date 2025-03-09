@@ -23,7 +23,6 @@
 package org.opendc.simulator.network.flow
 
 import org.opendc.common.units.DataRate
-import org.opendc.common.units.plus
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
 import org.opendc.simulator.network.utils.ifNull0
@@ -53,7 +52,7 @@ internal value class RateUpdt(private val updt: Map<FlowId, DataRate>) : Map<Flo
         RateUpdt(
             (updt.keys + other.updt.keys)
                 .associateWith {
-                    ((updt[it].ifNull0()) + (other.updt[it].ifNull0()))
+                    (updt[it].ifNull0() + (other.updt[it].ifNull0()))
                 },
         )
 }

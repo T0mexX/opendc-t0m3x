@@ -105,7 +105,10 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
     @InternalUse
     public val value: Double
 
-
+    /**
+     * @return the sum with [other] as [T].
+     */
+    public operator fun plus(other: T): T = new(value + other.value)
 
     /**
      * @return the subtraction of [other] from *this* as [T].
@@ -383,7 +386,4 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
 
     }
 }
-/**
- * @return the sum with [other] as [T].
- */
-public inline operator fun <T: Unit<T>> T.plus(other: T): T = new(value + other.value)
+
