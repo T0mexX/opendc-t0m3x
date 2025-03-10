@@ -74,11 +74,11 @@ internal class TaskRecordMaterializer(schema: MessageType) : RecordMaterializer<
                                 }
                             }
                         "ts_submit" ->
-                            object : PrimitiveConverter() {
-                                override fun addLong(value: Long) {
-                                    localSubmitTime = Instant.ofEpochMilli(value)
-                                }
-                            }
+                           object : PrimitiveConverter() {
+                               override fun addLong(value: Long) {
+                                   localSubmitTime = Instant.ofEpochMilli(value)
+                               }
+                           }
                         "wait_time" ->
                             object : PrimitiveConverter() {
                                 override fun addLong(value: Long) {

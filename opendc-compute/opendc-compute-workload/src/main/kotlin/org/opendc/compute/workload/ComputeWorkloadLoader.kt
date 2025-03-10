@@ -23,6 +23,7 @@
 package org.opendc.compute.workload
 
 import mu.KotlinLogging
+import org.opendc.common.units.DataRate
 import org.opendc.simulator.compute.workload.trace.TraceWorkload
 import org.opendc.simulator.compute.workload.trace.scaling.NoDelayScaling
 import org.opendc.simulator.compute.workload.trace.scaling.ScalingPolicy
@@ -36,6 +37,8 @@ import org.opendc.trace.conv.resourceID
 import org.opendc.trace.conv.resourceMemCapacity
 import org.opendc.trace.conv.resourceStateCpuUsage
 import org.opendc.trace.conv.resourceStateDuration
+import org.opendc.trace.conv.resourceStateNetRx
+import org.opendc.trace.conv.resourceStateNetTx
 import org.opendc.trace.conv.resourceSubmissionTime
 import java.io.File
 import java.lang.ref.SoftReference
@@ -78,6 +81,14 @@ public class ComputeWorkloadLoader(
         val coresCol = reader.resolve(resourceCpuCount)
         val usageCol = reader.resolve(resourceStateCpuUsage)
 
+        // These columns are for now assumed to be inter-datacenter data flows.
+        val netTxCol = reader.resolve(resourceStateNetTx).let { if (it < 0) null else it }
+        val netRxCol = reader.resolve(resourceStateNetRx).let { if (it < 0) null else it }
+
+        if (netTxCol == null && netRxCol == null) {
+            logger.info("no network related columns found")
+        }
+
         val fragments = mutableMapOf<String, Builder>()
 
         return try {
@@ -87,11 +98,14 @@ public class ComputeWorkloadLoader(
                 val cores = reader.getInt(coresCol)
                 val cpuUsage = reader.getDouble(usageCol)
 
+                val netTx: DataRate? = netTxCol?.let { DataRate.ofKBps(reader.getDouble(netTxCol)) }
+                val netRx: DataRate?  = netRxCol?.let { DataRate.ofKBps(reader.getDouble(netRxCol)) }
+
                 val builder =
                     fragments.computeIfAbsent(
                         id,
                     ) { Builder(checkpointInterval, checkpointDuration, checkpointIntervalScaling, scalingPolicy) }
-                builder.add(durationMs, cpuUsage, cores)
+                builder.add(durationMs, cpuUsage, cores, netTx, netRx)
             }
 
             fragments
@@ -211,10 +225,17 @@ public class ComputeWorkloadLoader(
             duration: Duration,
             usage: Double,
             cores: Int,
+            netTx: DataRate?,
+            netRx: DataRate?,
         ) {
             totalLoad += (usage * duration.toMillis()) / 1000 // avg MHz * duration = MFLOPs
 
-            builder.add(duration.toMillis(), usage, cores)
+            // If networking values are defined in fragment.
+            if (netTx != null && netRx != null) {
+                builder.add(duration.toMillis(), usage, cores, netTx.toKbps(), netRx.toKbps())
+            } else {
+                builder.add(duration.toMillis(), usage, cores)
+            }
         }
 
         /**

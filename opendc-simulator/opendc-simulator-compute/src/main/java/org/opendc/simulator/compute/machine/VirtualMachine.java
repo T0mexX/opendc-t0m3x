@@ -23,6 +23,8 @@
 package org.opendc.simulator.compute.machine;
 
 import java.util.function.Consumer;
+
+import org.jetbrains.annotations.Nullable;
 import org.opendc.simulator.compute.cpu.SimCpu;
 import org.opendc.simulator.compute.workload.SimWorkload;
 import org.opendc.simulator.compute.workload.Workload;
@@ -31,12 +33,15 @@ import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowGraph;
 import org.opendc.simulator.engine.graph.FlowNode;
 import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.NetworkSupplier;
+import org.opendc.simulator.network.api.node.NetworkInterface;
 
 /*
   A virtual Machine created to run a single workload
 */
-public class VirtualMachine extends FlowNode implements FlowConsumer, FlowSupplier {
+public class VirtualMachine extends FlowNode implements FlowConsumer, FlowSupplier, NetworkSupplier {
     private final SimMachine machine;
+    private final @Nullable NetworkInterface networkInterface;
 
     private SimWorkload activeWorkload;
 
@@ -90,6 +95,11 @@ public class VirtualMachine extends FlowNode implements FlowConsumer, FlowSuppli
         return machine.getCpu();
     }
 
+    @Override
+    public @Nullable NetworkInterface getNetworkInterface() {
+        return this.networkInterface;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Constructors
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,6 +108,10 @@ public class VirtualMachine extends FlowNode implements FlowConsumer, FlowSuppli
         super(machine.getGraph());
         this.machine = machine;
         this.clock = this.machine.getClock();
+
+        this.networkInterface = machine.getNetworkInterface() != null
+            ? machine.getNetworkInterface().getSubInterface()
+            : null;
 
         this.parentGraph = machine.getGraph();
         this.parentGraph.addEdge(this, this.machine.getCpuDistributor());
@@ -119,6 +133,7 @@ public class VirtualMachine extends FlowNode implements FlowConsumer, FlowSuppli
 
         super.closeNode();
 
+        if (this.networkInterface != null) this.networkInterface.close();
         this.activeWorkload = null;
         this.performanceCounters = null;
 

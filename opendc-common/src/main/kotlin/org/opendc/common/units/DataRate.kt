@@ -41,7 +41,7 @@ import java.time.Duration
  */
 @JvmInline
 @Serializable(with = DataRate.Companion.DataRateSerializer::class)
-public value class DataRate private constructor(
+public value class DataRate public constructor(
     // In bits/s.
     override val value: Double,
 ) : Unit<DataRate> {

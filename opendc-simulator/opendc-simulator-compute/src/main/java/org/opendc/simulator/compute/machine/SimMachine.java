@@ -24,6 +24,8 @@ package org.opendc.simulator.compute.machine;
 
 import java.time.InstantSource;
 import java.util.function.Consumer;
+
+import org.jetbrains.annotations.Nullable;
 import org.opendc.simulator.compute.cpu.CpuPowerModel;
 import org.opendc.simulator.compute.cpu.SimCpu;
 import org.opendc.simulator.compute.memory.Memory;
@@ -33,6 +35,7 @@ import org.opendc.simulator.compute.workload.SimWorkload;
 import org.opendc.simulator.compute.workload.Workload;
 import org.opendc.simulator.engine.graph.FlowDistributor;
 import org.opendc.simulator.engine.graph.FlowGraph;
+import org.opendc.simulator.network.api.node.NetworkInterface;
 
 /**
  * A machine that is able to execute {@link SimWorkload} objects.
@@ -45,8 +48,11 @@ public class SimMachine {
 
     private SimCpu cpu;
     private FlowDistributor cpuDistributor;
+    private @Nullable NetworkInterface networkInterface;
     private SimPsu psu;
     private Memory memory;
+
+
 
     private final Consumer<Exception> completion;
 
@@ -86,6 +92,11 @@ public class SimMachine {
         return psu;
     }
 
+    @Nullable
+    public NetworkInterface getNetworkInterface() {
+        return networkInterface;
+    }
+
     /**
      * Return the CPU capacity of the hypervisor in MHz.
      */
@@ -116,10 +127,13 @@ public class SimMachine {
             MachineModel machineModel,
             FlowDistributor powerDistributor,
             CpuPowerModel cpuPowerModel,
-            Consumer<Exception> completion) {
+            @Nullable NetworkInterface networkInterface,
+            Consumer<Exception> completion
+    ) {
         this.graph = graph;
         this.machineModel = machineModel;
         this.clock = graph.getEngine().getClock();
+        this.networkInterface = networkInterface;
 
         // Create the psu and cpu and connect them
         this.psu = new SimPsu(graph);
@@ -157,6 +171,11 @@ public class SimMachine {
         this.cpuDistributor = null;
 
         this.memory = null;
+
+        if (networkInterface != null) {
+            this.networkInterface.close();
+            this.networkInterface = null;
+        }
 
         this.completion.accept(cause);
     }

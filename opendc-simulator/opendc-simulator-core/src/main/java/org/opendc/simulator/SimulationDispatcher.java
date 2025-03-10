@@ -24,8 +24,11 @@ package org.opendc.simulator;
 
 import java.time.Instant;
 import java.time.InstantSource;
+
+import org.jetbrains.annotations.Nullable;
 import org.opendc.common.Dispatcher;
 import org.opendc.common.DispatcherHandle;
+import org.opendc.simulator.network.api.NetworkController;
 
 /**
  * A {@link Dispatcher} used by simulations to manage execution of (future) tasks, providing a controllable (virtual)
@@ -120,7 +123,9 @@ public final class SimulationDispatcher implements Dispatcher {
     public void advanceUntilIdle() {
         final TaskQueue queue = this.queue;
 
+
         while (true) {
+
             long deadline = queue.peekDeadline();
             Runnable task = queue.poll();
 
