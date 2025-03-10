@@ -1,0 +1,16 @@
+{
+    "networkExportConfig": {
+        "exportInterval": "5min"
+    },
+    "runs": 1,
+    "topologies": [{
+        "pathToFile": "resources/env/topologies/128_test_top.json"
+    }],
+    "workloads": [{
+        "pathToFile": "resources/env/traces/bitbrains128",
+        "type": "ComputeWorkload"
+    }],
+    "allocationPolicies": [{
+        "policyType": "Mem"
+    }]
+}

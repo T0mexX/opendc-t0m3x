@@ -35,6 +35,7 @@ import org.opendc.simulator.compute.cpu.getPowerModel
 import org.opendc.simulator.compute.models.CpuModel
 import org.opendc.simulator.compute.models.MachineModel
 import org.opendc.simulator.compute.models.MemoryUnit
+import org.opendc.simulator.network.api.NetworkController
 import java.io.File
 import java.io.InputStream
 
@@ -74,55 +75,40 @@ private fun createUniqueName(
     return newName
 }
 
-/**
- * Construct a topology from the specified [pathToFile].
- */
-public fun clusterTopology(pathToFile: String): List<ClusterSpec> {
-    return clusterTopology(File(pathToFile))
-}
+public fun TopologySpec.Companion.fromFile(file: File): TopologySpec = reader.read(file)
 
-/**
- * Construct a topology from the specified [file].
- */
-public fun clusterTopology(file: File): List<ClusterSpec> {
-    val topology = reader.read(file)
-    return topology.toClusterSpec()
-}
+public fun TopologySpec.Companion.fromPath(path: String): TopologySpec = reader.read(File(path))
 
-/**
- * Construct a topology from the specified [input].
- */
-public fun clusterTopology(input: InputStream): List<ClusterSpec> {
-    val topology = reader.read(input)
-    return topology.toClusterSpec()
-}
+public fun TopologySpec.Companion.fromInputStream(input: InputStream): TopologySpec = reader.read(input)
 
 /**
  * Helper method to convert a [TopologySpec] into a list of [HostSpec]s.
  */
-private fun TopologySpec.toClusterSpec(): List<ClusterSpec> {
+public fun TopologySpec.toClusterSpec(): List<ClusterSpec> {
     clusterNames.clear()
     hostNames.clear()
     powerSourceNames.clear()
     batteryNames.clear()
 
     return clusters.map { cluster ->
-        cluster.toClusterSpec()
+        cluster.toClusterSpec(networkController)
     }
 }
 
 /**
  * Helper method to convert a [ClusterJSONSpec] into a list of [HostSpec]s.
  */
-private fun ClusterJSONSpec.toClusterSpec(): ClusterSpec {
+private fun ClusterJSONSpec.toClusterSpec(netController: NetworkController?): ClusterSpec {
     val clusterName = createUniqueName(this.name, clusterNames)
 
     val hostSpecs =
         hosts.flatMap { host ->
             (
-                List(host.count) {
+                List(host.count) { idx ->
                     host.toHostSpec(
                         clusterName,
+                        netController,
+                        idx,
                     )
                 }
             )
@@ -156,7 +142,7 @@ private fun ClusterJSONSpec.toClusterSpec(): ClusterSpec {
  */
 private var globalCoreId = 0
 
-private fun HostJSONSpec.toHostSpec(clusterName: String): HostSpec {
+private fun HostJSONSpec.toHostSpec(clusterName: String, netController: NetworkController?, idx: Int): HostSpec {
     val units =
         List(cpu.count) {
             CpuModel(
@@ -173,6 +159,9 @@ private fun HostJSONSpec.toHostSpec(clusterName: String): HostSpec {
             unknownMemoryUnit,
         )
 
+
+
+
     val powerModel =
         getPowerModel(powerModel.modelType, powerModel.power.toWatts(), powerModel.maxPower.toWatts(), powerModel.idlePower.toWatts())
 
@@ -182,6 +171,7 @@ private fun HostJSONSpec.toHostSpec(clusterName: String): HostSpec {
             clusterName,
             machineModel,
             powerModel,
+            nodeIds?.getOrNull(idx),
         )
     return hostSpec
 }

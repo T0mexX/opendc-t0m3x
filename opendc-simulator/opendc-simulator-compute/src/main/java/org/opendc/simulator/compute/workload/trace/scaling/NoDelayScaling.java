@@ -22,6 +22,10 @@
 
 package org.opendc.simulator.compute.workload.trace.scaling;
 
+import org.jetbrains.annotations.NotNull;
+import org.opendc.common.units.Percentage;
+import org.opendc.simulator.network.api.NetFlowBarrier;
+
 /**
  * The NoDelay scaling policy states that there will be no delay
  * when less CPU can be provided than needed.
@@ -31,17 +35,22 @@ package org.opendc.simulator.compute.workload.trace.scaling;
  */
 public class NoDelayScaling implements ScalingPolicy {
     @Override
-    public double getFinishedWork(double cpuFreqDemand, double cpuFreqSupplied, long passedTime) {
+    public double getFinishedCpuWork(double cpuFreqDemand, double cpuFreqSupplied, long passedTime) {
         return cpuFreqDemand * passedTime;
     }
 
     @Override
-    public long getRemainingDuration(double cpuFreqDemand, double cpuFreqSupplied, double remainingWork) {
+    public long getRemainingCpuDuration(double cpuFreqDemand, double cpuFreqSupplied, double remainingWork) {
         return (long) (remainingWork / cpuFreqDemand);
     }
 
     @Override
-    public double getRemainingWork(double cpuFreqDemand, long duration) {
+    public double getRemainingCpuWork(double cpuFreqDemand, long duration) {
         return cpuFreqDemand * duration;
+    }
+
+    @Override
+    public long getRemainingNetworkDuration(@NotNull NetFlowBarrier barrier) {
+        return 0;
     }
 }

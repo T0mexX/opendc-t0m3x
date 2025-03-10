@@ -1,0 +1,21 @@
+{
+    "name": "single host network",
+    "type": "custom-network-topology-specs",
+    "nodesSpecs": [
+        {
+            "type": "host-node-specs",
+            "id": 0,
+            "numOfPorts": 1,
+            "portSpeed": "1Mbps"
+        },
+        {
+            "type": "core-switch-specs",
+            "id": 1,
+            "numOfPorts": 2,
+            "portSpeed": "1Mbps"
+        }
+    ],
+    "links": [
+        [0,1]
+    ]
+}
