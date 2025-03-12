@@ -26,9 +26,9 @@ import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Unit.Companion.sumOfUnit
+import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.node.NetworkInterface
 import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable

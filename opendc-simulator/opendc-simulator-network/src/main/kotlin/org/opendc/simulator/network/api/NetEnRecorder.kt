@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.api
 
+import org.opendc.common.logger.logger
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.TimeDelta
@@ -34,7 +35,6 @@ import org.opendc.simulator.network.energy.EnergyConsumer
 import org.opendc.simulator.network.utils.ChangeHndlr
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
-import org.opendc.simulator.network.utils.logger
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -108,7 +108,10 @@ public class NetEnRecorder internal constructor(network: Network) {
     /**
      * Advances the time by [Time], updating energy consumption and average power draw accordingly.
      */
-    internal suspend fun advanceBy(deltaTime: TimeDelta, checkStability: Boolean = false) {
+    internal suspend fun advanceBy(
+        deltaTime: TimeDelta,
+        checkStability: Boolean = false,
+    ) {
         suspend fun foo() {
             // Update total energy consumption.
             totalConsumption += currPwrUsage * deltaTime
@@ -120,13 +123,15 @@ public class NetEnRecorder internal constructor(network: Network) {
             avrgPwrUsage = (
                 (avrgPwrUsage * totTimeElapsed.toSec()) +
                     currPwrUsage * deltaTime.toSec()
-                ) / (totTimeElapsed + deltaTime).toSec()
+            ) / (totTimeElapsed + deltaTime).toSec()
             totTimeElapsed += deltaTime
         }
 
-       if (checkStability) {
-           coroutineContext.getNetStabilityChecker().checkIsStableWhile { foo() }
-       } else foo()
+        if (checkStability) {
+            coroutineContext.getNetStabilityChecker().checkIsStableWhile { foo() }
+        } else {
+            foo()
+        }
     }
 
     public companion object {

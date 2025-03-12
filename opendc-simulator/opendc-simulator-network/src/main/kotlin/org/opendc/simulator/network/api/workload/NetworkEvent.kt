@@ -23,15 +23,15 @@
 package org.opendc.simulator.network.api.workload
 
 import kotlinx.coroutines.runBlocking
+import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
+import org.opendc.simulator.network.api.FlowId
+import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.api.FlowId
-import org.opendc.simulator.network.api.NetFlow
-import org.opendc.simulator.network.utils.logger
 
 /**
  * Represents a single network event occurring at [deadline].
@@ -76,7 +76,7 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
     protected abstract suspend fun NetworkController.exec()
 
     /**
-     * Executes *this* event on [this] controller if the deadline is not passed.
+     * Executes *this* event on this controller if the deadline is not passed.
      */
     context(NetworkController)
     internal suspend fun execIfNotPassed() {

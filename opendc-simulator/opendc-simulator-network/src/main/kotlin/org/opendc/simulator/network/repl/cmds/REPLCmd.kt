@@ -25,11 +25,11 @@ package org.opendc.simulator.network.repl.cmds
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
 import kotlinx.serialization.json.Json
+import org.opendc.common.logger.logger
 import org.opendc.simulator.network.api.NetEnRecorder
 import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.repl.REPLEnv
 import org.opendc.simulator.network.repl.REPLTmSrc
-import org.opendc.simulator.network.utils.logger
 
 internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
     protected val log by logger(name)

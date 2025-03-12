@@ -22,13 +22,13 @@
 
 package org.opendc.simulator.network.components
 
+import org.opendc.common.logger.logger
+import org.opendc.common.logger.withWarn
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.internalstructs.RoutingVect
 import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.components.internalstructs.port.connect
 import org.opendc.simulator.network.components.internalstructs.port.disconnect
-import org.opendc.simulator.network.utils.logger
-import org.opendc.simulator.network.utils.withWarn
 
 private val log by Unit.logger("NodeConnectionExt")
 

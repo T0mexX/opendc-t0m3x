@@ -22,16 +22,16 @@
 
 package org.opendc.simulator.network.components.internalstructs.port
 
+import org.opendc.common.logger.logger
+import org.opendc.common.logger.withErr
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
+import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
 import org.opendc.simulator.network.components.link.ReceiveLink
 import org.opendc.simulator.network.components.link.SendLink
-import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.utils.ifNull0
-import org.opendc.simulator.network.utils.logger
-import org.opendc.simulator.network.utils.withErr
 import kotlin.math.max
 import kotlin.math.min
 

@@ -24,13 +24,13 @@ package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.yield
 import org.opendc.common.units.DataRate
+import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
 import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.components.stability.NetworkStabilityBarrier
 import org.opendc.simulator.network.flow.FlowHandler
-import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.flow.RateUpdt
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.PortSelectionPolicy

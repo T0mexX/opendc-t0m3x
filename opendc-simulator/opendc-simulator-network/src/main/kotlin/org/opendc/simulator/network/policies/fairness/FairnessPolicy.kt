@@ -23,10 +23,10 @@
 package org.opendc.simulator.network.policies.fairness
 
 import kotlinx.serialization.Serializable
+import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.flow.RateUpdt
-import org.opendc.simulator.network.utils.logger
 
 @Serializable
 internal sealed interface FairnessPolicy {
@@ -42,9 +42,10 @@ internal sealed interface FairnessPolicy {
      */
     fun FlowHandler.execRateReductions(updt: RateUpdt) {
         updt.forEach { fId, deltaRate ->
-            if (deltaRate < DataRate.zero)
+            if (deltaRate < DataRate.zero) {
                 outgoingFlows[fId]
                     ?.tryUpdtRate()
+            }
         }
     }
 

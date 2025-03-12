@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.flow
 
+import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.FlowId
@@ -32,7 +33,6 @@ import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.flow.tracker.NodeFlowTracker
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.PortSelectionPolicy
-import org.opendc.simulator.network.utils.logger
 
 /**
  * Handles all incoming and outgoing flows of the node this handler belongs to,

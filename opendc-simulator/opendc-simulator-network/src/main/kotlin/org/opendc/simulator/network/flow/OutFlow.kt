@@ -23,12 +23,12 @@
 package org.opendc.simulator.network.flow
 
 import org.jetbrains.annotations.TestOnly
+import org.opendc.common.logger.logger
+import org.opendc.common.logger.withWarn
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.flow.tracker.NodeFlowTracker
-import org.opendc.simulator.network.utils.logger
-import org.opendc.simulator.network.utils.withWarn
 import java.util.concurrent.ConcurrentHashMap
 
 /**

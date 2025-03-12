@@ -24,11 +24,11 @@ package org.opendc.simulator.network.policies.forwarding
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.opendc.simulator.network.api.FlowId
+import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.internalstructs.port.Port
-import org.opendc.simulator.network.api.FlowId
-import org.opendc.simulator.network.api.NetFlow
 
 // TODO: documentation
 @Serializable

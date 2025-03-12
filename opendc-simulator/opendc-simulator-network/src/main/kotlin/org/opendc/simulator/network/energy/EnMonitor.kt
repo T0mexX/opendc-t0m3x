@@ -76,21 +76,26 @@ internal class EnMonitor<T : EnergyConsumer<T>>(
         currPwrUsage = enModel.computeCurrConsumpt(monitored)
     }
 
-    suspend fun advanceBy(deltaTime: TimeDelta, checkStability: Boolean = false) {
+    suspend fun advanceBy(
+        deltaTime: TimeDelta,
+        checkStability: Boolean = false,
+    ) {
         fun foo() {
             // Update total energy consumption
             totEnConsumpt += currPwrUsage * deltaTime
 
             // Update average power usage.
             avrgPwrUsage = (
-                    (avrgPwrUsage * totTimeElapsed.toSec()) +
-                            currPwrUsage * deltaTime.toSec()
-                    ) / (totTimeElapsed + deltaTime).toSec()
+                (avrgPwrUsage * totTimeElapsed.toSec()) +
+                    currPwrUsage * deltaTime.toSec()
+            ) / (totTimeElapsed + deltaTime).toSec()
             totTimeElapsed += deltaTime
         }
 
         if (checkStability) {
             coroutineContext.getNetStabilityChecker().checkIsStableWhile { foo() }
-        } else foo()
+        } else {
+            foo()
+        }
     }
 }

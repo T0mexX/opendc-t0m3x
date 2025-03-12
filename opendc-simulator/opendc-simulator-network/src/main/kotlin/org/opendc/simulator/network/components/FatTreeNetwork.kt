@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
-@file:OptIn(SealedProtectedUse::class)
-
 package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.runBlocking
@@ -32,7 +30,6 @@ import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.HostNode.HostNodeSpecs
 import org.opendc.simulator.network.components.Switch.SwitchSpecs
 import org.opendc.simulator.network.utils.NonSerializable
-import org.opendc.simulator.network.utils.SealedProtectedUse
 import kotlin.math.min
 import kotlin.math.pow
 

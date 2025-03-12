@@ -22,14 +22,12 @@
 
 package org.opendc.simulator.network.api.workload
 
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.utils.CoroutineWorkChannel
-import org.opendc.simulator.network.utils.logger
 import java.time.Duration
 import java.time.Instant
 import java.util.LinkedList
@@ -109,18 +107,18 @@ public class SimNetWorkload(
 
     internal suspend fun NetworkController.execUntil(
         until: Timestamp,
-        workChl: CoroutineWorkChannel<NetworkEvent>
+        workChl: CoroutineWorkChannel<NetworkEvent>,
     ): Long {
         var consumed: Long = 0
         while ((events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
             workChl.send(events.poll())
-            consumed++;
+            consumed++
         }
 //        coroutineScope {
-////            while ((events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
-////                events.poll()?.let { with(it) { launch { execIfNotPassed() } } }
-////                consumed++
-////            }
+// //            while ((events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
+// //                events.poll()?.let { with(it) { launch { execIfNotPassed() } } }
+// //                consumed++
+// //            }
 //            pollUntil(until).map { launch { it.execIfNotPassed() } }.also { consumed += it.size }
 //        }
 

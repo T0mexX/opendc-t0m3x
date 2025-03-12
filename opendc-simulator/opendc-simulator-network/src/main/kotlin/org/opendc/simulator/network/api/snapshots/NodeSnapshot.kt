@@ -35,7 +35,6 @@ import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.energy.EnergyConsumer
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.flow.OutFlow
-import org.opendc.simulator.network.flow.tracker.AllByUnsatisfaction
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable
@@ -241,8 +240,8 @@ public class NodeSnapshot internal constructor(
             if (!noCache) {
                 cache[id]
                     ?.let {
-                    if (it.instant == instant) return it
-                }
+                        if (it.instant == instant) return it
+                    }
             }
 
             withStableNetwork?.let {
@@ -264,18 +263,29 @@ public class NodeSnapshot internal constructor(
                 numGeneratingFlows = fh.generatingFlows.size,
                 numConsumedFlows = fh.consumingFlows.size,
                 currMinFlowTputPerc =
-                    if (flows.isNotEmpty()) flows.minOf { it.totRateOut roundedPercentageOf it.demand }
-                    else null,
+                    if (flows.isNotEmpty()) {
+                        flows.minOf { it.totRateOut roundedPercentageOf it.demand }
+                    } else {
+                        null
+                    },
                 currMaxFlowTputPerc =
-                    if (flows.isNotEmpty()) flows.maxOf { it.totRateOut roundedPercentageOf it.demand }
-                    else null,
+                    if (flows.isNotEmpty()) {
+                        flows.maxOf { it.totRateOut roundedPercentageOf it.demand }
+                    } else {
+                        null
+                    },
                 currAvrgFlowTputPerc =
-                    if (flows.isNotEmpty()) flows.sumOfUnit { it.totRateOut roundedPercentageOf it.demand } / flows.size
-                    else null,
+                    if (flows.isNotEmpty()) {
+                        flows.sumOfUnit { it.totRateOut roundedPercentageOf it.demand } / flows.size
+                    } else {
+                        null
+                    },
                 currNodeTputPercAllFlows =
-                    if (flows.isNotEmpty())
+                    if (flows.isNotEmpty()) {
                         flows.sumOfUnit { it.totRateOut } roundedPercentageOf flows.sumOfUnit { it.demand }
-                    else null,
+                    } else {
+                        null
+                    },
                 currPwrUse = (this as? EnergyConsumer<*>)?.enMonitor?.currPwrUsage ?: Power.zero,
                 avrgPwrUseOverTime = (this as? EnergyConsumer<*>)?.enMonitor?.avrgPwrUsage ?: Power.zero,
                 totEnConsumed = (this as? EnergyConsumer<*>)?.enMonitor?.totEnConsumpt ?: Energy.zero,

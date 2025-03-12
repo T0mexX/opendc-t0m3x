@@ -24,8 +24,8 @@ package org.opendc.simulator.network.components.link
 
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
-import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.api.FlowId
+import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.flow.RateUpdt.Companion.toRateUpdt
 import org.opendc.simulator.network.utils.ifNull0
 

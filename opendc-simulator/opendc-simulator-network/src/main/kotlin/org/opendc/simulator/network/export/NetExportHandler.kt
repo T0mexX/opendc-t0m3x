@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.export
 
+import org.opendc.common.logger.logger
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.NetworkController
@@ -30,7 +31,6 @@ import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snap
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
 import org.opendc.simulator.network.components.Network.Companion.INTERNET_ID
-import org.opendc.simulator.network.utils.logger
 import org.opendc.trace.util.parquet.exporter.Exporter
 import java.io.File
 
@@ -92,7 +92,7 @@ internal class NetExportHandler(
     internal fun NetworkController.timeUntilExport(): TimeDelta? =
         getNextDeadline()?.timeDelta(lastUpdate).also { check(it == null || it >= TimeDelta.zero) }
 
-    internal suspend fun NetworkController.exportIfNeeded(): Unit {
+    internal suspend fun NetworkController.exportIfNeeded() {
         // Non-mutable for smart cast.
         val exportDeadline = getNextDeadline()
 

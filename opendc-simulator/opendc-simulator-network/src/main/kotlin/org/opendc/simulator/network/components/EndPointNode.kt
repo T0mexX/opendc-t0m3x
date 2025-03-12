@@ -22,11 +22,11 @@
 
 package org.opendc.simulator.network.components
 
+import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.utils.ifNull0
-import org.opendc.simulator.network.utils.logger
 
 /**
  * Node you can start a [NetFlow] from or direct a [NetFlow] to.

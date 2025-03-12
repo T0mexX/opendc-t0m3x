@@ -25,6 +25,7 @@ package org.opendc.simulator.network.components
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
+import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
@@ -35,7 +36,6 @@ import org.opendc.simulator.network.energy.EnMonitor
 import org.opendc.simulator.network.energy.EnergyConsumer
 import org.opendc.simulator.network.energy.emodels.HostNodeDfltEnModel
 import org.opendc.simulator.network.flow.FlowHandler
-import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
 import org.opendc.simulator.network.policies.fairness.MaxMinPerPort

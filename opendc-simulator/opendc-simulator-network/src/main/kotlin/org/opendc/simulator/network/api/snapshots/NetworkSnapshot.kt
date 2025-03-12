@@ -29,6 +29,7 @@ import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.NetEnRecorder
+import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.HDR
@@ -36,7 +37,6 @@ import org.opendc.simulator.network.components.CoreSwitch
 import org.opendc.simulator.network.components.HostNode
 import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.components.Network.Companion.getNodesById
-import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable
@@ -239,8 +239,8 @@ public class NetworkSnapshot private constructor(
                 numActiveFlows = activeFlows.size,
                 totTput = totThroughput,
                 totTputPerc = if (activeFlows.isEmpty()) null else totThroughput roundedPercentageOf totDemand,
-                avrgTputPerc = activeFlows.averageOfUnitOrNull { it.getThroughput() / it.getDemand() },
-                worstTputPerc = activeFlows.minOfOrNull { it.getThroughput() / it.getDemand() },
+                avrgTputPerc = activeFlows.averageOfUnitOrNull { it.getThroughput() roundedPercentageOf it.getDemand() },
+                worstTputPerc = activeFlows.minOfOrNull { it.getThroughput() roundedPercentageOf it.getDemand() },
                 currPwrUse = enRecorder.currPwrUsage,
                 avrgPwrUseOverTime = enRecorder.avrgPwrUsage,
                 totEnConsumed = enRecorder.totalConsumption,

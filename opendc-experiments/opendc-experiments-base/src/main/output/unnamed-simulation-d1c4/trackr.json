@@ -1,0 +1,10 @@
+[{
+    "name": "unnamed-simulation-d1c4",
+    "topology": {
+        "pathToFile": "resources/exp-top/top.json"
+    },
+    "workload": {
+        "pathToFile": "resources/exp-top/bitbrains128/",
+        "type": "ComputeWorkload"
+    }
+}]

@@ -27,6 +27,7 @@ package org.opendc.simulator.network.utils
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.opendc.common.annotations.InternalUse
 import kotlin.reflect.KClass
 
 public interface Flags<T> {

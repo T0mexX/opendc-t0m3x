@@ -35,6 +35,7 @@ import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.common.logger.infoNewLine
+import org.opendc.common.logger.logger
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.workload.NetworkEvent
@@ -44,7 +45,6 @@ import org.opendc.simulator.network.components.Specs
 import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.input.readNetworkWl
 import org.opendc.simulator.network.utils.CoroutineWorkChannel
-import org.opendc.simulator.network.utils.logger
 import java.io.File
 import java.util.UUID
 import javax.naming.OperationNotSupportedException
@@ -116,18 +116,19 @@ public data class NetworkScenario(
             runBlocking(network.validator) {
                 val chl = CoroutineWorkChannel<NetworkEvent>(scope = this) { it.execIfNotPassed() }
                 network.awaitStability()
-                val simTime: TimeDelta = TimeDelta.ofMillis(
-                    measureTimeMillis {
-                        with(runWl) wl@{
-                            while (runWl.hasNext()) {
-                                val nextWlDeadline = runWl.peek().deadline
-                                pb.stepBy(execUntil(nextWlDeadline, chl))
-                                while (!chl.isEmpty) yield()
-                                network.awaitStability()
+                val simTime: TimeDelta =
+                    TimeDelta.ofMillis(
+                        measureTimeMillis {
+                            with(runWl) wl@{
+                                while (runWl.hasNext()) {
+                                    val nextWlDeadline = runWl.peek().deadline
+                                    pb.stepBy(execUntil(nextWlDeadline, chl))
+                                    while (!chl.isEmpty) yield()
+                                    network.awaitStability()
+                                }
                             }
-                        }
-                    }
-                )
+                        },
+                    )
 
                 pb.refresh()
                 println()

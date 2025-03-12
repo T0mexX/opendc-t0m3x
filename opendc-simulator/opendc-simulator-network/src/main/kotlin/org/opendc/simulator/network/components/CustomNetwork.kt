@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
-@file:OptIn(SealedProtectedUse::class)
-
 package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.Job
@@ -41,12 +39,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonUnquotedLiteral
 import kotlinx.serialization.serializer
-import org.opendc.simulator.network.api.node.NodeId
+import org.opendc.common.logger.errAndNull
+import org.opendc.common.logger.logger
 import org.opendc.simulator.network.api.NetFlow
+import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.utils.NonSerializable
-import org.opendc.simulator.network.utils.SealedProtectedUse
-import org.opendc.simulator.network.utils.errAndNull
-import org.opendc.simulator.network.utils.logger
 
 /**
  * Network that is not built following a specific algorithm.

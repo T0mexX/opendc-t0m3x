@@ -23,8 +23,8 @@
 package org.opendc.simulator.network.components.link
 
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.api.FlowId
+import org.opendc.simulator.network.components.internalstructs.port.Port
 
 internal interface SendLink : Link {
     val outgoingRatesById: Map<FlowId, DataRate>

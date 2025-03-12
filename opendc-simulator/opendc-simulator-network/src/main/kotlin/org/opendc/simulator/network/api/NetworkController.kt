@@ -28,6 +28,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
+import org.opendc.common.logger.errAndNull
+import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
@@ -48,9 +50,6 @@ import org.opendc.simulator.network.export.NetExportHandler
 import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.utils.ChangeHndlr
 import org.opendc.simulator.network.utils.SusChangeHndlr
-import org.opendc.simulator.network.utils.errAndNull
-import org.opendc.simulator.network.utils.infoNewLn
-import org.opendc.simulator.network.utils.logger
 import org.slf4j.Logger
 import java.io.File
 import java.time.Instant
@@ -394,7 +393,7 @@ public class NetworkController(
         val syncTo: Timestamp = instantSrc.timestamp
         if (instantSrc.isExternalSource) {
             network.awaitStability()
-            if (logSnapshot) log.infoNewLn(snapshot().fmt())
+            if (logSnapshot) log.info(snapshot().fmt())
 
             val timeSpan = syncTo.timeDelta(lastUpdate)
             if (timeSpan <= TimeDelta.zero) return

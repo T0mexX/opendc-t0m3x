@@ -22,11 +22,11 @@
 
 package org.opendc.simulator.network.flow.tracker
 
+import org.opendc.common.logger.logger
 import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.flow.OutFlow
 import org.opendc.simulator.network.flow.tracker.TrackerMode.Companion.setUp
 import org.opendc.simulator.network.utils.RWLock
-import org.opendc.simulator.network.utils.logger
 import java.util.TreeSet
 
 /**
@@ -113,31 +113,31 @@ internal class NodeFlowTracker(
         fun OutFlow.isNew(): Boolean = demand.isZero() && totRateOut.isZero()
 
         treesByMode.forEach { (mode, treeSet) ->
-                with(mode) {
-                    // If the condition is true, then an element should be in the sortedSet and be removed.
-                    // After this 'if' clause, the OutFlow should never be in the tree.
-                    // The removal of the flow has to be executed before field is updated.
-                    if (shouldBeTracked()) {
-                        treeSet.remove(this@rmIfNeeded).let {
-                            if (isNew().not() && !it) {
-                                log.warn(
-                                    "outflow ${this@rmIfNeeded} should have been in the sortedSet but wasn't",
-                                )
-                            }
+            with(mode) {
+                // If the condition is true, then an element should be in the sortedSet and be removed.
+                // After this 'if' clause, the OutFlow should never be in the tree.
+                // The removal of the flow has to be executed before field is updated.
+                if (shouldBeTracked()) {
+                    treeSet.remove(this@rmIfNeeded).let {
+                        if (isNew().not() && !it) {
+                            log.warn(
+                                "outflow ${this@rmIfNeeded} should have been in the sortedSet but wasn't",
+                            )
                         }
                     }
                 }
+            }
         }
     }
 
     private fun OutFlow.addIfNeeded() {
         treesByMode.forEach { (mode, treeSet) ->
-                with(mode) {
-                    // If the condition is true, then element should be added to the treeSet,
-                    // since it is eligible for data rate increases.
-                    if (shouldBeTracked()) {
-                        treeSet.add(this@addIfNeeded)
-                    }
+            with(mode) {
+                // If the condition is true, then element should be added to the treeSet,
+                // since it is eligible for data rate increases.
+                if (shouldBeTracked()) {
+                    treeSet.add(this@addIfNeeded)
+                }
             }
         }
     }

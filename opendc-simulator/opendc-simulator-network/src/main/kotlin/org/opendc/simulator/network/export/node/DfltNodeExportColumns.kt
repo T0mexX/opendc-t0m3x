@@ -29,10 +29,10 @@ import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64
 import org.apache.parquet.schema.Types
+import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.api.NetFlow
 import org.opendc.trace.util.parquet.exporter.ExportColumn
 
 public object DfltNodeExportColumns {

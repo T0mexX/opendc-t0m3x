@@ -22,11 +22,11 @@
 
 package org.opendc.simulator.network.components.internalstructs.port
 
+import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.link.SimplexLink
 import org.opendc.simulator.network.flow.RateUpdt
 import org.opendc.simulator.network.flow.RateUpdt.Companion.toRateUpdt
-import org.opendc.simulator.network.utils.logger
 
 private val log by Unit.logger("PortConnectionExt")
 

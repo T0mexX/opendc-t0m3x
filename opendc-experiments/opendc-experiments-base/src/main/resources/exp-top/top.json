@@ -1,4 +1,5 @@
 {
+    "networkSpecPath": "resources/exp-top/fat-tree.json",
     "clusters":
     [{
         "name": "C01",

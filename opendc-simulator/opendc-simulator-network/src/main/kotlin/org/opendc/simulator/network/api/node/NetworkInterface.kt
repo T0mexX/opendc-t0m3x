@@ -23,7 +23,11 @@
 package org.opendc.simulator.network.api.node
 
 import kotlinx.coroutines.runBlocking
+import org.opendc.common.logger.errAndNull
+import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
+import org.opendc.simulator.network.api.FlowId
+import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshotOf
@@ -31,12 +35,8 @@ import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.Internet
 import org.opendc.simulator.network.components.Network.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.api.FlowId
-import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.utils.ChangeHndlr
 import org.opendc.simulator.network.utils.SusChangeHndlr
-import org.opendc.simulator.network.utils.errAndNull
-import org.opendc.simulator.network.utils.logger
 
 /**
  * Type alias for improved understandability.

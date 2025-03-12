@@ -30,24 +30,22 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
+import org.opendc.common.logger.errAndNull
+import org.opendc.common.logger.logger
+import org.opendc.common.logger.warnAndNull
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.stability.NetworkStabilityBarrier
-import org.opendc.simulator.network.components.stability.NetworkStabilityChecker
 import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.integration.SeqComputeIntegration
+import org.opendc.simulator.network.api.node.NodeId
+import org.opendc.simulator.network.components.stability.NetworkStabilityBarrier
+import org.opendc.simulator.network.components.stability.NetworkStabilityChecker
 import org.opendc.simulator.network.utils.NonSerializable
-import org.opendc.simulator.network.utils.SealedProtectedUse
-import org.opendc.simulator.network.utils.errAndNull
-import org.opendc.simulator.network.utils.logger
-import org.opendc.simulator.network.utils.warnAndNull
 
 /**
  * Interface representing a network of [Node]s.
  */
-@OptIn(SealedProtectedUse::class)
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 public sealed class Network protected constructor() : WithSpecs<Network> {
