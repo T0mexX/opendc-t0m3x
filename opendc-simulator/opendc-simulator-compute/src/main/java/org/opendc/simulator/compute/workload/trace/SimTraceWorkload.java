@@ -135,9 +135,9 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
 
         final @NotNull NetFlow tx = Objects.requireNonNull(this.netFlowTx);
         final @NotNull NetFlow rx = Objects.requireNonNull(this.netFlowRx);
-//        netFlowBarrier = new NetFlowBarrier(SeqComputeIntegration.Mode.SEQUENTIAL, tx, rx)
+        netFlowBarrier = new NetFlowBarrier(SeqComputeIntegration.Mode.SEQUENTIAL, tx, rx)
             // When one flow completes, its demand is set to 0.
-//            .whenAFlowCompletesDflt();
+            .whenAFlowCompletesDemandToZero();
             // When the remaining time decreases, a sequential invalidation of this node is performed.
             // This lambda will be run before virtual time is advanced when `SimulatorDispatcher` invokes
             // `NetworkController.executeSequentialHandlers()`, since the invalidation process is not thread-safe.

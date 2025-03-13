@@ -133,8 +133,8 @@ internal class FlowHandler(internal val ports: Collection<Port>) {
         // Sets up the handler of any data rate changes, propagating updates to other nodesById
         // changes of this flow data rate can be performed through a NetworkController,
         // the NetworkInterface of this node, or through the instance of the NetFlow itself.
-        newFlow.withDemandChangeHndlr { _, old, new ->
-            if (old == new) return@withDemandChangeHndlr
+        newFlow.withHandler(NetFlow.DEMAND) { _, old, new ->
+            if (old == new) return@withHandler
 
             if (new < DataRate.zero) {
                 log.warn(

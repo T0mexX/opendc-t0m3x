@@ -1,5 +1,9 @@
 {
     "networkSpecsPath": "resources/example-topologies/net-spec.json",
     "wlPath": "resources/example-traces/bb_net_wl128.parquet",
+    "exportConfig": {
+        "outputFolder": "output",
+        "exportInterval": "5min"
+    },
     "virtualMapping": true
 }

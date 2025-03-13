@@ -23,7 +23,6 @@
 package org.opendc.simulator.network.utils.observable
 
 import kotlinx.coroutines.sync.Mutex
-import org.apache.yetus.audience.InterfaceAudience.Private
 import org.apache.yetus.audience.InterfaceAudience.Public
 import org.opendc.common.annotations.InternalUse
 import org.opendc.simulator.network.utils.ChangeHndlr
@@ -31,6 +30,12 @@ import org.opendc.simulator.network.utils.SusChangeHndlr
 
 @Public
 public interface Observable<T : Observable<T>> {
+    @InternalUse
+    public val observedMtx: Mutex
+
+    @InternalUse
+    public fun setUpDelegatedObserver(delegated: T, observedMtx: Mutex)
+
     public suspend fun <N> withHandler(
         prop: ObservableProperty<T, N>,
         hndlr: SusChangeHndlr<T, N>,
@@ -47,16 +52,17 @@ public interface Observable<T : Observable<T>> {
         old: N,
         new: N,
     )
-
-    @InternalUse
-    public suspend fun <N> Mutex.withTransferredLockHndlChange(
-        prop: ObservableProperty<T, N>,
-        f1: suspend () -> OldNewPair<N>?,
-    )
-
-    @InternalUse
-    public class OldNewPair<T>(public val first: T, public val second: T) {
-        public operator fun component1(): T = first
-        public operator fun component2(): T = second
-    }
+//
+//    @InternalUse
+//    public suspend fun <N> Mutex.withTransferredLockHndlChange(
+//        prop: ObservableProperty<T, N>,
+//        f1: suspend () -> OldNewPair<N>?,
+//    )
+//
+//    @InternalUse
+//    public class OldNewPair<T>(public val first: T, public val second: T) {
+//        public operator fun component1(): T = first
+//
+//        public operator fun component2(): T = second
+//    }
 }

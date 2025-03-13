@@ -33,9 +33,15 @@ import org.opendc.simulator.network.utils.SusChangeHndlr
 
 @Suppress("UNCHECKED_CAST")
 internal class DelegatedObservable<T : Observable<T>> : Observable<T> {
+    private lateinit var delegator: T
+    private lateinit var
     private val hndlrs = mutableMapOf<ObservableProperty<T, *>, HndlrsLs<T, *>>()
     private val hndlrsLsMtx = Mutex()
     private val hndlMtx = Mutex()
+
+    override fun setUpDelegatedObserver(delegator: T, observedMtx: Mutex) {
+        this.delegator = delegator
+    }
 
     override suspend fun <N> withHandler(
         prop: ObservableProperty<T, N>,
@@ -59,7 +65,7 @@ internal class DelegatedObservable<T : Observable<T>> : Observable<T> {
         new: N,
     ) = hndlMtx.withLock {
         val ls = hndlrs.getOrPut(prop) { HndlrsLs<T, N>() } as HndlrsLs<T, N>
-        ls.handleAll(this as T, old, new)
+        ls.handleAll(delegator, old, new)
     }
 
     override suspend fun <N> Mutex.withTransferredLockHndlChange(
@@ -73,7 +79,7 @@ internal class DelegatedObservable<T : Observable<T>> : Observable<T> {
         pair?.let {
             val ls = hndlrs.getOrPut(prop) { HndlrsLs<T, N>() } as HndlrsLs<T, N>
             val (old, new) = pair
-            ls.handleAll(this as T, old, new)
+            ls.handleAll(delegator, old, new)
             hndlMtx.unlock()
         }
     }

@@ -289,8 +289,8 @@ public class NetworkController(
                 demand = demand,
             )
 
-        throughputChangeHndlr?.let { netFlow.withThroughputChangeHndlrSeq(throughputChangeHndlr) }
-        throughputSusChangeHndlr?.let { netFlow.withThroughputChangeHndlr(throughputSusChangeHndlr) }
+        throughputChangeHndlr?.let { netFlow.withHandlerSeq(NetFlow.THROUGHPUT, throughputChangeHndlr) }
+        throughputSusChangeHndlr?.let { netFlow.withHandler(NetFlow.THROUGHPUT, throughputSusChangeHndlr) }
 
         return doStartFlow(netFlow)
     }

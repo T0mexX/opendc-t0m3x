@@ -33,15 +33,10 @@ import org.opendc.common.units.TimeDelta
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
-import org.opendc.simulator.network.utils.ChangeHndlr
-import org.opendc.simulator.network.utils.SusChangeHndlr
 import org.opendc.simulator.network.utils.observable.DelegatedObservable
-import org.opendc.simulator.network.utils.observable.HndlrsLs
 import org.opendc.simulator.network.utils.observable.Observable
 import org.opendc.simulator.network.utils.observable.ObservableProperty
-import org.opendc.simulator.network.utils.withTransferredLock
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -62,34 +57,10 @@ public class NetFlow internal constructor(
     public val transmitterId: NodeId,
     public val destinationId: NodeId,
     demand: DataRate = DataRate.zero,
-): Observable<NetFlow> by DelegatedObservable() {
+) : Observable<NetFlow> by DelegatedObservable() {
     public val id: FlowId = runBlocking { nextId() }
 
-//    /**
-//     * Functions invoked whenever the throughput of the flow changes.
-//     */
-//    private val throughputHndlrs = HndlrsLs<NetFlow, DataRate>()
-//
-//    /**
-//     * Functions invoked whenever the demand of the flow changes.
-//     */
-//    private val demandHndlrs = HndlrsLs<NetFlow, DataRate>()
-//
-//    /**
-//     * Functions invoked whenever the [fragmentTarget] is reached.
-//     */
-//    private val fragmentCompletionHndlrs = HndlrsLs<NetFlow, DataSize>()
-    private var fragmentCompletionHandled = false
-//
-//    /**
-//     * To ensure that handlers are invoked in the correct order.
-//     */
-//    private val hndlrsMtx = Mutex()
-//
-//    /**
-//     * To ensure handlers lists
-//     */
-//    private val hndlrsLsMtx = Mutex()
+    private var fragmentCompletionHandled = true
 
     /**
      * Total data transmitted since the start of the flow (in Kb).
@@ -124,6 +95,8 @@ public class NetFlow internal constructor(
     private val demandMtx = Mutex()
 
     init {
+        @OptIn(InternalUse::class)
+        setUpDelegatedObserver(this)
         // Sets up the static destination id retrieval for the flow.
         _flowsDestIds[id] = destinationId
     }
@@ -138,20 +111,12 @@ public class NetFlow internal constructor(
         checkStability: Boolean = false,
     ) {
         suspend fun doAdvance() {
-            throughputMtx.withTransferredLockHndlChange(FRAGMENT_COMPLETION) hndlr@ {
+            throughputMtx.withTransferredLockHndlChange(FRAGMENT_COMPLETION) hndlr@{
                 totDataTransmitted += throughput * time
-                if (fragmentCompletionHandled || totDataTransmitted approxSmaller  fragmentTarget) return@hndlr null
+                if (fragmentCompletionHandled || totDataTransmitted approxSmaller fragmentTarget) return@hndlr null
                 fragmentCompletionHandled = true
                 Observable.OldNewPair(fragmentStart, fragmentTarget)
             }
-//            throughputMtx.withTransferredLock(hndlrsMtx, {
-//                totDataTransmitted += throughput * time
-//                fragmentCompletionHandled.not() && totDataTransmitted approxLargerOrEq fragmentTarget
-//            }) {
-//                totDataTransmitted = fragmentTarget
-//                fragmentCompletionHndlrs.handleAll(this, fragmentStart, fragmentTarget)
-//                fragmentCompletionHandled = true
-//            }
         }
 
         if (checkStability) {
@@ -171,11 +136,17 @@ public class NetFlow internal constructor(
      *
      * This function is not thread safe, it is assumed to be invoked sequentially.
      */
+    @OptIn(InternalUse::class)
     @JvmSynthetic
     public fun newFragment(target: DataSize) {
         fragmentStart = totDataTransmitted
         fragmentTarget = target
-        fragmentCompletionHandled = false
+        if (target > DataSize.zero) {
+            fragmentCompletionHandled = false
+        } else {
+            fragmentCompletionHandled = true
+            runBlocking { handleChange(FRAGMENT_COMPLETION, target, target) }
+        }
     }
 
     /**
@@ -201,20 +172,12 @@ public class NetFlow internal constructor(
     @OptIn(InternalUse::class)
     @JvmSynthetic
     public suspend fun setDemand(newDemand: DataRate): Unit =
-        demandMtx.withTransferredLockHndlChange(DEMAND) hndlr@ {
+        demandMtx.withTransferredLockHndlChange(DEMAND) hndlr@{
             val oldDemand = demand
             if (newDemand approx oldDemand) return@hndlr null
             demand = newDemand
             Observable.OldNewPair(oldDemand, demand)
         }
-//        demandMtx.withLock {
-//            val oldDemand = demand
-//            if (newDemand approx oldDemand) return
-//            demand = newDemand
-//
-//            // calls observer handlers
-//            demandHndlrs.handleAll(this, oldDemand, newDemand)
-//        }
 
     public fun setDemandJava(newDemand: Double) {
         runBlocking { setDemand(DataRate.ofKbps(newDemand)) }
@@ -235,22 +198,12 @@ public class NetFlow internal constructor(
     @OptIn(InternalUse::class)
     @JvmSynthetic
     internal suspend fun setThroughput(new: DataRate) =
-        throughputMtx.withTransferredLockHndlChange(THROUGHPUT) hndlr@ {
+        throughputMtx.withTransferredLockHndlChange(THROUGHPUT) hndlr@{
             if (new == throughput) return@hndlr null
             val old = throughput
             throughput = if (new approx demand) demand else new.roundToIfWithinEpsilon(DataRate.zero)
             Observable.OldNewPair(old, new)
         }
-//        var old: DataRate = DataRate.zero
-//        throughputMtx.withTransferredLock(hndlrsMtx, {
-//            if (new == throughput) return
-//            old = throughput
-//            throughput = if (new approx demand) demand else new.roundToIfWithinEpsilon(DataRate.zero)
-//            true // Transfer lock to second mutex and execute second lambda.
-//        }) {
-//            throughputHndlrs.handleAll(this, old, new)
-//        }
-//    }
 
     @JvmSynthetic
     public suspend fun getThroughput(): DataRate =
@@ -268,82 +221,11 @@ public class NetFlow internal constructor(
             Observable.OldNewPair(old, throughput)
         }
     }
-//        if (amount.isZero()) return
-//        var old: DataRate = DataRate.zero
-//        throughputMtx.withTransferredLock(hndlrsMtx, {
-//            old = throughput
-//            throughput += amount
-//            true // Transfer lock to second mutex and execute second lambda.
-//        }) {
-//            throughputHndlrs.handleAll(this, old, throughput)
-//        }
-//    }
 
     public fun getThroughputJava(): DataRate =
         runBlocking {
             getThroughput()
         }
-
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Observers
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//    /**
-//     * Adds [hndlr] among the functions invoked whenever the throughput of the flow changes.
-//     */
-//    public fun withThroughputChangeHndlr(hndlr: SusChangeHndlr<NetFlow, DataRate>): NetFlow {
-//        throughputHndlrs.addSus(hndlr)
-//        return this
-//    }
-//
-//    /**
-//     * Adds [hndlr] among the callbacks that are queued, when [throughput] changes,
-//     * in the network [CoroutineContext] to be invoked sequentially in the future.
-//     *
-//     * @see org.opendc.simulator.network.api.integration.SeqComputeIntegration
-//     */
-//    public fun withThroughputChangeHndlrSeq(hndlr: ChangeHndlr<NetFlow, DataRate>): NetFlow {
-//        throughputHndlrs.addSeq(hndlr)
-//        return this
-//    }
-//
-//    /**
-//     * Adds [hndlr] among the functions invoked whenever the demand of the flow changes.
-//     */
-//    internal fun withDemandChangeHndlr(hndlr: SusChangeHndlr<NetFlow, DataRate>): NetFlow {
-//        demandHndlrs.addSus(hndlr)
-//        return this
-//    }
-//
-//    /**
-//     * Adds [hndlr] among the callbacks that are queued, when the [demand] changes,
-//     * in the network [CoroutineContext] to be invoked sequentially in the future.
-//     *
-//     * @see org.opendc.simulator.network.api.integration.SeqComputeIntegration
-//     */
-//    internal fun withDemandChangeHndlrSeq(hndlr: ChangeHndlr<NetFlow, DataRate>): NetFlow {
-//        demandHndlrs.addSeq(hndlr)
-//        return this
-//    }
-//
-//    /**
-//     * Adds [f] among the functions invoked whenever the [fragmentTarget] is reached.
-//     */
-//    public fun withFragmentCompletionHndlr(f: SusChangeHndlr<NetFlow, DataSize>): NetFlow {
-//        fragmentCompletionHndlrs.addSus(f)
-//        return this
-//    }
-//
-//    /**
-//     * Adds [hndlr] among the callbacks that are queued, when the [fragmentTarget] is reached,
-//     * in the network [CoroutineContext] to be invoked sequentially in the future.
-//     *
-//     * @see org.opendc.simulator.network.api.integration.SeqComputeIntegration
-//     */
-//    public fun withFragmentCompletionHndlrJava(hndlr: ChangeHndlr<NetFlow, DataSize>): NetFlow {
-//        fragmentCompletionHndlrs.addSeq(hndlr)
-//        return this
-//    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Other
@@ -373,8 +255,6 @@ public class NetFlow internal constructor(
         public val DEMAND: ObservableProperty<NetFlow, DataRate> = ObservableProperty()
         public val THROUGHPUT: ObservableProperty<NetFlow, DataRate> = ObservableProperty()
         public val FRAGMENT_COMPLETION: ObservableProperty<NetFlow, DataSize> = ObservableProperty()
-
-
 
         internal const val DEFAULT_NAME: String = "unknown"
 
