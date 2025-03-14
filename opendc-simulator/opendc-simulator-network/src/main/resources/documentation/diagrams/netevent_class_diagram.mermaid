@@ -1,0 +1,24 @@
+classDiagram
+    NetworkEvent <|-- StartFlow
+    NetworkEvent <|-- UpdateFlow
+    NetworkEvent <|-- StopFlow
+    class NetworkEvent {
+        +deadline: Timestamp
+        +NetworkController.exec()
+    }
+    <<interface>> NetworkEvent
+
+    class StartFlow{
+        +from NodeId
+        +to NodeId
+        +demand DataRate
+    }
+
+    class UpdateFlow {
+        +id: Flowid
+        +newDemand: DataRate
+    }
+
+    class StopFlow{
+        +id: FlowId
+    }

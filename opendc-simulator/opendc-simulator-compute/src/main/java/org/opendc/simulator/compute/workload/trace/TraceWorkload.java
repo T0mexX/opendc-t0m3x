@@ -186,8 +186,12 @@ public class TraceWorkload implements Workload {
          * @param usage The CPU usage at this fragment.
          * @param cores The number of cores used during this fragment.
          */
+        public void add(long duration, double usage, int cores, double netTxKbps, double netRxKbps) {
+            fragments.add(fragments.size(), new TraceFragment(duration, usage, cores, netTxKbps, netRxKbps));
+        }
+
         public void add(long duration, double usage, int cores) {
-            fragments.add(fragments.size(), new TraceFragment(duration, usage, cores));
+            add(duration, usage, cores, 0, 0);
         }
 
         /**

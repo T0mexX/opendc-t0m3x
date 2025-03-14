@@ -22,6 +22,10 @@
 
 package org.opendc.simulator.compute.workload.trace.scaling;
 
+import org.jetbrains.annotations.NotNull;
+import org.opendc.common.units.Percentage;
+import org.opendc.simulator.network.api.NetFlowBarrier;
+
 /**
  * PerfectScaling scales the workload duration perfectly
  * based on the CPU capacity.
@@ -31,17 +35,24 @@ package org.opendc.simulator.compute.workload.trace.scaling;
  */
 public class PerfectScaling implements ScalingPolicy {
     @Override
-    public double getFinishedWork(double cpuFreqDemand, double cpuFreqSupplied, long passedTime) {
+    public double getFinishedCpuWork(double cpuFreqDemand, double cpuFreqSupplied, long passedTime) {
         return cpuFreqSupplied * passedTime;
     }
 
     @Override
-    public long getRemainingDuration(double cpuFreqDemand, double cpuFreqSupplied, double remainingWork) {
+    public long getRemainingCpuDuration(double cpuFreqDemand, double cpuFreqSupplied, double remainingWork) {
         return (long) (remainingWork / cpuFreqSupplied);
     }
 
     @Override
-    public double getRemainingWork(double cpuFreqDemand, long duration) {
+    public double getRemainingCpuWork(double cpuFreqDemand, long duration) {
         return cpuFreqDemand * duration;
+    }
+
+    @Override
+    public long getRemainingNetworkDuration(@NotNull NetFlowBarrier barrier) {
+        // Equivalent to `barrier.approxTimeToCompletionPercentage(Percentage.of(1))
+        // Returns the expected required time to transmit the totality of the data requested.
+        return barrier.approxMsRemainingJava();
     }
 }

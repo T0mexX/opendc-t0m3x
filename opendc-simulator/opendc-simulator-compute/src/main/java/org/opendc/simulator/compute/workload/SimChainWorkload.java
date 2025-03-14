@@ -23,14 +23,18 @@
 package org.opendc.simulator.compute.workload;
 
 import java.util.LinkedList;
+
+import org.jetbrains.annotations.Nullable;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowNode;
 import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.NetworkSupplier;
+import org.opendc.simulator.network.api.node.NetworkInterface;
 
 /**
  * A {@link SimChainWorkload} that composes multiple {@link SimWorkload}s.
  */
-final class SimChainWorkload extends SimWorkload implements FlowSupplier {
+final class SimChainWorkload extends SimWorkload implements FlowSupplier, NetworkSupplier {
     private final LinkedList<Workload> workloads;
     private int workloadIndex;
 
@@ -77,6 +81,13 @@ final class SimChainWorkload extends SimWorkload implements FlowSupplier {
     @Override
     public double getCheckpointIntervalScaling() {
         return checkpointIntervalScaling;
+    }
+
+    @Override
+    public @Nullable NetworkInterface getNetworkInterface() {
+        return machineEdge.getSupplier() instanceof NetworkSupplier netSupp
+            ? netSupp.getNetworkInterface()
+            : null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

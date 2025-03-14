@@ -35,6 +35,7 @@ dependencies {
     api(libs.kotlinx.coroutines)
     implementation(libs.kotlin.logging)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
     api(libs.log4j.core)
     api(libs.log4j.slf4j)

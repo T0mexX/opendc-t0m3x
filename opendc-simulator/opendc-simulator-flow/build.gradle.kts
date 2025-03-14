@@ -30,6 +30,7 @@ plugins {
 dependencies {
     api(projects.opendc.opendcCommon)
     implementation(libs.slf4j.api)
+    implementation(projects.opendcSimulator.opendcSimulatorNetwork)
 
     testImplementation(projects.opendcSimulator.opendcSimulatorCore)
     testImplementation(libs.slf4j.simple)

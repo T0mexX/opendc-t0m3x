@@ -23,11 +23,14 @@
 package org.opendc.simulator.engine.engine;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.InstantSource;
 import kotlin.coroutines.CoroutineContext;
+import org.jetbrains.annotations.Nullable;
 import org.opendc.common.Dispatcher;
 import org.opendc.simulator.engine.graph.FlowGraph;
 import org.opendc.simulator.engine.graph.FlowNode;
+import org.opendc.simulator.network.api.NetworkController;
 
 /**
  * A {@link FlowEngine} simulates a generic flow network.
@@ -51,6 +54,8 @@ public final class FlowEngine implements Runnable {
      */
     private final InvocationStack futureInvocations = new InvocationStack(256);
 
+    private final @Nullable NetworkController networkController;
+
     /**
      * A flag to indicate that the engine is active.
      */
@@ -59,16 +64,14 @@ public final class FlowEngine implements Runnable {
     private final Dispatcher dispatcher;
     private final InstantSource clock;
 
-    /**
-     * Create a new {@link FlowEngine} instance using the specified {@link CoroutineContext} and {@link InstantSource}.
-     */
-    public static FlowEngine create(Dispatcher dispatcher) {
-        return new FlowEngine(dispatcher);
-    }
-
-    FlowEngine(Dispatcher dispatcher) {
+    public FlowEngine(Dispatcher dispatcher, @Nullable NetworkController networkController) {
         this.dispatcher = dispatcher;
         this.clock = dispatcher.getTimeSource();
+        this.networkController = networkController;
+    }
+
+    public FlowEngine(Dispatcher dispatcher) {
+        this(dispatcher, null);
     }
 
     /**
@@ -146,6 +149,7 @@ public final class FlowEngine implements Runnable {
     /**
      * Run all the enqueued actions for the specified timestamp (<code>now</code>).
      */
+    private long bo = 0;
     private void doRunEngine(long now) {
         final FlowCycleQueue cycleQueue = this.cycleQueue;
         final FlowEventQueue eventQueue = this.eventQueue;
@@ -153,6 +157,14 @@ public final class FlowEngine implements Runnable {
         try {
             // Mark the engine as active to prevent concurrent calls to this method
             active = true;
+
+//             Sync network with simulation virtual time.
+//             Network integration notes: *simulator/*network/src/main/resources/integration.md
+//            if (networkController != null) networkController.syncJava();
+            if (now > bo + 6000000 ) {
+                System.out.println(Instant.ofEpochMilli(now));
+                bo = now;
+            }
 
             // Execute all scheduled updates at current timestamp
             while (true) {
@@ -168,6 +180,16 @@ public final class FlowEngine implements Runnable {
             while (true) {
                 final FlowNode ctx = cycleQueue.poll();
                 if (ctx == null) {
+                    // Network integration notes: *simulator/*network/src/main/resources/integration.md
+                    if (networkController != null) {
+//                        networkController.syncJava(); // Wait until the network is stable.
+                        // Execute observers' handlers sequentially, since node invalidation must be sequential.
+                        int hndlrsExecuted = networkController.executeSequentialHndlrs();
+                        networkController.syncJava();
+                        // If at least one hndlr has been executed, there may be an invalidated node.
+//                        if (hndlrsExecuted > 0) continue;
+                    }
+
                     break;
                 }
 

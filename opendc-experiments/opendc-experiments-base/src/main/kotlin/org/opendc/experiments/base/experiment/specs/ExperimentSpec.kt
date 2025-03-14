@@ -26,6 +26,7 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.logger.infoNewLine
 import org.opendc.common.logger.logger
 import org.opendc.compute.simulator.telemetry.parquet.ComputeExportConfig
+import org.opendc.simulator.network.export.NetworkExportConfig
 import java.util.UUID
 
 /**
@@ -52,6 +53,7 @@ public data class ExperimentSpec(
     val runs: Int = 1,
     val exportModels: Set<ExportModelSpec> = setOf(ExportModelSpec()),
     val computeExportConfig: ComputeExportConfig = ComputeExportConfig.ALL_COLUMNS,
+    val networkExportConfig: NetworkExportConfig? = null,
     val maxNumFailures: Set<Int> = setOf(10),
     val topologies: Set<ScenarioTopologySpec>,
     val workloads: Set<WorkloadSpec>,

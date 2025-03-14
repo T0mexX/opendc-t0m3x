@@ -44,6 +44,8 @@ import org.opendc.trace.conv.resourceID
 import org.opendc.trace.conv.resourceMemCapacity
 import org.opendc.trace.conv.resourceStateCpuUsage
 import org.opendc.trace.conv.resourceStateDuration
+import org.opendc.trace.conv.resourceStateNetRx
+import org.opendc.trace.conv.resourceStateNetTx
 import org.opendc.trace.conv.resourceStateTimestamp
 import org.opendc.trace.conv.resourceSubmissionTime
 import org.opendc.trace.formats.opendc.parquet.ResourceReadSupport
@@ -110,6 +112,8 @@ public class OdcVmTraceFormat : TraceFormat {
                         TableColumn(resourceStateDuration, TableColumnType.Duration),
                         TableColumn(resourceCpuCount, TableColumnType.Int),
                         TableColumn(resourceStateCpuUsage, TableColumnType.Double),
+                        TableColumn(resourceStateNetTx, TableColumnType.Double, isNullable = true),
+                        TableColumn(resourceStateNetRx, TableColumnType.Double, isNullable = true),
                     ),
                 )
             TABLE_INTERFERENCE_GROUPS ->

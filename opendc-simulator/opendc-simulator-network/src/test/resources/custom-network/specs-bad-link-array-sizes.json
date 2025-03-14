@@ -1,0 +1,42 @@
+{
+    "type": "custom-network-topology-specs",
+    "nodesSpecs": [
+        {
+            "type": "switch-specs",
+            "id": 0,
+            "numOfPorts": 4,
+            "portSpeed": 1000
+        },
+        {
+            "type": "host-node-specs",
+            "id": 1,
+            "numOfPorts": 1,
+            "portSpeed": 1000
+        },
+        {
+            "type": "host-node-specs",
+            "id": 2,
+            "numOfPorts": 1,
+            "portSpeed": 1000
+        },
+        {
+            "type": "host-node-specs",
+            "id": 3,
+            "numOfPorts": 1,
+            "portSpeed": 1000
+        },
+        {
+            "type": "host-node-specs",
+            "id": 4,
+            "numOfPorts": 1,
+            "portSpeed": 1000
+        }
+    ],
+    "links": [
+        [0, 1, 2],
+        [0, 3],
+        [0],
+        [0, 4],
+        [0, 2, 1]
+    ]
+}
