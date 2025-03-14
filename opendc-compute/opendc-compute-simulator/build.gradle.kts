@@ -33,6 +33,7 @@ dependencies {
     api(projects.opendcTrace.opendcTraceParquet)
     api(libs.commons.math3)
     implementation(projects.opendcCommon)
+    implementation(projects.opendcSimulator.opendcSimulatorNetwork)
     implementation(libs.kotlin.logging)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 

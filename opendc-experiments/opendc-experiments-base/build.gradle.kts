@@ -35,6 +35,7 @@ dependencies {
 
     api(projects.opendcCompute.opendcComputeSimulator)
 
+    implementation(projects.opendcSimulator.opendcSimulatorNetwork)
     implementation(libs.clikt)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation(libs.progressbar)

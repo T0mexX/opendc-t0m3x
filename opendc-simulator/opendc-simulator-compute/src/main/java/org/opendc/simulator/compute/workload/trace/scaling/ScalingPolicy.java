@@ -22,12 +22,14 @@
 
 package org.opendc.simulator.compute.workload.trace.scaling;
 
+import org.jetbrains.annotations.NotNull;
+import org.opendc.simulator.network.api.NetFlowBarrier;
+
 /**
  * Interface for the scaling policy.
  * A scaling decides how a TaskFragment should scale when it is not getting the demanded capacity
  */
 public interface ScalingPolicy {
-
     /**
      * Calculate how much work was finished based on the demanded and supplied cpu
      *
@@ -36,7 +38,7 @@ public interface ScalingPolicy {
      * @param passedTime
      * @return
      */
-    double getFinishedWork(double cpuFreqDemand, double cpuFreqSupplied, long passedTime);
+    double getFinishedCpuWork(double cpuFreqDemand, double cpuFreqSupplied, long passedTime);
 
     /**
      * Calculate the remaining duration of this fragment based on the demanded and supplied cpu
@@ -46,7 +48,7 @@ public interface ScalingPolicy {
      * @param remainingWork
      * @return
      */
-    long getRemainingDuration(double cpuFreqDemand, double cpuFreqSupplied, double remainingWork);
+    long getRemainingCpuDuration(double cpuFreqDemand, double cpuFreqSupplied, double remainingWork);
 
     /**
      * Calculate how much work is remaining based on the demanded and supplied cpu
@@ -55,5 +57,7 @@ public interface ScalingPolicy {
      * @param duration
      * @return
      */
-    double getRemainingWork(double cpuFreqDemand, long duration);
+    double getRemainingCpuWork(double cpuFreqDemand, long duration);
+
+    long getRemainingNetworkDuration(@NotNull NetFlowBarrier barrier);
 }

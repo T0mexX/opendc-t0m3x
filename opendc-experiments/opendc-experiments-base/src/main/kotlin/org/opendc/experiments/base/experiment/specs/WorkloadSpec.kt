@@ -44,7 +44,7 @@ public data class WorkloadSpec(
     val type: WorkloadTypes,
     val sampleFraction: Double = 1.0,
     val submissionTime: String? = null,
-    val scalingPolicy: ScalingPolicyEnum = ScalingPolicyEnum.NoDelay,
+    val scalingPolicy: ScalingPolicyEnum = ScalingPolicyEnum.Perfect
 ) {
     public val name: String = File(pathToFile).nameWithoutExtension
 

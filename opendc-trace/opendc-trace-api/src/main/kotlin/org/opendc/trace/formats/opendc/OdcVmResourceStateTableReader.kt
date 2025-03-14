@@ -27,6 +27,8 @@ import org.opendc.trace.conv.resourceCpuCount
 import org.opendc.trace.conv.resourceID
 import org.opendc.trace.conv.resourceStateCpuUsage
 import org.opendc.trace.conv.resourceStateDuration
+import org.opendc.trace.conv.resourceStateNetRx
+import org.opendc.trace.conv.resourceStateNetTx
 import org.opendc.trace.conv.resourceStateTimestamp
 import org.opendc.trace.formats.opendc.parquet.ResourceState
 import org.opendc.trace.util.parquet.LocalParquetReader
@@ -60,6 +62,8 @@ internal class OdcVmResourceStateTableReader(private val reader: LocalParquetRea
     private val colDuration = 2
     private val colCpuCount = 3
     private val colCpuUsage = 4
+    private val colNetTx = 5
+    private val colNetRx = 6
 
     override fun resolve(name: String): Int {
         return when (name) {
@@ -68,12 +72,14 @@ internal class OdcVmResourceStateTableReader(private val reader: LocalParquetRea
             resourceStateDuration -> colDuration
             resourceCpuCount -> colCpuCount
             resourceStateCpuUsage -> colCpuUsage
+            resourceStateNetTx -> colNetTx
+            resourceStateNetRx -> colNetRx
             else -> -1
         }
     }
 
     override fun isNull(index: Int): Boolean {
-        require(index in 0..colCpuUsage) { "Invalid column index" }
+        require(index in 0..colNetRx) { "Invalid column index" }
         return false
     }
 
@@ -101,6 +107,8 @@ internal class OdcVmResourceStateTableReader(private val reader: LocalParquetRea
         val record = checkNotNull(record) { "Reader in invalid state" }
         return when (index) {
             colCpuUsage -> record.cpuUsage
+            colNetTx -> record.netTx!!
+            colNetRx -> record.netRx!!
             else -> throw IllegalArgumentException("Invalid column or type [index $index]")
         }
     }

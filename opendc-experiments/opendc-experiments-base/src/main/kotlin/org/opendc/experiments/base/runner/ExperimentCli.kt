@@ -45,7 +45,7 @@ internal class ExperimentCommand : CliktCommand(name = "experiment") {
      */
     private val scenarioPath by option("--experiment-path", help = "path to experiment file")
         .file(canBeDir = false, canBeFile = true)
-        .defaultLazy { File("resources/experiment.json") }
+        .defaultLazy { File("resources/exp-top/scenario.json") }
 
     override fun run() {
         val experiment = getExperiment(scenarioPath)

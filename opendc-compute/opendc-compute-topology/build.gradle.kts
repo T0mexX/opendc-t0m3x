@@ -32,6 +32,7 @@ dependencies {
     api(projects.opendcCompute.opendcComputeApi)
     implementation(projects.opendcCommon)
     implementation(project(mapOf("path" to ":opendc-simulator:opendc-simulator-compute")))
+    implementation(projects.opendcSimulator.opendcSimulatorNetwork)
 
     implementation(libs.jackson.module.kotlin)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")

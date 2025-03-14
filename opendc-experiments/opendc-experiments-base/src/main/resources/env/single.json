@@ -1,0 +1,30 @@
+{
+    "clusters":
+    [
+        {
+            "name": "C01",
+            "hosts" :
+            [
+                {
+                    "cpu":
+                        {
+                            "coreCount": 8,
+                            "coreSpeed": "3.2 Ghz"
+                        },
+                    "memory": {
+                        "memorySize": "128e3 MiB",
+                        "memorySpeed": "1 Mhz"
+                    },
+                    "powerModel": {
+                        "modelType": "linear",
+                        "power": "400 Watts",
+                        "maxPower": "1 KW",
+                        "idlePower": "0.4W"
+                    }
+                }
+            ]
+        }
+    ]
+}
+
+
