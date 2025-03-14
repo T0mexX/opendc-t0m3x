@@ -26,6 +26,7 @@ import org.opendc.compute.simulator.service.ComputeService
 import org.opendc.compute.simulator.telemetry.ComputeMetricReader
 import org.opendc.compute.simulator.telemetry.ComputeMonitor
 import org.opendc.compute.simulator.telemetry.OutputFiles
+import org.opendc.simulator.network.api.integration.NetController
 import java.time.Duration
 
 /**
@@ -46,6 +47,7 @@ public class ComputeMonitorProvisioningStep(
             OutputFiles.BATTERY to true,
         ),
     private val printFrequency: Int? = null,
+    private val netController: NetController?,
 ) : ProvisioningStep {
     override fun apply(ctx: ProvisioningContext): AutoCloseable {
         val service =
@@ -61,6 +63,7 @@ public class ComputeMonitorProvisioningStep(
                 startTime,
                 filesToExport,
                 printFrequency,
+                netController,
             )
         return metricReader
     }

@@ -25,12 +25,21 @@ package org.opendc.simulator.compute.workload.trace;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.opendc.simulator.compute.workload.SimWorkload;
+import org.opendc.simulator.compute.workload.trace.scaling.NoDelayScaling;
 import org.opendc.simulator.compute.workload.trace.scaling.ScalingPolicy;
 import org.opendc.simulator.engine.graph.FlowConsumer;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowNode;
 import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.NetworkSupplier;
+import org.opendc.simulator.network.api.NetIFace;
+import org.opendc.simulator.network.api.integration.JNetFTracker;
+import org.opendc.simulator.network.api.integration.JNetFlow;
+import org.opendc.simulator.network.api.integration.JNetIFace;
 
 public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
     private LinkedList<TraceFragment> remainingFragments;
@@ -53,6 +62,14 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
     private final ScalingPolicy scalingPolicy;
 
     private final String taskName;
+
+    private @Nullable JNetIFace netIFace;
+    // With the current odc trace format, only total tx and rx of a vm are available.
+    // It is assumed that all tx and rx traffic is therefore inter-datacenter, hence
+    // 1 flow for transmission and one for reception.
+    private @Nullable JNetFlow netFlowTx; // The transmission network flow.
+    private @Nullable JNetFlow netFlowRx; // The reception network flow.
+    private @Nullable JNetFTracker netFTracker;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Basic Getters and Setters
@@ -97,7 +114,40 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
 
         this.startOfFragment = this.clock.millis();
 
+        // If the supplier provides networking (vm either directly or through chainWL),
+        // then use its network interface to execute fragments' network requirements.
+        NetIFace suppNetIFace = supplier instanceof NetworkSupplier netSupplier ? netSupplier.getNetIFace() : null;
+        // Convert [NetIFace] into the java non-suspending adapted version.
+        this.netIFace = suppNetIFace != null ? suppNetIFace.getJNetIFace() : null;
+
+        setUpNetworkFlows();
+
         new FlowEdge(this, supplier);
+    }
+
+    void setUpNetworkFlows() {
+        if (netIFace == null) return;
+        this.netFlowTx = Objects.requireNonNull(netIFace.startFlow());
+        this.netFlowRx = Objects.requireNonNull(netIFace.startFlowFromInet());
+
+        final @NotNull JNetFlow tx = Objects.requireNonNull(this.netFlowTx);
+        final @NotNull JNetFlow rx = Objects.requireNonNull(this.netFlowRx);
+
+        // If [NoDelay] scaling is used, no need to set up anything else.
+        if (this.scalingPolicy.getNetTxCompletionRequired(10) == .0) return;
+
+        this.netFTracker = new JNetFTracker(netIFace, tx, rx);
+        // When a one fragment flow completes (either rx or tx), reset its demand to zero.
+        this.netFTracker.setOn1FFragCompl((f, fragId) -> {
+            // If when this set demand is processed, the fragment has been changed
+            // (network fragment completion and next fragment happen in the same update cycle, hence [fragId] differs),
+            // the [setDemand] has no effect.
+            f.setDemand(.0, fragId);
+        });
+
+        // If the estimated time remaining for the current fragment (networking) decreases,
+        // invalidate this node.
+        this.netFTracker.setOnTmRmDecrease((oldMs, newMs) -> invalidate());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,12 +164,41 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
 
         this.remainingWork -= finishedWork;
 
-        // If this.remainingWork <= 0, the fragment has been completed
+        // If this.remainingWork <= 0, the fragment compute part has been completed
         if (this.remainingWork <= 0) {
-            this.startNextFragment();
+            long remainingNetDuration = 0;
+            if (this.netFTracker != null) {
+                remainingNetDuration = this.netFTracker.tmRmMs();
+            }
 
-            this.invalidate();
-            return Long.MAX_VALUE;
+            // Both compute and network work satisfied.
+            if (this.netFTracker == null || remainingNetDuration == 0) {
+                this.startNextFragment();
+
+                this.invalidate();
+                return Long.MAX_VALUE;
+
+            } else {
+                //
+                // Compute satisfied but network not yet.
+
+                this.cpuFreqSupplied = this.newCpuFreqSupplied;
+
+                // Set compute demand to 0 while waiting for network.
+                this.pushOutgoingDemand(this.machineEdge, .0);
+
+                // TODO remove
+                if (finishedWork > 0L) {
+                    System.out.println("remTm(sec): " + ((double) remainingNetDuration / 1000.0));
+                }
+
+                // If throughput is 0, remainingNetDuration may be `Long.MAX_VALUE`, hence we avoid overflow.
+                try {
+                    return Math.addExact(now, remainingNetDuration);
+                } catch (ArithmeticException e) {
+                    return Long.MAX_VALUE;
+                }
+            }
         }
 
         this.cpuFreqSupplied = this.newCpuFreqSupplied;
@@ -155,6 +234,37 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
         double demand = nextFragment.cpuUsage();
         this.remainingWork = this.scalingPolicy.getRemainingWork(demand, nextFragment.duration());
         this.pushOutgoingDemand(this.machineEdge, demand);
+        startNetworkFragment(nextFragment);
+    }
+
+    private void startNetworkFragment(TraceFragment fragment) {
+        if (netIFace == null) return;
+        assert netFlowTx != null;
+        assert netFlowRx != null;
+        final boolean noDelay = scalingPolicy instanceof NoDelayScaling;
+
+        final double txDmndKbps = fragment.netTxKbps();
+        final double rxDmndKbps = fragment.netRxKbps();
+        final double fragmentDurationSec = (double) fragment.duration() / 1000;
+        final double requiredTxKb = scalingPolicy.getNetTxCompletionRequired(txDmndKbps * fragmentDurationSec);
+        final double requiredRxKb = scalingPolicy.getNetRxCompletionRequired(rxDmndKbps * fragmentDurationSec);
+        if (!noDelay) {
+            netFlowTx.fragInit(requiredTxKb, currentFragment);
+            netFlowRx.fragInit(requiredRxKb, currentFragment);
+        }
+        netFlowTx.setDemand(txDmndKbps, currentFragment);
+        netFlowRx.setDemand(rxDmndKbps, currentFragment);
+        if (!noDelay) Objects.requireNonNull(netFTracker).reset();
+    }
+
+    @Override
+    public void closeNode() {
+        if (netIFace != null) {
+            this.netIFace.stopFlow(Objects.requireNonNull(netFlowTx));
+            this.netIFace.stopFlow(Objects.requireNonNull(netFlowRx));
+            Objects.requireNonNull(this.netFTracker).close();
+        }
+        super.closeNode();
     }
 
     @Override
@@ -170,6 +280,15 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
         this.machineEdge = null;
         this.remainingFragments = null;
         this.currentFragment = null;
+        if (netIFace != null) {
+            assert this.netFTracker != null;
+            netFTracker.close();
+            netIFace.close();
+            netFlowTx = null;
+            netFlowRx = null;
+            netFTracker = null;
+            netIFace = null;
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -209,8 +328,12 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
         }
 
         // Create a new fragment based on the current fragment and remaining duration
-        TraceFragment newFragment =
-                new TraceFragment(remainingTime, currentFragment.cpuUsage(), currentFragment.coreCount());
+        TraceFragment newFragment = new TraceFragment(
+                remainingTime,
+                currentFragment.cpuUsage(),
+                currentFragment.coreCount(),
+                currentFragment.netTxKbps(),
+                currentFragment.netRxKbps());
 
         // Alter the snapshot by removing finished fragments
         this.snapshot.removeFragments(this.fragmentIndex);
@@ -220,7 +343,7 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
 
         // Create and add a fragment for processing the snapshot process
         TraceFragment snapshotFragment = new TraceFragment(
-                this.checkpointDuration, this.snapshot.getMaxCpuDemand(), this.snapshot.getMaxCoreCount());
+                this.checkpointDuration, this.snapshot.getMaxCpuDemand(), this.snapshot.getMaxCoreCount(), 0, 0);
         this.remainingFragments.addFirst(snapshotFragment);
 
         this.fragmentIndex = -1;

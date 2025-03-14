@@ -1,0 +1,2 @@
+[*.kt]
+ktlint_kotlin_compiler_enabled=true

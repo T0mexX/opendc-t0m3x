@@ -29,9 +29,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 import org.opendc.simulator.engine.engine.FlowEngine;
+import org.opendc.simulator.network.api.NetIFace;
 
-public class FlowDistributor extends FlowNode implements FlowSupplier, FlowConsumer {
+public class FlowDistributor extends FlowNode implements FlowSupplier, FlowConsumer, NetworkSupplier {
     private final ArrayList<FlowEdge> consumerEdges = new ArrayList<>();
     private FlowEdge supplierEdge;
 
@@ -62,6 +64,12 @@ public class FlowDistributor extends FlowNode implements FlowSupplier, FlowConsu
 
     public double getCapacity() {
         return capacity;
+    }
+
+    @Override
+    public @Nullable NetIFace getNetIFace() {
+        final FlowSupplier supp = this.supplierEdge.getSupplier();
+        return supp instanceof NetworkSupplier netSupplier ? netSupplier.getNetIFace() : null;
     }
 
     public long onUpdate(long now) {

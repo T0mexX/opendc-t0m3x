@@ -24,6 +24,8 @@ package org.opendc.simulator;
 
 import java.time.Instant;
 import java.time.InstantSource;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.opendc.common.Dispatcher;
 import org.opendc.common.DispatcherHandle;
 
@@ -120,6 +122,10 @@ public final class SimulationDispatcher implements Dispatcher {
     public void advanceUntilIdle() {
         final TaskQueue queue = this.queue;
 
+        ProgressBar pb = ProgressBar.builder()
+                .setStyle(ProgressBarStyle.ASCII)
+                .setTaskName("task queue counter")
+                .build(); // TODO: remove
         while (true) {
             long deadline = queue.peekDeadline();
             Runnable task = queue.poll();
@@ -128,9 +134,12 @@ public final class SimulationDispatcher implements Dispatcher {
                 break;
             }
 
+            boolean step = currentTime != deadline; // TODO:remove
             currentTime = deadline;
             task.run();
+            if (step) pb.step(); // TODO remove
         }
+        pb.close(); // TODO: remove
     }
 
     /**

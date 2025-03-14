@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package org.opendc.simulator.network.repl.cmds.node
+
+import com.github.ajalt.clikt.core.requireObject
+import inet.ipaddr.ipv4.IPv4Address
+import org.opendc.common.units.DataRate
+import org.opendc.simulator.network.components.networks.custom.CustomNetwork
+import org.opendc.simulator.network.components.node.terminal.Terminal
+import org.opendc.simulator.network.repl.cmds.REPLCmd
+
+private const val CMD_STR: String = "host"
+
+internal class NodeMkHostCmd : REPLCmd(name = CMD_STR) {
+    private val nodeMkCtx: NodeMkCmd.NodeMkCtx by requireObject<NodeMkCmd.NodeMkCtx>()
+    private val ip: IPv4Address by lazy { nodeMkCtx.ip }
+    private val speed: DataRate by lazy { nodeMkCtx.portSpeed }
+    private val nPorts: Int by lazy { nodeMkCtx.nPort }
+
+    override fun aliases(): Map<String, List<String>> =
+        mapOf(
+            "h" to listOf(CMD_STR),
+        ) + super.aliases()
+
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.awaitStability()
+
+            addrMngr.claimIp(ip)
+
+            val newHost =
+                Terminal(
+                    ip = ip,
+                    portSpeed = speed,
+                    nPorts = nPorts,
+                )
+
+            (net as CustomNetwork).plus(newHost)
+            echo("| Node added successfully")
+        }
+}

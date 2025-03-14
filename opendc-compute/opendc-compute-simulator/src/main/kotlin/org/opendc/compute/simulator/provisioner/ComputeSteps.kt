@@ -29,6 +29,7 @@ import org.opendc.compute.simulator.telemetry.ComputeMonitor
 import org.opendc.compute.simulator.telemetry.OutputFiles
 import org.opendc.compute.topology.specs.ClusterSpec
 import org.opendc.compute.topology.specs.HostSpec
+import org.opendc.simulator.network.api.integration.NetController
 import java.time.Duration
 
 /**
@@ -69,8 +70,9 @@ public fun registerComputeMonitor(
             OutputFiles.BATTERY to true,
         ),
     printFrequency: Int? = null,
+    netController: NetController? = null,
 ): ProvisioningStep {
-    return ComputeMonitorProvisioningStep(serviceDomain, monitor, exportInterval, startTime, filesToExport, printFrequency)
+    return ComputeMonitorProvisioningStep(serviceDomain, monitor, exportInterval, startTime, filesToExport, printFrequency, netController)
 }
 
 /**
@@ -85,6 +87,14 @@ public fun setupHosts(
     serviceDomain: String,
     specs: List<ClusterSpec>,
     startTime: Long = 0L,
+    netController: NetController? = null,
 ): ProvisioningStep {
-    return HostsProvisioningStep(serviceDomain, specs, startTime)
+    return HostsProvisioningStep(serviceDomain, specs, startTime, netController)
+}
+
+/**
+ * TODO
+ */
+public fun setUpNetwork(netController: NetController?): ProvisioningStep {
+    return NetworkProvisioningStep(netController)
 }

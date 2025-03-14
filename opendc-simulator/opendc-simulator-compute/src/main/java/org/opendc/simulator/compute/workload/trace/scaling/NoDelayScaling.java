@@ -44,4 +44,14 @@ public class NoDelayScaling implements ScalingPolicy {
     public double getRemainingWork(double cpuFreqDemand, long duration) {
         return duration;
     }
+
+    @Override
+    public double getNetRxCompletionRequired(double fragmentNetRxKb) {
+        return 0;
+    }
+
+    @Override
+    public double getNetTxCompletionRequired(double fragmentNetTxKb) {
+        return 0;
+    }
 }

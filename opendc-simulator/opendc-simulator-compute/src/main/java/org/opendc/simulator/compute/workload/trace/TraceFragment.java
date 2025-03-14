@@ -22,9 +22,9 @@
 
 package org.opendc.simulator.compute.workload.trace;
 
-public record TraceFragment(long duration, double cpuUsage, int coreCount) {
+public record TraceFragment(long duration, double cpuUsage, int coreCount, double netTxKbps, double netRxKbps) {
 
     public TraceFragment(long start, long duration, double cpuUsage, int coreCount) {
-        this(duration, cpuUsage, coreCount);
+        this(duration, cpuUsage, coreCount, 0, 0);
     }
 }

@@ -29,6 +29,7 @@ import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
 import org.opendc.experiments.base.experiment.getExperiment
+import org.opendc.simulator.network.api.integration.NetSimGlobal
 import java.io.File
 
 /**
@@ -45,9 +46,10 @@ internal class ExperimentCommand : CliktCommand(name = "experiment") {
      */
     private val experimentPath by option("--experiment-path", help = "path to experiment file")
         .file(canBeDir = false, canBeFile = true)
-        .defaultLazy { File("resources/experiment.json") }
+        .defaultLazy { File("resources/env/experiments/experiment.json") }
 
     override fun run() {
+        NetSimGlobal.WITH_COMPUTE = true
         val experiment = getExperiment(experimentPath)
         runExperiment(experiment)
     }

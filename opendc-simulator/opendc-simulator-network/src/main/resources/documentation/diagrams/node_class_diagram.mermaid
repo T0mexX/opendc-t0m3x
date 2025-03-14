@@ -1,0 +1,32 @@
+classDiagram
+    Node <|-- Switch
+    Node <|-- CoreSwitch
+    Node <|-- HostNode
+    Node <|-- Internet
+    class Node {
+        +id: NodeId
+        +portSpeed: DataRate
+        +nPorts: Int
+        +fairnessPolicy: FairnessPolicy
+        +portSelectionPolicy: PortSelectionPolicy
+    }
+    <<interface>> Node
+
+    class Switch{
+    }
+
+    note for CoreSwitch "Only nodes connected to inet"
+    class CoreSwitch {
+
+    }
+
+    class HostNode{
+        +startFlow(): NetFlow?
+        +stopFlow(): NetFlow?
+    }
+
+    class Internet {
+        +id: NodeId = Long.MIN_VALUE
+        +nPorts: Int = ∞
+        +portSpeed: DataRate = ∞
+    }

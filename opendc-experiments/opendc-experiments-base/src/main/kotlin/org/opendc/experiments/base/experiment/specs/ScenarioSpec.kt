@@ -33,6 +33,7 @@ public data class ScenarioSpec(
     var name: String = "",
     val outputFolder: String = "output",
     val topology: ScenarioTopologySpec,
+    val netCtx: ScenarioNetworkCtxSpec?,
     val workload: WorkloadSpec,
     val allocationPolicy: AllocationPolicySpec = PrefabAllocationPolicySpec(ComputeSchedulerEnum.Mem),
     val exportModel: ExportModelSpec = ExportModelSpec(),

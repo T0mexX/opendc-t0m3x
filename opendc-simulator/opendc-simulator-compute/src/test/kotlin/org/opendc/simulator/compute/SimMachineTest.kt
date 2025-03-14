@@ -166,20 +166,20 @@ class SimMachineTest {
 //
 //            machine.runWorkload(
 //                object : SimWorkload {
-//                    override fun onStart(ctx: SimMachineContext) {
-//                        val cpu = ctx.cpu
+//                    override fun onStart(rootScope: SimMachineContext) {
+//                        val cpu = rootScope.cpu
 //
 //                        cpu.frequency = (cpu.cpuModel.totalCapacity + 1000.0)
 //                        assertEquals(cpu.cpuModel.totalCapacity, cpu.frequency)
 //                        cpu.frequency = -1.0
 //                        assertEquals(0.0, cpu.frequency)
 //
-//                        ctx.shutdown()
+//                        rootScope.shutdown()
 //                    }
 //
 //                    override fun setOffset(now: Long) {}
 //
-//                    override fun onStop(ctx: SimMachineContext) {}
+//                    override fun onStop(rootScope: SimMachineContext) {}
 //
 //                    override fun makeSnapshot(now: Long) {
 //                    }
@@ -218,14 +218,14 @@ class SimMachineTest {
 //
 //            machine.runWorkload(
 //                object : SimWorkload {
-//                    override fun onStart(ctx: SimMachineContext) {
-//                        assertEquals(32_000 * 4.0, ctx.memory.capacity)
-//                        ctx.shutdown()
+//                    override fun onStart(rootScope: SimMachineContext) {
+//                        assertEquals(32_000 * 4.0, rootScope.memory.capacity)
+//                        rootScope.shutdown()
 //                    }
 //
 //                    override fun setOffset(now: Long) {}
 //
-//                    override fun onStop(ctx: SimMachineContext) {}
+//                    override fun onStop(rootScope: SimMachineContext) {}
 //
 //                    override fun makeSnapshot(now: Long) {}
 //
@@ -263,14 +263,14 @@ class SimMachineTest {
 //
 //            machine.runWorkload(
 //                object : SimWorkload {
-//                    override fun onStart(ctx: SimMachineContext) {
-//                        val source = SimpleFlowSource(ctx.graph, ctx.memory.capacity.toFloat(), 1.0f) { ctx.shutdown() }
-//                        ctx.graph.connect(source.output, ctx.memory.input)
+//                    override fun onStart(rootScope: SimMachineContext) {
+//                        val source = SimpleFlowSource(rootScope.graph, rootScope.memory.capacity.toFloat(), 1.0f) { rootScope.shutdown() }
+//                        rootScope.graph.connect(source.output, rootScope.memory.input)
 //                    }
 //
 //                    override fun setOffset(now: Long) {}
 //
-//                    override fun onStop(ctx: SimMachineContext) {}
+//                    override fun onStop(rootScope: SimMachineContext) {}
 //
 //                    override fun makeSnapshot(now: Long) {
 //                    }

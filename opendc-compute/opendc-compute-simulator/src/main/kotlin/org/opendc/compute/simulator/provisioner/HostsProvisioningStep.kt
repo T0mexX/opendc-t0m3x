@@ -35,6 +35,7 @@ import org.opendc.simulator.compute.power.batteries.SimBattery
 import org.opendc.simulator.engine.engine.FlowEngine
 import org.opendc.simulator.engine.graph.FlowDistributor
 import org.opendc.simulator.engine.graph.FlowEdge
+import org.opendc.simulator.network.api.integration.NetController
 
 /**
  * A [ProvisioningStep] that provisions a list of hosts for a [ComputeService].
@@ -47,6 +48,7 @@ public class HostsProvisioningStep internal constructor(
     private val serviceDomain: String,
     private val clusterSpecs: List<ClusterSpec>,
     private val startTime: Long = 0L,
+    private val netController: NetController?,
 ) : ProvisioningStep {
     override fun apply(ctx: ProvisioningContext): AutoCloseable {
         val service =
@@ -56,7 +58,7 @@ public class HostsProvisioningStep internal constructor(
         val simHosts = mutableSetOf<SimHost>()
         val simPowerSources = mutableListOf<SimPowerSource>()
 
-        val engine = FlowEngine.create(ctx.dispatcher)
+        val engine = FlowEngine.create(ctx.dispatcher, netController?.jNetController)
 
         for (cluster in clusterSpecs) {
             // Create the Power Source to which hosts are connected
@@ -130,6 +132,7 @@ public class HostsProvisioningStep internal constructor(
                         hostSpec.embodiedCarbon,
                         hostSpec.expectedLifetime,
                         hostDistributor,
+                        netIface = netController?.claimTerminal(),
                     )
 
                 require(simHosts.add(simHost)) { "Host with name ${hostSpec.name} already exists" }

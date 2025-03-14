@@ -164,9 +164,11 @@ public class TraceWorkload implements Workload {
          * @param duration The timestamp at which the fragment ends (in epoch millis).
          * @param usage The CPU usage at this fragment.
          * @param cores The number of cores used during this fragment.
+         * @param netTxKbps The outgoing network data-rate used during this fragment.
+         * @param netRxKbps The incoming network data-rate used during this fragment.
          */
-        public void add(long duration, double usage, int cores) {
-            fragments.add(fragments.size(), new TraceFragment(duration, usage, cores));
+        public void add(long duration, double usage, int cores, double netTxKbps, double netRxKbps) {
+            fragments.add(fragments.size(), new TraceFragment(duration, usage, cores, netTxKbps, netRxKbps));
         }
 
         /**

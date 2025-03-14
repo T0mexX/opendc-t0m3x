@@ -26,6 +26,7 @@ import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.compute.simulator.provisioner.Provisioner
 import org.opendc.compute.simulator.provisioner.registerComputeMonitor
+import org.opendc.compute.simulator.provisioner.setUpNetwork
 import org.opendc.compute.simulator.provisioner.setupComputeService
 import org.opendc.compute.simulator.provisioner.setupHosts
 import org.opendc.compute.simulator.scheduler.ComputeScheduler
@@ -41,6 +42,7 @@ import org.opendc.experiments.base.experiment.specs.getWorkloadLoader
 import org.opendc.simulator.compute.power.CarbonModel
 import org.opendc.simulator.compute.power.CarbonReceiver
 import org.opendc.simulator.kotlin.runSimulation
+import org.opendc.simulator.network.api.integration.NetController
 import java.io.File
 import java.time.Duration
 import java.util.Random
@@ -105,6 +107,15 @@ public fun runScenario(
             val startTime = Duration.ofMillis(startTimeLong)
 
             val topology = clusterTopology(scenario.topologySpec.pathToFile)
+
+            // The gateway through which the compute simulation can control the associated network simulation.
+            val netController =
+                scenario.networkCtxSpec?.getNetworkController(
+                    scenario = scenario,
+                    seed = seed,
+                    dispatcher = dispatcher,
+                )
+
             provisioner.runSteps(
                 setupComputeService(
                     serviceDomain,
@@ -122,10 +133,11 @@ public fun runScenario(
                     },
                     maxNumFailures = scenario.maxNumFailures,
                 ),
-                setupHosts(serviceDomain, topology, startTimeLong),
+                setupHosts(serviceDomain, topology, startTimeLong, netController),
+                setUpNetwork(netController),
             )
 
-            addExportModel(provisioner, serviceDomain, scenario, seed, startTime, scenario.id)
+            addExportModel(provisioner, serviceDomain, scenario, seed, startTime, scenario.id, netController)
 
             val service = provisioner.registry.resolve(serviceDomain, ComputeService::class.java)!!
             service.setTasksExpected(workload.size)
@@ -180,6 +192,7 @@ public fun addExportModel(
     seed: Long,
     startTime: Duration,
     index: Int,
+    netController: NetController?,
 ) {
     provisioner.runStep(
         registerComputeMonitor(
@@ -195,6 +208,7 @@ public fun addExportModel(
             startTime,
             scenario.exportModelSpec.filesToExportDict,
             scenario.exportModelSpec.printFrequency,
+            netController,
         ),
     )
 }

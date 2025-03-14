@@ -39,6 +39,7 @@ import org.opendc.compute.simulator.telemetry.table.service.ServiceTableReaderIm
 import org.opendc.compute.simulator.telemetry.table.task.TaskTableReaderImpl
 import org.opendc.simulator.compute.power.SimPowerSource
 import org.opendc.simulator.compute.power.batteries.SimBattery
+import org.opendc.simulator.network.api.integration.NetController
 import java.time.Duration
 
 /**
@@ -65,6 +66,7 @@ public class ComputeMetricReader(
             OutputFiles.SERVICE to true,
         ),
     private val printFrequency: Int? = null,
+    private val netController: NetController?,
 ) : AutoCloseable {
     private val logger = KotlinLogging.logger {}
     private val scope = CoroutineScope(dispatcher.asCoroutineDispatcher())
@@ -112,6 +114,7 @@ public class ComputeMetricReader(
                     delay(intervalMs)
 
                     loggState()
+                    netController?.exportNow()
                 }
             } finally {
                 if (monitor is AutoCloseable) {

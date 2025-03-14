@@ -27,6 +27,7 @@ import org.opendc.common.logger.infoNewLine
 import org.opendc.common.logger.logger
 import org.opendc.compute.simulator.telemetry.OutputFiles
 import org.opendc.compute.simulator.telemetry.parquet.ComputeExportConfig
+import org.opendc.simulator.network.export.NetworkExportConfig
 import kotlin.getValue
 
 /**
@@ -39,6 +40,7 @@ public data class ExportModelSpec(
     val exportInterval: Long = 5 * 60,
     var printFrequency: Int? = 24,
     val computeExportConfig: ComputeExportConfig = ComputeExportConfig.ALL_COLUMNS,
+    val networkExportConfig: NetworkExportConfig = NetworkExportConfig.ALL_COLUMNS,
     val filesToExport: List<OutputFiles> = OutputFiles.entries.toList(),
     var filesToExportDict: MutableMap<OutputFiles, Boolean> = OutputFiles.entries.associateWith { false }.toMutableMap(),
 ) {

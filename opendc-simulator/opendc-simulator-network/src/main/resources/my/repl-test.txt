@@ -1,0 +1,108 @@
+import resources/my/scope.jsonc
+net info
+f synth bit-complement 100%
+f info --ls
+q
+
+f info
+q
+f mk -s 4 -b 1Gbps -d 5
+f mk -s 4 -b 2Gbps -d 5
+f mk -s 4 -b 1Gbps -d 5
+f info
+q
+f synth random-permutation 30%
+f info
+q
+
+
+n mk -b 1Gbps -n 4 -p 2 h
+n mk -b 1Gbps -n 1 -p 3 s
+n mk -b 1Gbps -n 2 -p 3 s
+n mk -b 1Gbps -n 3 -p 2 h
+l mk -n 4 -n 1 -b 1Gbps
+l mk -n 4 -n 2 -b 1Gbps
+l mk -n 4 -n 2 -b 1Gbps
+l mk -n 4 -n 3 -b 1Gbps
+l mk -n 4 -n 3 -b 10Gbps
+
+l mk -n 4 -n 4 -b 120Gbps
+l mk -n 3 -n 1 -b 1Gbps
+l mk -n 3 -n 2 -b 1Gbps
+f mk -s 4 -d 3 -b 3Gbps
+net prefix-trie
+net info
+f info
+q
+
+
+import resources/my/scope.json
+net info
+net prefix-trie
+f synth full 5%
+f info
+f export resources/ignored/test.parquet --columns [demand_Kbps,tput_Kbps,sender_ip,timestamp]
+q
+
+f mk -s 4 -d 5 -b 1Gbps
+f mk -s 5 -d 4 -b 1Gbps
+f mk -s 5 -d 4 -b 2Gbps
+f info
+q
+import resources/my/scope.json
+net snap
+f synth bit-reversal 100%
+f info
+q
+
+
+n mk -n 0 -b 1Gbps -p 2 gs
+n mk -n 1 -b 1Gbps -p 2 gs
+n mk -n 2 -b 1Gbps -p 2 h
+l mk -n 1 -n 2 -b 1Gbps
+l mk -n 0 -n 2 -b 1Gbps
+net snap
+q
+
+import resources/my/scope.json
+f mk -s 4 -d 5 -b 500Mbps
+f mk -s 4 -d 5 -b 1Gbps
+f mk -s 5 -d 4 -b 500Mbps
+f info
+q
+
+n mk -n 0 -b 1Gbps -p 2 gs
+n mk -n 1 -b 1Gbps -p 1 h
+l mk -n 1 -n 0 -b 1Gbps
+
+n mk -n 3 -b 1Gbps -p 2 gs
+n mk -n 4 -b 1Gbps -p 1 h
+l mk -n 3 -n 4 -b 1Gbps
+
+f mk -s 4 -d 1 -b 500Mbps
+f mk -s 4 -d 1 -b 1Gbps
+f mk -s 1 -d 4 -b 500Mbps
+f info
+q
+
+import resources/my/scope.json
+net info
+f synth full 100%
+f info
+q
+
+
+
+
+import resources/my/scope.json
+net info
+f synth full 100%
+f info
+q
+
+
+
+
+
+
+

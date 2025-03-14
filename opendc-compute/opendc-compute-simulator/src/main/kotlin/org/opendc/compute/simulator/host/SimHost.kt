@@ -37,6 +37,7 @@ import org.opendc.simulator.compute.models.MachineModel
 import org.opendc.simulator.compute.models.MemoryUnit
 import org.opendc.simulator.engine.engine.FlowEngine
 import org.opendc.simulator.engine.graph.FlowDistributor
+import org.opendc.simulator.network.api.NetIFace
 import java.time.Duration
 import java.time.Instant
 import java.time.InstantSource
@@ -61,6 +62,7 @@ public class SimHost(
     private val embodiedCarbon: Double,
     private val expectedLifetime: Double,
     private val powerDistributor: FlowDistributor,
+    private val netIface: NetIFace?,
 ) : AutoCloseable {
     /**
      * The event listeners registered with this host.
@@ -136,6 +138,7 @@ public class SimHost(
                 this.machineModel,
                 this.powerDistributor,
                 this.cpuPowerModel,
+                this.netIface,
             ) { cause ->
                 hostState = if (cause != null) HostState.ERROR else HostState.DOWN
             }

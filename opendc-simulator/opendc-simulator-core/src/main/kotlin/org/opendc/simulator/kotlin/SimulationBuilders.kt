@@ -23,11 +23,13 @@
 package org.opendc.simulator.kotlin
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.DispatcherProvider
 import org.opendc.common.asCoroutineDispatcher
@@ -71,14 +73,30 @@ public fun runSimulation(
     val (safeContext, job, dispatcher) = context.checkArguments(scheduler)
     val startingJobs = job.activeJobs()
     val scope = SimulationCoroutineScope(safeContext)
-    val deferred =
-        scope.async {
+    val simJob =
+        scope.launch {
             body(scope)
         }
     dispatcher.advanceUntilIdle()
-    deferred.getCompletionExceptionOrNull()?.let {
-        throw it
+    simJob.cancel()
+
+    // TODO: remove begin
+    fun printCoTree(
+        coCtx: CoroutineContext,
+        indent: String = "",
+    ) {
+        val name = coCtx[CoroutineName]?.name ?: "Unnamed"
+        val job = coCtx[Job]!!
+        println("$indent- Job(name=$name): $job, isActive=${job.isActive}, isCompleted=${job.isCompleted}, isCancelled=${job.isCancelled}")
+        job.children.forEach { child ->
+            printCoTree(child, "$indent  ")
+        }
     }
+    printCoTree(scope.coroutineContext)
+    // TODO: remove end
+//    deferred.getCompletionExceptionOrNull()?.let {
+//        throw it
+//    }
     val endingJobs = job.activeJobs()
     if ((endingJobs - startingJobs).isNotEmpty()) {
         throw IllegalStateException("Test finished with active jobs: $endingJobs")

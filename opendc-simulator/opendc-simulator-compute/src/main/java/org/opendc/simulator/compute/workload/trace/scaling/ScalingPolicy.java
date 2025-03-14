@@ -56,4 +56,8 @@ public interface ScalingPolicy {
      * @return
      */
     double getRemainingWork(double cpuFreqDemand, long duration);
+
+    double getNetRxCompletionRequired(double fragmentNetRxKb);
+
+    double getNetTxCompletionRequired(double fragmentNetTxKb);
 }

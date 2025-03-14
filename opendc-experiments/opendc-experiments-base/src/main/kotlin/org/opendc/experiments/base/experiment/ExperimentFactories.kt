@@ -76,6 +76,7 @@ public fun getExperiment(experimentSpec: ExperimentSpec): List<Scenario> {
                 runs = experimentSpec.runs,
                 initialSeed = experimentSpec.initialSeed,
                 topologySpec = scenarioSpec.topology,
+                networkCtxSpec = scenarioSpec.netCtx,
                 workloadSpec = scenarioSpec.workload,
                 allocationPolicySpec = scenarioSpec.allocationPolicy,
                 exportModelSpec = scenarioSpec.exportModel,

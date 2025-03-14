@@ -30,6 +30,7 @@ plugins {
 
 dependencies {
     api(projects.opendcSimulator.opendcSimulatorCompute)
+    api(projects.opendcSimulator.opendcSimulatorNetwork)
     api(projects.opendcTrace.opendcTraceParquet)
     api(libs.commons.math3)
     implementation(projects.opendcCommon)

@@ -1,0 +1,4 @@
+import resources/my/4-28/clos(n:3,a:16,speed:1Gbps).json
+f mk
+
+quit

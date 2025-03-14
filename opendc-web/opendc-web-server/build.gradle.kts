@@ -71,6 +71,10 @@ val createStartScripts by tasks.creating(CreateStartScripts::class) {
     outputDir = project.layout.buildDirectory.get().asFile.resolve("scripts")
 }
 
+tasks.named("compileJava") {
+    dependsOn(tasks.named("compileQuarkusGeneratedSourcesJava"))
+}
+
 distributions {
     main {
         distributionBaseName.set("opendc")

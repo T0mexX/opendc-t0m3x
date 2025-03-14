@@ -44,4 +44,14 @@ public class PerfectScaling implements ScalingPolicy {
     public double getRemainingWork(double cpuFreqDemand, long duration) {
         return cpuFreqDemand * duration;
     }
+
+    @Override
+    public double getNetRxCompletionRequired(double fragmentNetRxKb) {
+        return fragmentNetRxKb;
+    }
+
+    @Override
+    public double getNetTxCompletionRequired(double fragmentNetTxKb) {
+        return fragmentNetTxKb;
+    }
 }

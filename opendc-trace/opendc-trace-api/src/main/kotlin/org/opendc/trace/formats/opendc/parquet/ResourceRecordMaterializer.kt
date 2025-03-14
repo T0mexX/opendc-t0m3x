@@ -130,6 +130,7 @@ internal class ResourceRecordMaterializer(schema: MessageType) : RecordMateriali
         }
 
     override fun getCurrentRecord(): Resource =
+        // TODO: maybe check if all columns have been read
         Resource(
             localId,
             localSubmissionTime,

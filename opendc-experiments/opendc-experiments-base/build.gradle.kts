@@ -39,6 +39,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation(libs.progressbar)
     implementation(project(mapOf("path" to ":opendc-simulator:opendc-simulator-core")))
+    implementation(projects.opendcSimulator.opendcSimulatorNetwork)
 
     implementation(project(mapOf("path" to ":opendc-compute:opendc-compute-workload")))
     implementation(project(mapOf("path" to ":opendc-compute:opendc-compute-topology")))

@@ -49,6 +49,7 @@ public data class ExperimentSpec(
     val initialSeed: Int = 0,
     val runs: Int = 1,
     val topologies: Set<ScenarioTopologySpec>,
+    val networkCtxs: Set<ScenarioNetworkCtxSpec>? = null,
     val workloads: Set<WorkloadSpec>,
     val allocationPolicies: Set<AllocationPolicySpec> = setOf(PrefabAllocationPolicySpec(ComputeSchedulerEnum.Mem)),
     val failureModels: Set<FailureModelSpec?> = setOf(null),
@@ -75,9 +76,11 @@ public data class ExperimentSpec(
             val allocationDiv = exportDiv * exportModels.size
             val workloadDiv = allocationDiv * allocationPolicies.size
             val topologyDiv = workloadDiv * workloads.size
-            val numScenarios = topologyDiv * topologies.size
+            val netDiv = topologyDiv * topologies.size
+            val numScenarios = netDiv * (networkCtxs?.size ?: 1)
 
             val topologyList = topologies.toList()
+            val netCtxList = networkCtxs?.toList()
             val workloadList = workloads.toList()
             val allocationPolicyList = allocationPolicies.toList()
             val exportModelList = exportModels.toList()
@@ -91,6 +94,7 @@ public data class ExperimentSpec(
                         name,
                         outputFolder,
                         topologyList[(i / topologyDiv) % topologyList.size],
+                        netCtxList?.let { netCtxList[(i / netDiv) % netCtxList.size] },
                         workloadList[(i / workloadDiv) % workloadList.size],
                         allocationPolicyList[(i / allocationDiv) % allocationPolicyList.size],
                         exportModelList[(i / exportDiv) % exportModelList.size],

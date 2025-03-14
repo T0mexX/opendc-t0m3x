@@ -25,8 +25,10 @@ package org.opendc.simulator.engine.engine;
 import java.time.Clock;
 import java.time.InstantSource;
 import kotlin.coroutines.CoroutineContext;
+import org.jetbrains.annotations.Nullable;
 import org.opendc.common.Dispatcher;
 import org.opendc.simulator.engine.graph.FlowNode;
+import org.opendc.simulator.network.api.integration.JNetController;
 
 /**
  * A {@link FlowEngine} simulates a generic flow network.
@@ -58,16 +60,23 @@ public final class FlowEngine implements Runnable {
     private final Dispatcher dispatcher;
     private final InstantSource clock;
 
+    private final @Nullable JNetController netController;
+
     /**
      * Create a new {@link FlowEngine} instance using the specified {@link CoroutineContext} and {@link InstantSource}.
      */
-    public static FlowEngine create(Dispatcher dispatcher) {
-        return new FlowEngine(dispatcher);
+    public static FlowEngine create(Dispatcher dispatcher, @Nullable JNetController netController) {
+        return new FlowEngine(dispatcher, netController);
     }
 
-    FlowEngine(Dispatcher dispatcher) {
+    public static FlowEngine create(Dispatcher dispatcher) {
+        return new FlowEngine(dispatcher, null);
+    }
+
+    FlowEngine(Dispatcher dispatcher, @Nullable JNetController netController) {
         this.dispatcher = dispatcher;
         this.clock = dispatcher.getTimeSource();
+        this.netController = netController;
     }
 
     /**
@@ -146,6 +155,9 @@ public final class FlowEngine implements Runnable {
             // Mark the engine as active to prevent concurrent calls to this method
             active = true;
 
+            // Sync network with simulation virtual time.
+            if (netController != null) netController.sync();
+
             // Execute all scheduled updates at current timestamp
             while (true) {
                 final FlowNode ctx = eventQueue.poll(now);
@@ -160,10 +172,20 @@ public final class FlowEngine implements Runnable {
             while (true) {
                 final FlowNode ctx = cycleQueue.poll();
                 if (ctx == null) {
+                    if (netController != null) {
+                        //                        System.out.print("A");
+                        netController.sync(); // Wait until the network is stable.
+                        //                        System.out.print("B\n");
+                        // Execute observers' handlers sequentially, since node invalidation must be sequential.
+                        int callbacksExecuted = netController.execCallbacks();
+                        // If at least one callback has been executed, there may be an invalidated node.
+                        if (callbacksExecuted > 0) continue;
+                    }
                     break;
                 }
 
                 ctx.update(now);
+                //                System.out.print("|");
             }
         } finally {
             active = false;

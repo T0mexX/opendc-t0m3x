@@ -24,6 +24,7 @@ package org.opendc.simulator.compute.machine;
 
 import java.time.InstantSource;
 import java.util.function.Consumer;
+import org.jetbrains.annotations.Nullable;
 import org.opendc.simulator.compute.cpu.CpuPowerModel;
 import org.opendc.simulator.compute.cpu.SimCpu;
 import org.opendc.simulator.compute.memory.Memory;
@@ -35,11 +36,13 @@ import org.opendc.simulator.compute.workload.VirtualMachine;
 import org.opendc.simulator.engine.engine.FlowEngine;
 import org.opendc.simulator.engine.graph.FlowDistributor;
 import org.opendc.simulator.engine.graph.FlowEdge;
+import org.opendc.simulator.engine.graph.NetworkSupplier;
+import org.opendc.simulator.network.api.NetIFace;
 
 /**
  * A machine that is able to execute {@link SimWorkload} objects.
  */
-public class SimMachine {
+public class SimMachine implements NetworkSupplier {
     private final MachineModel machineModel;
     private final FlowEngine engine;
 
@@ -49,6 +52,7 @@ public class SimMachine {
     private FlowDistributor cpuDistributor;
     private SimPsu psu;
     private Memory memory;
+    private @Nullable NetIFace netIFace;
 
     private final Consumer<Exception> completion;
 
@@ -84,6 +88,11 @@ public class SimMachine {
         return psu;
     }
 
+    @Override
+    public @Nullable NetIFace getNetIFace() {
+        return this.netIFace;
+    }
+
     /**
      * Return the CPU capacity of the hypervisor in MHz.
      */
@@ -114,10 +123,12 @@ public class SimMachine {
             MachineModel machineModel,
             FlowDistributor powerDistributor,
             CpuPowerModel cpuPowerModel,
+            @Nullable NetIFace netIFace,
             Consumer<Exception> completion) {
         this.engine = engine;
         this.machineModel = machineModel;
         this.clock = engine.getClock();
+        this.netIFace = netIFace;
 
         // Create the psu and cpu and connect them
         this.psu = new SimPsu(engine);

@@ -1,0 +1,25 @@
+{
+    "config": {
+        "routingPolicy": { "type": "ecmp" },
+        "netSimDevConfig": {
+            "netConfig": {
+                "includeRoutInfo2Switches": false,
+                "subnetOptimization": true
+            },
+            "barrierConfig": {
+                "barrierNodeSize": 500
+            },
+            "flyWeightConfig": {
+                "nSubPools": 10,
+                "initialCapacity": 100,
+                "subPoolMaxIdle": null,
+                "subPoolMaxSize": null,
+                "poolMaxSize": null
+            },
+            "nodeConfig": {
+                "defaultPortSpeed": "1Gbps"
+            }
+        }
+    },
+    "netPath": "./resources/examples/networks/ftree/ftree(k:4).json"
+}

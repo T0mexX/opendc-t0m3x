@@ -30,7 +30,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="org.opendc" level="warn" additivity="false">
+        <Logger name="org.opendc" level="error" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="org.apache.hadoop" level="warn" additivity="false">

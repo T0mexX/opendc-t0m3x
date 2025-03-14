@@ -26,16 +26,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.jetbrains.annotations.Nullable;
 import org.opendc.simulator.compute.machine.PerformanceCounters;
 import org.opendc.simulator.compute.machine.SimMachine;
 import org.opendc.simulator.engine.graph.FlowEdge;
 import org.opendc.simulator.engine.graph.FlowNode;
 import org.opendc.simulator.engine.graph.FlowSupplier;
+import org.opendc.simulator.engine.graph.NetworkSupplier;
+import org.opendc.simulator.network.api.NetIFace;
 
 /**
  * A {@link VirtualMachine} that composes multiple {@link SimWorkload}s.
  */
-public final class VirtualMachine extends SimWorkload implements FlowSupplier {
+public final class VirtualMachine extends SimWorkload implements FlowSupplier, NetworkSupplier {
     private final LinkedList<Workload> workloads;
     private int workloadIndex;
 
@@ -46,6 +49,7 @@ public final class VirtualMachine extends SimWorkload implements FlowSupplier {
 
     private FlowEdge workloadEdge;
     private FlowEdge machineEdge;
+    private @Nullable NetIFace netIFace;
 
     private double capacity = 0;
 
@@ -93,16 +97,22 @@ public final class VirtualMachine extends SimWorkload implements FlowSupplier {
         return performanceCounters;
     }
 
+    @Override
+    public @Nullable NetIFace getNetIFace() {
+        return this.netIFace;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Constructors
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    VirtualMachine(FlowSupplier supplier, ChainWorkload workload) {
+    VirtualMachine(FlowSupplier supplier, ChainWorkload workload, NetworkSupplier netSupp) {
         super(((FlowNode) supplier).getEngine());
 
         this.snapshot = workload;
 
         new FlowEdge(this, supplier);
+        this.netIFace = netSupp.getNetIFace();
 
         this.workloads = new LinkedList<>(workload.workloads());
         this.checkpointInterval = workload.checkpointInterval();
@@ -121,7 +131,7 @@ public final class VirtualMachine extends SimWorkload implements FlowSupplier {
     }
 
     VirtualMachine(FlowSupplier supplier, ChainWorkload workload, SimMachine machine, Consumer<Exception> completion) {
-        this(supplier, workload);
+        this(supplier, workload, machine);
 
         this.capacity = machine.getCpu().getFrequency();
         this.d = 1 / machine.getCpu().getFrequency();
