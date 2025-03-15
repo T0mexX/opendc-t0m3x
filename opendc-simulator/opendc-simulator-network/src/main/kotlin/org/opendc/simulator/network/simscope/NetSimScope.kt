@@ -20,9 +20,9 @@ internal class NetSimScope(
         runBlocking {
             ctx[Job] ?: let { ctx += Job() }
             ctx[NetSimConfig] ?: let { ctx += NetSimConfig.DEFAULT }
-            ctx[NetSimBarrier] ?: let {
-                ctx +=  NetSimBarrier()
-            }
+//            ctx[NetSimBarrier] ?: let {
+//                ctx +=  NetSimBarrier()
+//            }
         }
     }
 
