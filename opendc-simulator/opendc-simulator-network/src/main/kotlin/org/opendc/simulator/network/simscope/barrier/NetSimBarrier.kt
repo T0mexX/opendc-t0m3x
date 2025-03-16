@@ -173,6 +173,8 @@ internal class NetSimBarrier internal constructor(
      */
     private inner class RootNetSimStabilizer: NetSimStabilizer() {
         override val netSimConfig: NetSimConfig = this@NetSimBarrier.netSimConfig
+        override val isValidated: Boolean
+            get() = stabilityMtx.isLocked
 
         override suspend fun invalidate(): Unit = stabilityMtx.lock()
 
@@ -180,6 +182,8 @@ internal class NetSimBarrier internal constructor(
 
         override suspend fun <T> whileNetStable(netSimStabilityMode: NetSimStabilityMode, block: suspend () -> T): T =
             throw RuntimeException("should not be invoked")
+
+        override suspend fun awaitStability() = throw RuntimeException("should not be invoked")
     }
 
 
@@ -233,7 +237,8 @@ internal class NetSimBarrier internal constructor(
              * - `true` => the owner component is in a stable state
              * - `false => the owner component is in an unstable state
              */
-            private var valid: Boolean = true
+            override var isValidated: Boolean = true
+                private set
 
             override suspend fun invalidate() {
                 // If there is a `NetStabilityMode.CHECK` protected block that is being executed.
@@ -251,8 +256,8 @@ internal class NetSimBarrier internal constructor(
 
                 countMtx.withLock {
                     // If the owner component already invalidated its state, then return.
-                    if (valid.not()) return
-                    valid = false
+                    if (isValidated.not()) return
+                    isValidated = false
 
                     // If this `ChildBarrier` was complete => parent was validated,
                     // then invalidate parent.
@@ -263,8 +268,8 @@ internal class NetSimBarrier internal constructor(
             override suspend fun validate() {
                 countMtx.withLock {
                     // If the owner component already validated its state, then return.
-                    if (valid) return
-                    valid = true
+                    if (isValidated) return
+                    isValidated = true
 
                     // If this is the last `NetSimStabilizer` to validate its state
                     // in the `ChildBarrier` then validate `parentBarrier`
@@ -277,6 +282,7 @@ internal class NetSimBarrier internal constructor(
                 block: suspend () -> T
             ): T = this@NetSimBarrier.whileStable(netSimStabilityMode, block)
 
+            override suspend fun awaitStability() = this@NetSimBarrier.awaitStability()
         }
     }
 
