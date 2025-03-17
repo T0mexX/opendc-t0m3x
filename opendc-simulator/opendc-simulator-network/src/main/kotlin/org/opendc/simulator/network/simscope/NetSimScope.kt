@@ -63,7 +63,7 @@ internal class NetSimScope(
 //            return coroutine
         }
 
-        internal fun NetSimScope.launchNet(
+        internal fun NetSimScope.scopeLaunch(
             ctx: CoroutineContext = EmptyCoroutineContext,
             block: suspend NetSimScope.() -> Unit
         ): Job = launch(ctx) {

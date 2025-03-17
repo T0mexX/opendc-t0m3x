@@ -1,3 +1,3 @@
 package org.opendc.simulator.network.utils.eventEmitter
 
-internal interface Event<T: org.opendc.simulator.network.utils.eventEmitter.EventEmitter<T>>
+public interface Event<in T: EventEmitter<in T>>

@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.simscope
 
+import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.flyweight.FlyWeight
 import org.opendc.simulator.network.utils.flyweight.FlyWeightPool
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -13,8 +14,8 @@ internal class NetSimPoolAggregator(
     private val poolsByType = mutableMapOf<KClass<*>, FlyWeightPool<*>>()
 
     @Suppress("UNCHECKED_CAST")
-    inline fun <reified T: FlyWeight<T>> getPool(
-        noinline objConstructor: () -> T
+    inline fun <reified T: FlyWeight<T>> getCreatePool(
+        noinline objConstructor: suspend (Idx) -> T
     ): FlyWeightPool<T> =
         poolsByType.getOrPut(T::class) {
             FlyWeightPool(
@@ -22,6 +23,10 @@ internal class NetSimPoolAggregator(
                 objConstructor = objConstructor
             )
         } as FlyWeightPool<T>
+
+    @Suppress("UNCHECKED_CAST")
+    inline fun <reified T: FlyWeight<T>> getPool(): FlyWeightPool<T> =
+        poolsByType[T::class]!! as FlyWeightPool<T>
 
     companion object Key : CoroutineContext.Key<NetSimPoolAggregator> {
         context(NetSimScope)

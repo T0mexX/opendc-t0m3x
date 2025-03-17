@@ -1,5 +1,5 @@
 package org.opendc.simulator.network.utils.flyweight
 
-internal fun interface FlyWeightDispenser<T: org.opendc.simulator.network.utils.flyweight.FlyWeight<T>> {
-    fun acquire(): T
+internal fun interface FlyWeightDispenser<in T: FlyWeight<in T>> {
+    suspend fun acquire(): @UnsafeVariance T
 }
