@@ -1,6 +1,4 @@
-package org.opendc.simulator.network.flow
-
-import org.opendc.simulator.network.components.node.NodeId2
+package org.opendc.simulator.network.flow.neww.publics
 
 @JvmInline
 public value class FlowId2(public val value: Long) {

@@ -1,4 +1,4 @@
-package org.opendc.simulator.network.utils.invalidatable
+package org.opendc.simulator.network.utils.invalidatable.internals
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first

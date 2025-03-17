@@ -39,7 +39,7 @@ import org.opendc.simulator.engine.graph.NetworkSupplier;
 import org.opendc.simulator.network.api.NetFlowBarrier;
 import org.opendc.simulator.network.api.integration.SeqComputeIntegration;
 import org.opendc.simulator.network.api.node.NetworkInterface;
-import org.opendc.simulator.network.api.NetFlow;
+import org.opendc.simulator.network.flow.neww.publics.NetFlow;
 
 public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
     private LinkedList<TraceFragment> remainingFragments;

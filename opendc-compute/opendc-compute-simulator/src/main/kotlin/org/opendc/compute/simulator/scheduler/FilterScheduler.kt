@@ -49,7 +49,7 @@ public class FilterScheduler(
     private val random: RandomGenerator = SplittableRandom(0),
 ) : ComputeScheduler {
     /**
-     * The pool of hosts available to the scheduler.
+     * The poolAggr of hosts available to the scheduler.
      */
     private val hosts = mutableListOf<HostView>()
 

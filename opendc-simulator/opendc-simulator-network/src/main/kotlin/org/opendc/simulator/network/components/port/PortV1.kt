@@ -1,128 +1,177 @@
 package org.opendc.simulator.network.components.port
 
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.isActive
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.link.ReceiveLink2
 import org.opendc.simulator.network.components.link.SendLink2
-import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.flow.FlowId2
+import org.opendc.simulator.network.flow.neww.publics.FlowId2
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.MaxMinPerPort
 import org.opendc.simulator.network.simscope.NetSimScope
-import org.opendc.simulator.network.simscope.pool.DeltaFlowPool
-import org.opendc.simulator.network.utils.notifiable.Notification
-import org.opendc.simulator.network.utils.statefull.State
-import org.opendc.simulator.network.sync.flyweight.PoolIdx
+import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
+import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
+import org.opendc.simulator.network.utils.notifiable.publics.Notification
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.IntId
+import org.opendc.simulator.network.utils.IntSz
 import org.opendc.simulator.network.utils.datastructures.IntArrayQueue
+import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
+import org.opendc.simulator.network.utils.flyweight.internals.FWPool
+import org.opendc.simulator.network.utils.flyweight.internals.IFW
+import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
+import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
+import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
+import org.opendc.simulator.network.utils.statefull.publics.State
 
 internal class PortV1 private constructor(
-    private val poolIdx: PoolIdx,
-    private val pool: DeltaFlowPool,
-    startingListSize: Int,
+    initialCapacity: IntSz,
+    override val stabilizer: NetSimStabilizer
 ): Port {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // ChlNotifiable
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    override val notificationChl: ReceiveChannel<org.opendc.simulator.network.utils.notifiable.Notification<Port>> get() = _notificationChl
-    private val _notificationChl = Channel<org.opendc.simulator.network.utils.notifiable.Notification<Port>>(Channel.UNLIMITED)
-    override val PROCESS: org.opendc.simulator.network.utils.notifiable.Notification<PortV1> get() = Companion.PROCESS
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Stateful
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    override val state: StateFlow<org.opendc.simulator.network.utils.statefull.State<Port>> get() = _state
-    private val _state = MutableStateFlow(Port.STABLE)
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Port Interface Implementation
+    // Port
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override var txLink: SendLink2? = null
     override var rxLink: ReceiveLink2? = null
     override var fairnessPolicy: FairnessPolicy = MaxMinPerPort
-    override fun setTxDemand(txDemand: DataRate, entryId: IntId?): IntId {
-        if (txDemand.isZero()) return rmEntry(entryId!!)
 
-        return entryId?.let {
-            entries[it].txDemand = txDemand
-            entryId
-        } ?: newEntry(txDemand)
+    override suspend fun startProcessing() {
+        TODO("Not yet implemented")
     }
+
+    override suspend fun setTxDemand(txDemand: DataRate, entryId: IntId?): IntId {
+        val notif = setDemandNotifDispenser.acquire()
+        notif.newDemand = txDemand
+        val id = entryId ?: newEntry()
+        notif.entryId = id
+        _notificationChl.send(notif)
+        return id
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Launchable
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    context(NetSimScope) override fun netLaunch(): Job = this@NetSimScope.scopeLaunch {
+        while (isActive) {
+            _notificationChl.receive().handle()
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Notifiable
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private var _notificationChl = InvalidatorChl<Notification<Port>>(this)
+    override val notificationChl: SendChannel<Notification<Port>> = _notificationChl
+
+    private lateinit var startProcessingNotifDispenser: FWDispenser<Port.StartProcessing>
+    private lateinit var setDemandNotifDispenser: FWDispenser<Port.SetDemand>
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Stateful
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private var _state = MutableStateFlow(Port.STABLE)
+    override val state: StateFlow<State<Port>> = _state
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Port Internal Implementation
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private val entries: MutableList<PortFlowEntry> = 0.rangeUntil(startingListSize).map {
+    private val entries: MutableList<PortFlowEntry> = 0.rangeUntil(initialCapacity).map {
         PortFlowEntry()
     }.toMutableList()
 
-    private val freeIdxs: IntArrayQueue = IntArrayQueue(initialCapacity = startingListSize).also { q ->
-        (0 until startingListSize).forEach { q.add(it) }
+    private val freeIdxs: IntArrayQueue = IntArrayQueue(initialCapacity = initialCapacity).also { q ->
+        (0 until initialCapacity).forEach { q.add(it) }
     }
 
-    private val toRmIdxs: IntArrayQueue = IntArrayQueue(initialCapacity = startingListSize).also { q ->
-        (0 until startingListSize).forEach { q.add(it) }
+    private val toRmIdxs: IntArrayQueue = IntArrayQueue(initialCapacity = initialCapacity).also { q ->
+        (0 until initialCapacity).forEach { q.add(it) }
     }
 
-    private val changedIdxs: IntArrayQueue = IntArrayQueue(initialCapacity = startingListSize).also { q ->
-        (0 until startingListSize).forEach { q.add(it) }
+//    private val toProcessIdxs: IntArrayQueue = IntArrayQueue(initialCapacity = initialCapacity).also { q ->
+//        (0 until initialCapacity).forEach { q.add(it) }
+//    }
+
+    private fun newEntry(): Idx =
+        freeIdxs.poll()
+            ?: grow1()
+
+    private fun grow1(): Idx {
+        entries.add(PortFlowEntry().also { it.used = true })
+        return entries.size - 1
     }
 
-    private fun newEntry(txDemand: DataRate): Idx {
-        val idx: Idx = freeIdxs.poll()
-            ?: let {
-                grow()
-                freeIdxs.poll()
-            }
-        entries[idx].also {
-            it.used = true
-            it.txDemand = txDemand
-        }
-        return idx
-    }
-
-    private fun grow() {
-        entries.addAll((0 until entries.size).map { PortFlowEntry() })
-    }
-
-    private fun rmEntry(idx: Idx): Idx {
+    private fun rmEntry(idx: Idx) {
         toRmIdxs.add(idx)
-        return -1
     }
 
-    private data class PortFlowEntry(
-        var used: Boolean = false,
-        var flowId: FlowId2 = FlowId2.INVALID,
-        var txDemand: DataRate = DataRate.zero,
-        var txThroughput: DataRate = DataRate.zero
-    )
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PortVersion
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    companion object {
-        context(NetSimScope, Node)
-        suspend operator fun invoke() =
+    companion object : PortVersion {
+
+        context(NetSimScope)
+        override suspend operator fun invoke() =
             PortV1(
-                pool = deltaFlowPool,
-                poolIdx = deltaFlowPool.getIdx(),
-                startingListSize = devConfig.startingListsSize,
-            )
+                initialCapacity = devConfig.portConfig.initialCapacity,
+                stabilizer = barrier.stabilizer()
+            ).also {
+                it.startProcessingNotifDispenser = dispenser(Port.StartProcessing)
+                it.setDemandNotifDispenser = dispenser(Port.SetDemand)
+            }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Notifications
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        private val PROCESS: org.opendc.simulator.network.utils.notifiable.Notification<PortV1> =
-            org.opendc.simulator.network.utils.notifiable.Notification {
-                _state.emit(Port.PROCESSING)
-                TODO()
-            }
+        context(NetSimScope) override suspend fun dispenser(id: FlyWeightId<Port.StartProcessing>): FWDispenser<Port.StartProcessing> =
+            poolAggr.getCreatePool(id) { pool, idx ->
+                val stab = barrier.stabilizer()
+                object : Port.StartProcessing, IFW<Port.StartProcessing>, Invalidatable {
+                    override val pool: FWPool<Port.StartProcessing, FlyWeightId<Port.StartProcessing>> = pool
+                    override val poolIdx: Idx = idx
+                    override val stabilizer: NetSimStabilizer = stab
+
+                    context(Port) override suspend fun handle() {
+                        val p = this@Port as PortV1
+                        TODO()
+                    }
+                }
+            }.dispenser()
+
+        context(NetSimScope) override suspend fun dispenser(id: FlyWeightId<Port.SetDemand>): FWDispenser<Port.SetDemand> =
+            poolAggr.getCreatePool(id) { pool, idx ->
+                val stab = barrier.stabilizer()
+                object : Port.SetDemand, IFW<Port.SetDemand>, Invalidatable {
+                    override val pool: FWPool<Port.SetDemand, FlyWeightId<Port.SetDemand>> = pool
+                    override val poolIdx: Idx = idx
+                    override val stabilizer: NetSimStabilizer = stab
+                    override var newDemand: DataRate = DataRate.zero
+                    override var entryId: IntId = -1
+
+                    context(Port) override suspend fun handle() {
+                        val p = this@Port as PortV1
+                        if (newDemand.isZero()) return p.rmEntry(entryId)
+                        val entry = p.entries[entryId]
+                        val oldDemand = entry.txDemand
+                        entry.txDemand = newDemand
+                        if (newDemand < oldDemand && txTh) {
+                            p.txLink!!.releaseBw(oldDemand - newDemand)
+                            entry.txThroughput = newDemand min
+                        }
+                        else p.toProcessIdxs.add(entryId)
+                        dispose()
+                    }
+                }
+            }.dispenser()
     }
 }
 

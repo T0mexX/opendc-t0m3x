@@ -1,14 +1,16 @@
-package org.opendc.simulator.network.utils.flyweight
+package org.opendc.simulator.network.utils.flyweight.internals
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.simulator.network.utils.Idx
+import org.opendc.simulator.network.utils.flyweight.publics.FlyWeight
+import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
 
 
-internal class FlyWeightPool<T: FlyWeight<T>>(
+internal class FWPool<T: FlyWeight<T>, O: FlyWeightId<T>>(
     private val nSubPools: Int = 10,
-    private val objConstructor: suspend (Idx) -> T
+    private val objConstructor: suspend (FWPool<T, O>, Idx) -> T
 ) {
     private var nextIdx: Int = 0
     private val nextIdxMtx = Mutex()
@@ -18,18 +20,18 @@ internal class FlyWeightPool<T: FlyWeight<T>>(
         nextIdx++ % nSubPools
     }
 
-    suspend fun dispenser(): FlyWeightDispenser<T> {
+    suspend fun dispenser(): FWDispenser<T> {
         val idx = nextIdx()
-        return FlyWeightDispenser {
+        return FWDispenser {
             subPools[idx]
                 .tryReceive()
                 .getOrNull()
-                ?: objConstructor(idx)
+                ?: objConstructor(this, idx)
         }
     }
 
     suspend fun dispose(obj: T) {
-        subPools[(obj as IFlyWait<*>).poolIdx].send(obj)
+        subPools[(obj as IFW<*>).poolIdx].send(obj)
     }
 }
 

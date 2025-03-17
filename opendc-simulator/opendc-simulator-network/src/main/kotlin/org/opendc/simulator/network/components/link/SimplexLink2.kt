@@ -5,11 +5,12 @@ import kotlinx.coroutines.sync.withLock
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.sync.invalidatable.Invalidatable
+import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
 
 internal class SimplexLink2 private constructor(
     to: Invalidatable,
     override val maxBw: DataRate,
-): org.opendc.simulator.network.utils.invalidatable.InvalidatorChl<DeltaFlow>(receiver = to), SendLink2, ReceiveLink2 {
+): InvalidatorChl<DeltaFlow>(receiver = to), SendLink2, ReceiveLink2 {
     private var usedBw: DataRate = DataRate.zero
     private val mtx = Mutex()
 

@@ -26,7 +26,7 @@ import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64
 import org.apache.parquet.schema.Types
-import org.opendc.simulator.network.api.NetFlow
+import org.opendc.simulator.network.flow.neww.publics.NetFlow
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot
 import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.components.Node

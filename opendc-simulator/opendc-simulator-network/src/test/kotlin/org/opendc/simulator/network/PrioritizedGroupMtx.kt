@@ -21,10 +21,10 @@ import kotlinx.coroutines.launch
 //                    }
 //                }
 //            }
-//            repeat(nNonDelayed) { idx ->
+//            repeat(nNonDelayed) { entryId ->
 //                launch {
 //                    groupMtx.withLockAs(groupId) {
-//                        arr[idx] = true
+//                        arr[entryId] = true
 //                    }
 //                }
 //            }

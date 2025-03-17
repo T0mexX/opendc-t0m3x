@@ -26,7 +26,7 @@ import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.FlowId
-import org.opendc.simulator.network.api.NetFlow
+import org.opendc.simulator.network.flow.neww.publics.NetFlow
 import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.flow.tracker.NodeFlowTracker

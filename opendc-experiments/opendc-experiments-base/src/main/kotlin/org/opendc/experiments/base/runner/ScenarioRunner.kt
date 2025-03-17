@@ -48,7 +48,7 @@ import java.util.concurrent.ForkJoinPool
 import java.util.stream.LongStream
 
 /**
- * Run scenario when a pool is available for parallel execution
+ * Run scenario when a poolAggr is available for parallel execution
  * The scenario is run multiple times based on the user input
  *
  * @param scenario The scenario to run

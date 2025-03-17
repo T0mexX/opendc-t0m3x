@@ -17,7 +17,7 @@ internal class NetSimScope(
     val config: NetSimConfig
     val barrier: NetSimBarrier
     val devConfig: NetSimDevConfig
-    val pool: NetSimPoolAggregator
+    val poolAggr: NetSimPoolAggregator
     val idDispenser: NetSimIdDispenser
 
     init {
@@ -36,7 +36,7 @@ internal class NetSimScope(
         config = ctx[NetSimConfig]!!
         barrier = ctx[NetSimBarrier]!!
         devConfig = config.netSimDevConfig
-        pool = ctx[NetSimPoolAggregator]!!
+        poolAggr = ctx[NetSimPoolAggregator]!!
         idDispenser = ctx[NetSimIdDispenser]!!
     }
 

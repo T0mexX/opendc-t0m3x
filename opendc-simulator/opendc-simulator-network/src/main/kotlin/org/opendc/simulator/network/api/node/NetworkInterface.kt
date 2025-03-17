@@ -27,7 +27,7 @@ import org.opendc.common.logger.errAndNull
 import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.FlowId
-import org.opendc.simulator.network.api.NetFlow
+import org.opendc.simulator.network.flow.neww.publics.NetFlow
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshotOf

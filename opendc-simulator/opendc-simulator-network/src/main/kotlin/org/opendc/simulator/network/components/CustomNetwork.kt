@@ -41,7 +41,7 @@ import kotlinx.serialization.json.JsonUnquotedLiteral
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.errAndNull
 import org.opendc.common.logger.logger
-import org.opendc.simulator.network.api.NetFlow
+import org.opendc.simulator.network.flow.neww.publics.NetFlow
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.utils.NonSerializable
 

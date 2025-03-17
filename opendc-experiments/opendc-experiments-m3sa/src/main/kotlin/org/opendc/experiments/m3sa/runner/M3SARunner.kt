@@ -28,7 +28,7 @@ import org.opendc.experiments.base.experiment.Scenario
 import org.opendc.experiments.base.runner.setupOutputFolderStructure
 
 /**
- * Run scenario when no pool is available for parallel execution
+ * Run scenario when no poolAggr is available for parallel execution
  *
  * @param experiment The scenarios to run
  * @param parallelism The number of scenarios that can be run in parallel

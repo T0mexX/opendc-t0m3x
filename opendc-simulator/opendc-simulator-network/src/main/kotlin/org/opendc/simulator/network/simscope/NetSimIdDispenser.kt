@@ -3,7 +3,7 @@ package org.opendc.simulator.network.simscope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.simulator.network.components.node.NodeId2
-import org.opendc.simulator.network.flow.FlowId2
+import org.opendc.simulator.network.flow.neww.publics.FlowId2
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 

@@ -48,6 +48,7 @@ import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.Specs
 import org.opendc.simulator.network.export.NetExportHandler
 import org.opendc.simulator.network.export.NetworkExportConfig
+import org.opendc.simulator.network.flow.neww.publics.NetFlow
 import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
 import org.opendc.simulator.network.utils.`observable-old`.SusChangeHndlr
 import org.slf4j.Logger

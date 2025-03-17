@@ -34,9 +34,9 @@ internal class IntArrayQueue(initialCapacity: Int) {
         size++
     }
 
-    fun poll(): Int {
+    fun poll(): Int? {
         if (isEmpty()) {
-            throw NoSuchElementException("Queue is empty")
+            return null
         }
         val value = array[front]
         front = (front + 1) % array.size
@@ -44,9 +44,9 @@ internal class IntArrayQueue(initialCapacity: Int) {
         return value
     }
 
-    fun peek(): Int {
+    fun peek(): Int? {
         if (isEmpty()) {
-            throw NoSuchElementException("Queue is empty")
+            return null
         }
         return array[front]
     }

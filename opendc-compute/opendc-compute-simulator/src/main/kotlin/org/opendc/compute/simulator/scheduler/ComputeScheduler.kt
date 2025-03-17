@@ -35,7 +35,7 @@ public interface ComputeScheduler {
     public fun addHost(host: HostView)
 
     /**
-     * Remove the specified [host] to be removed from the scheduling pool.
+     * Remove the specified [host] to be removed from the scheduling poolAggr.
      */
     public fun removeHost(host: HostView)
 

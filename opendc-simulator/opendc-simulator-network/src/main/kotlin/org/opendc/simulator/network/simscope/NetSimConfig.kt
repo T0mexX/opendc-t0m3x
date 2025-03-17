@@ -11,10 +11,10 @@ import kotlin.coroutines.CoroutineContext
  * Configuration of [NetSimScope].
  * It encapsulates simulation settings that can be managed externally.
  */
-public data class NetSimConfig(
+public data class NetSimConfig internal constructor(
     val stabilityMode: NetSimStabilityMode = NetSimStabilityMode.ASSUMED,
     val exportConfig: NetworkExportConfig? = null,
-    val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
+    internal val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
 ): AbstractCoroutineContextElement(Key) {
 
     public companion object Key : CoroutineContext.Key<NetSimConfig> {

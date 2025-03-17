@@ -26,7 +26,7 @@ import org.opendc.compute.simulator.service.HostView
 import org.opendc.compute.simulator.service.ServiceTask
 
 /**
- * An interface used by the [FilterScheduler] to weigh the pool of host for a scheduling request.
+ * An interface used by the [FilterScheduler] to weigh the poolAggr of host for a scheduling request.
  */
 public interface HostWeigher {
     /**

@@ -281,7 +281,7 @@ public final class ComputeService implements AutoCloseable {
     }
 
     /**
-     * Add a {@link SimHost} to the scheduling pool of the compute service.
+     * Add a {@link SimHost} to the scheduling poolAggr of the compute service.
      */
     public void addHost(SimHost host) {
         // Check if host is already known
@@ -323,7 +323,7 @@ public final class ComputeService implements AutoCloseable {
     }
 
     /**
-     * Remove a {@link SimHost} from the scheduling pool of the compute service.
+     * Remove a {@link SimHost} from the scheduling poolAggr of the compute service.
      */
     public void removeHost(SimHost host) {
         HostView view = hostToView.remove(host);

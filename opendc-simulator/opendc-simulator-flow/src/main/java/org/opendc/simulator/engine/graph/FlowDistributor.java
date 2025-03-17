@@ -194,7 +194,7 @@ public class FlowDistributor extends FlowNode implements FlowSupplier, FlowConsu
 
         this.totalIncomingDemand -= consumerEdge.getDemand();
 
-        // Remove idx from consumers that updated their demands
+        // Remove entryId from consumers that updated their demands
         this.updatedDemands.remove(idx);
 
         this.consumerEdges.remove(idx);

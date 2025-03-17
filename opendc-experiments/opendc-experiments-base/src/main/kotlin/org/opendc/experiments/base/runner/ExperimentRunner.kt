@@ -27,7 +27,7 @@ import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.experiments.base.experiment.Scenario
 
 /**
- * Run scenario when no pool is available for parallel execution
+ * Run scenario when no poolAggr is available for parallel execution
  *
  * @param experiment The scenarios to run
  */

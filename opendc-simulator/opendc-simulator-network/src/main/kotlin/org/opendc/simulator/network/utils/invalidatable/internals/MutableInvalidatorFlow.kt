@@ -1,4 +1,4 @@
-package org.opendc.simulator.network.utils.invalidatable
+package org.opendc.simulator.network.utils.invalidatable.internals
 
 internal class MutableInvalidatorFlow<T>: InvalidatorFlow<T>() {
     internal suspend fun emit(obj: T) {

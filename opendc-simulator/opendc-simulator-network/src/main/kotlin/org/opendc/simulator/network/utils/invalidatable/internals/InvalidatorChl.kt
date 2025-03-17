@@ -1,4 +1,4 @@
-package org.opendc.simulator.network.utils.invalidatable
+package org.opendc.simulator.network.utils.invalidatable.internals
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
@@ -29,6 +29,7 @@ internal open class InvalidatorChl<T> private constructor(
             pendingMtx.withLock {
                 pending--
             }
+            (res.getOrThrow() as? Invalidatable)?.validate()
         }
         return res
     }
@@ -45,7 +46,9 @@ internal open class InvalidatorChl<T> private constructor(
             if (--pending == 0) receiver.validate()
         }
 
-        return delegatedChl.receive()
+        return delegatedChl.receive().also {
+            if (it is Invalidatable) it.validate()
+        }
     }
 
     override suspend fun send(element: T) {
