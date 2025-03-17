@@ -53,7 +53,7 @@ classDiagram
 ```
 
 ### Flows
-Data transmission in the network is modeled as network flows [`NetFlows`](../../kotlin/org/opendc/simulator/network/api/NetFlow.kt). Each flow has a specified *demand*, a resulting *throughput* after routing through the network, and a total amount of *data transmitted* as the simulation progresses in virtual time. [`NetFlows`](../../kotlin/org/opendc/simulator/network/api/NetFlow.kt) are part of the module's [Api](#api) (check section for details).
+Data transmission in the network is modeled as network flows [`NetFlows`](../../kotlin/org/opendc/simulator/network/flow/NetFlow.kt). Each flow has a specified *demand*, a resulting *throughput* after routing through the network, and a total amount of *data transmitted* as the simulation progresses in virtual time. [`NetFlows`](../../kotlin/org/opendc/simulator/network/flow/NetFlow.kt) are part of the module's [Api](#api) (check section for details).
 
 ### Network Events
 Network workloads are represented as [`NetworkEvents`](../../kotlin/org/opendc/simulator/network/api/workload/NetworkEvent.kt), which can initiate, update the demand, or stop a network flow. Traces in the supported format (see [Trace Format](#trace-format)) are converted into a list of network events. Events with the same deadline are executed concurrently. Between different deadlines, the simulation pauses to ensure the network is stable (i.e., no updates need to be processed at any node), then advances virtual time and updates the tracked metrics.

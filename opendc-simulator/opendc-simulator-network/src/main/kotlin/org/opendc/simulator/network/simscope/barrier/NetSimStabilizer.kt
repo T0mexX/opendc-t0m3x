@@ -14,8 +14,7 @@ import kotlin.coroutines.CoroutineContext
  *
  * A [NetSimStabilizer] is bounded to the [NetSimBarrier] it was created for.
  */
-@InternalOdcNetworkApi
-public abstract class NetSimStabilizer internal constructor(
+internal abstract class NetSimStabilizer internal constructor(
 
 ): AbstractCoroutineContextElement(Key) {
     protected abstract val netSimConfig: NetSimConfig

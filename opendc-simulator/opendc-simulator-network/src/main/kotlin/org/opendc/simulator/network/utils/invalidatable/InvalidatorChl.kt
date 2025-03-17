@@ -10,7 +10,7 @@ internal open class InvalidatorChl<T> private constructor(
     private val receiver: Invalidatable
 ): Channel<T> by delegatedChl {
 
-    internal constructor(receiver: Invalidatable) :
+    constructor(receiver: Invalidatable) :
         this(delegatedChl = Channel<T>(Channel.UNLIMITED), receiver = receiver)
 
     /**

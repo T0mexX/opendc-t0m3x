@@ -18,7 +18,7 @@ internal class NetSimScope(
     val barrier: NetSimBarrier
     val devConfig: NetSimDevConfig
     val pool: NetSimPoolAggregator
-    val idDispenser: IdDispenser
+    val idDispenser: NetSimIdDispenser
 
     init {
         var ctx = coroutineContext
@@ -31,14 +31,13 @@ internal class NetSimScope(
             ctx[NetSimPoolAggregator] ?: let {
                 ctx += NetSimPoolAggregator(ctx[NetSimConfig]!!.netSimDevConfig.nSubPools)
             }
-            ctx[idDispenser] ?: let {
-                ctx += NetSimPoolAggregator(ctx[NetSimConfig]!!.netSimDevConfig.nSubPools)
-            }
+            ctx[NetSimIdDispenser] ?: let { ctx += NetSimIdDispenser() }
         }
         config = ctx[NetSimConfig]!!
         barrier = ctx[NetSimBarrier]!!
         devConfig = config.netSimDevConfig
         pool = ctx[NetSimPoolAggregator]!!
+        idDispenser = ctx[NetSimIdDispenser]!!
     }
 
 
