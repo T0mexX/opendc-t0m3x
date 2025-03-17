@@ -27,10 +27,10 @@ import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.TimeDelta
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
-import org.opendc.simulator.network.utils.observable.ChangeHndlr
-import org.opendc.simulator.network.utils.observable.DelegatedObservable
-import org.opendc.simulator.network.utils.observable.Observable
-import org.opendc.simulator.network.utils.observable.elements.ObservableProperty
+import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
+import org.opendc.simulator.network.utils.`observable-old`.DelegatedObservable
+import org.opendc.simulator.network.utils.`observable-old`.Observable
+import org.opendc.simulator.network.utils.`observable-old`.elements.ObservableProperty
 import kotlin.coroutines.coroutineContext
 import kotlin.properties.Delegates
 

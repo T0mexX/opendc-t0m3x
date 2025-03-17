@@ -28,7 +28,7 @@ import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
-import org.opendc.simulator.network.components.internalstructs.port.Port
+import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
 import org.opendc.simulator.network.components.stability.NetworkStabilityBarrier
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.flow.RateUpdt
@@ -53,7 +53,7 @@ internal interface Node : FlowView, WithSpecs<Node> {
     /**
      * Ports of ***this*** [Node], full duplex.
      */
-    val ports: List<Port>
+    val ports: List<`Port.bk`>
 
     /**
      * Number of ports of ***this*** [Node].

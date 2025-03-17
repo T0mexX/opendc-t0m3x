@@ -29,7 +29,6 @@ import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.UpdateChl
-import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.components.internalstructs.port.PortImpl
 import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.energy.EnMonitor

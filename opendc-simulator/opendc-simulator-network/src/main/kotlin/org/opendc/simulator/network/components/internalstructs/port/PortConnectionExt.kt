@@ -30,14 +30,14 @@ import org.opendc.simulator.network.flow.RateUpdt.Companion.toRateUpdt
 
 private val log by Unit.logger("PortConnectionExt")
 
-internal suspend fun Port.connect(
-    other: Port,
+internal suspend fun `Port.bk`.connect(
+    other: `Port.bk`,
     duplex: Boolean = true,
     linkBW: DataRate? = null,
 ) = this.connect(other = other, duplex = duplex, linkBW = linkBW, notifyOther = true)
 
-private suspend fun Port.connect(
-    other: Port,
+private suspend fun `Port.bk`.connect(
+    other: `Port.bk`,
     duplex: Boolean,
     linkBW: DataRate?,
     notifyOther: Boolean,
@@ -62,7 +62,7 @@ private suspend fun Port.connect(
     }
 }
 
-internal suspend fun Port.disconnect() {
+internal suspend fun `Port.bk`.disconnect() {
     if (this.isConnected.not()) return log.warn("unable to disconnect port $this, port not connected")
 
     val update: RateUpdt? = receiveLink?.incomingRateById?.mapValues { (_, rate) -> -rate }?.toRateUpdt()

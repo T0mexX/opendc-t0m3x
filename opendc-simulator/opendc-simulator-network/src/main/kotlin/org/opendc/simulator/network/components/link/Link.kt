@@ -24,7 +24,7 @@ package org.opendc.simulator.network.components.link
 
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
-import org.opendc.simulator.network.components.internalstructs.port.Port
+import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
 
 internal interface Link {
     val linkBW: DataRate

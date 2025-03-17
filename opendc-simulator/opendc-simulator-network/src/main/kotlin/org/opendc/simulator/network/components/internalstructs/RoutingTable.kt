@@ -24,7 +24,7 @@ package org.opendc.simulator.network.components.internalstructs
 
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.components.internalstructs.port.Port
+import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
 import org.opendc.simulator.network.utils.RWLock
 
 /**
@@ -38,7 +38,7 @@ internal class RoutingTable(private val ownerId: NodeId) {
 //     * Maps the destination id to the cost (numOfHops) to that destination.
 //     * It is used to share routing information to other [Node]s
 //     */
-//    val vector: Map<NodeId, Int>
+//    val vector: Map<NodeId2, Int>
 //        get() {
 //            rwLock.withRLock {
 //                return table.map {

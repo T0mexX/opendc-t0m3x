@@ -3,13 +3,11 @@ package org.opendc.simulator.network.tobedel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.simscope.rateupdtpool.FlowRateChangePool
+import org.opendc.simulator.network.simscope.pool.DeltaFlowPool
 
 internal suspend fun main() {
 //    BO.bo()
@@ -46,7 +44,7 @@ private object BO {
     }
 
     suspend fun booo() {
-        val pool = FlowRateChangePool(10)
+        val pool = DeltaFlowPool(10)
         val idx = pool.getIdx()
         pool.acquire(idx)
         pool.acquire(idx)

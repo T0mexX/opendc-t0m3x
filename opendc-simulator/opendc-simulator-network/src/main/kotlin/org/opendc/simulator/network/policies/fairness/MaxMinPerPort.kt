@@ -25,7 +25,7 @@ package org.opendc.simulator.network.policies.fairness
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.internalstructs.port.Port
+import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
 import org.opendc.simulator.network.flow.FlowHandler
 import org.opendc.simulator.network.flow.OutFlow
 import org.opendc.simulator.network.flow.RateUpdt

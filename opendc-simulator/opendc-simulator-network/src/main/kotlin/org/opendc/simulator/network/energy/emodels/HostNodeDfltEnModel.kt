@@ -27,7 +27,7 @@ import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.components.HostNode
 import org.opendc.simulator.network.components.Switch
-import org.opendc.simulator.network.components.internalstructs.port.Port
+import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
 import org.opendc.simulator.network.energy.EnModel
 import kotlin.math.pow
 

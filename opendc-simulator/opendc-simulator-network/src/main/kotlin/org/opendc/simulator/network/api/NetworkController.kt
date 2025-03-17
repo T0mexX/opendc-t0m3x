@@ -48,8 +48,8 @@ import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.Specs
 import org.opendc.simulator.network.export.NetExportHandler
 import org.opendc.simulator.network.export.NetworkExportConfig
-import org.opendc.simulator.network.utils.observable.ChangeHndlr
-import org.opendc.simulator.network.utils.observable.SusChangeHndlr
+import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
+import org.opendc.simulator.network.utils.`observable-old`.SusChangeHndlr
 import org.slf4j.Logger
 import java.io.File
 import java.time.Instant

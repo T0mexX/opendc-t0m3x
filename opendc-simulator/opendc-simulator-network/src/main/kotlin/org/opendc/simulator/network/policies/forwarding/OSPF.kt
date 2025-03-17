@@ -28,7 +28,6 @@ import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.components.internalstructs.port.Port
 
 // TODO: documentation
 @Serializable

@@ -29,7 +29,6 @@ import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.api.NetFlow
 import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.components.internalstructs.port.Port
 import org.opendc.simulator.network.flow.tracker.NodeFlowTracker
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.PortSelectionPolicy
@@ -44,7 +43,7 @@ import org.opendc.simulator.network.policies.forwarding.PortSelectionPolicy
  * @param[ports]    ports of the node this handler belongs to.
  * Only used to provide the [availableBW].
  */
-internal class FlowHandler(internal val ports: Collection<Port>) {
+internal class FlowHandler(internal val ports: Collection<`Port.bk`>) {
     /**
      * The current total available bandwidth on the switch,
      * as the sum of the available bw of the connected active ports.

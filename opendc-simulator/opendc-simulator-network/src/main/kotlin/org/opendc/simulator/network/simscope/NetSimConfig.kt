@@ -14,7 +14,7 @@ import kotlin.coroutines.CoroutineContext
 public data class NetSimConfig(
     val stabilityMode: NetSimStabilityMode = NetSimStabilityMode.ASSUMED,
     val exportConfig: NetworkExportConfig? = null,
-    val netSimDeveloperConfig: NetSimDeveloperConfig = NetSimDeveloperConfig(),
+    val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
 ): AbstractCoroutineContextElement(Key) {
 
     public companion object Key : CoroutineContext.Key<NetSimConfig> {

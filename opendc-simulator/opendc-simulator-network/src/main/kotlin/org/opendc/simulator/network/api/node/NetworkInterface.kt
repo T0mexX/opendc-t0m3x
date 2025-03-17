@@ -35,8 +35,8 @@ import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.Internet
 import org.opendc.simulator.network.components.Network.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.utils.observable.ChangeHndlr
-import org.opendc.simulator.network.utils.observable.SusChangeHndlr
+import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
+import org.opendc.simulator.network.utils.`observable-old`.SusChangeHndlr
 
 /**
  * Type alias for improved understandability.

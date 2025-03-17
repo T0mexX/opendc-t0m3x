@@ -23,9 +23,8 @@
 package org.opendc.simulator.network.api.integration
 
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.runBlocking
-import org.opendc.simulator.network.utils.observable.LazyChangeHndlr
-import org.opendc.simulator.network.utils.observable.handlers.LazyEventHndlr
+import org.opendc.simulator.network.utils.`observable-old`.LazyChangeHndlr
+import org.opendc.simulator.network.utils.`observable-old`.handlers.LazyEventHndlr
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 

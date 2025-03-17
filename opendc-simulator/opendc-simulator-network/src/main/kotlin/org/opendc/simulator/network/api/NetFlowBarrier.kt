@@ -30,14 +30,13 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.DataSize
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.TimeDelta
-import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.integration.SeqComputeIntegration.Mode
-import org.opendc.simulator.network.utils.observable.SusChangeHndlr
-import org.opendc.simulator.network.utils.observable.DelegatedObservable
-import org.opendc.simulator.network.utils.observable.Observable
-import org.opendc.simulator.network.utils.observable.elements.ObservableEvent
-import org.opendc.simulator.network.utils.observable.elements.ObservableProperty
-import org.opendc.simulator.network.utils.observable.handlers.SusEventHndlr
+import org.opendc.simulator.network.utils.`observable-old`.SusChangeHndlr
+import org.opendc.simulator.network.utils.`observable-old`.DelegatedObservable
+import org.opendc.simulator.network.utils.`observable-old`.Observable
+import org.opendc.simulator.network.utils.`observable-old`.elements.ObservableEvent
+import org.opendc.simulator.network.utils.`observable-old`.elements.ObservableProperty
+import org.opendc.simulator.network.utils.`observable-old`.handlers.SusEventHndlr
 
 /**
  * Offers a way to observe multiple flows at the same time through the same interface,

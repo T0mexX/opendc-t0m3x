@@ -1,8 +1,10 @@
 package org.opendc.simulator.network.simscope.barrier
 
+import org.opendc.common.annotations.InternalUse
 import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.simscope.NetSimConfig
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.InternalOdcNetworkApi
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -12,7 +14,10 @@ import kotlin.coroutines.CoroutineContext
  *
  * A [NetSimStabilizer] is bounded to the [NetSimBarrier] it was created for.
  */
-internal abstract class NetSimStabilizer : AbstractCoroutineContextElement(Key) {
+@InternalOdcNetworkApi
+public abstract class NetSimStabilizer internal constructor(
+
+): AbstractCoroutineContextElement(Key) {
     protected abstract val netSimConfig: NetSimConfig
     internal abstract val isValidated: Boolean
 
@@ -25,7 +30,7 @@ internal abstract class NetSimStabilizer : AbstractCoroutineContextElement(Key) 
      * - Invalidation is **cumulative**,
      * meaning multiple calls to [invalidate] require the same number of [validate] calls to restore stability.
      */
-    abstract suspend fun invalidate()
+    internal abstract suspend fun invalidate()
 
     /**
      * Manages the validation state of the component.
@@ -36,7 +41,7 @@ internal abstract class NetSimStabilizer : AbstractCoroutineContextElement(Key) 
      * - Invalidation is **cumulative**,
      * meaning multiple calls to [invalidate] require the same number of [validate] calls to restore stability.
      */
-    abstract suspend fun validate()
+    internal abstract suspend fun validate()
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,7 +80,7 @@ internal abstract class NetSimStabilizer : AbstractCoroutineContextElement(Key) 
      *
      * @param block To be executed while `this` [NetSimStabilizer] is invalidated.
      */
-    suspend fun <T> whileInvalidated(block: suspend () -> T): T {
+    internal suspend fun <T> whileInvalidated(block: suspend () -> T): T {
         invalidate()
 
         return try {
@@ -93,12 +98,12 @@ internal abstract class NetSimStabilizer : AbstractCoroutineContextElement(Key) 
     /**
      * @see NetSimBarrier.whileStable
      */
-    abstract suspend fun <T> whileNetStable(
+    internal abstract suspend fun <T> whileNetStable(
         netSimStabilityMode: NetSimStabilityMode = netSimConfig.stabilityMode,
         block: suspend () -> T,
     ): T
 
-    abstract suspend fun awaitStability()
+    internal abstract suspend fun awaitStability()
 
-    companion object Key : CoroutineContext.Key<NetSimStabilizer>
+    internal companion object Key : CoroutineContext.Key<NetSimStabilizer>
 }

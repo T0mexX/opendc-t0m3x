@@ -98,7 +98,7 @@ internal class CustomNetwork(
                 id2: NodeId,
             ) {
                 log.warn(
-                    "SimplexLink from (NodeId=$id1) <-> (NodeId=$id2) could not be established, " +
+                    "SimplexLink from (NodeId2=$id1) <-> (NodeId2=$id2) could not be established, " +
                         "one of the nodesById does not exist or it's connecting to itself.",
                 )
             }
@@ -221,7 +221,7 @@ internal class CustomNetwork(
 
     /**
      * Deserializer of a JSON array of array (**size 2**) of ints `[[1, 2], [2, 3]]`,
-     * into a link list (`List<Pair<NodeID, NodeId>>`).
+     * into a link list (`List<Pair<NodeID, NodeId2>>`).
      * - Filters out arrays (links) with size not equal to 2.
      * - Filters out links that try to connect a node to itself.
      */

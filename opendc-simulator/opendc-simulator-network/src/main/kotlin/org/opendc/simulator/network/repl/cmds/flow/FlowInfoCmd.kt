@@ -47,7 +47,7 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
             net.awaitStability()
 
             nodeId?.let {
-                // NodeId specified.
+                // NodeId2 specified.
                 val node: Node? = net.nodesById[it]
                 checkNotNull(node)
                 echo(node.fmtFlows())

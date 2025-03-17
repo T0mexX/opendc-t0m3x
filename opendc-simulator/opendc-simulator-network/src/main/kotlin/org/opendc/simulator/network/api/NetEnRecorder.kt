@@ -32,10 +32,9 @@ import org.opendc.simulator.network.components.Network
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
 import org.opendc.simulator.network.energy.EnMonitor
 import org.opendc.simulator.network.energy.EnergyConsumer
-import org.opendc.simulator.network.utils.observable.ChangeHndlr
+import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
-import org.opendc.simulator.network.utils.observable.Observable
 import kotlin.coroutines.coroutineContext
 
 /**

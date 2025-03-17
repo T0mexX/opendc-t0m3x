@@ -47,7 +47,7 @@ import kotlin.math.min
 internal class PortImpl(
     override val maxSpeed: DataRate,
     override val owner: Node,
-) : Port {
+) : `Port.bk` {
     /**
      * Sender interface of a link.
      */
@@ -135,7 +135,7 @@ internal class PortImpl(
     /**
      * The port at the other end of the link if this port is connected, null otherwise.
      */
-    override val otherEndPort: Port?
+    override val otherEndPort: `Port.bk`?
         get() = sendLink?.oppositeOf(this) ?: receiveLink?.oppositeOf(this)
 
     /**
