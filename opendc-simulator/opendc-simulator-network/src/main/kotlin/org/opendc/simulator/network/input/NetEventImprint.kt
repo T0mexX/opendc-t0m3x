@@ -28,7 +28,7 @@ import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.FlowId
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.workload.SimNetWorkload
-import org.opendc.simulator.network.components.Network.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.INTERNET_ID
 import kotlin.properties.Delegates
 
 /**

@@ -24,45 +24,52 @@ package org.opendc.simulator.network.components.internalstructs.port
 
 import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
+import org.opendc.simulator.network.components.link.LinkFlowUpdate
 import org.opendc.simulator.network.components.link.SimplexLink
-import org.opendc.simulator.network.flow.RateUpdt
-import org.opendc.simulator.network.flow.RateUpdt.Companion.toRateUpdt
+import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flowOld.RateUpdt
+import org.opendc.simulator.network.flowOld.RateUpdt.Companion.toRateUpdt
+import org.opendc.simulator.network.simscope.NetSimScope
 
 private val log by Unit.logger("PortConnectionExt")
 
-internal suspend fun `Port.bk`.connect(
-    other: `Port.bk`,
-    duplex: Boolean = true,
-    linkBW: DataRate? = null,
-) = this.connect(other = other, duplex = duplex, linkBW = linkBW, notifyOther = true)
+//internal suspend fun Port.connect(
+//    other: Port,
+//    linkBW: DataRate? = null,
+//) = this.connect(other = other, linkBW = linkBW, notifyOther = true)
 
-private suspend fun `Port.bk`.connect(
-    other: `Port.bk`,
-    duplex: Boolean,
-    linkBW: DataRate?,
-    notifyOther: Boolean,
-) {
-    require(this.sendLink == null) { "unable to connect ports $this and $other. $this is already connected" }
+//context(NetSimScope)
+//private suspend fun Port.connect(
+//    other: Port,
+//    linkBW: DataRate?,
+//    notifyOther: Boolean,
+//) {
+//    require(this.txLink == null) { "unable to connect ports $this and $other. $this is already connected" }
+//
+//    val computedLinkBW: DataRate = linkBW ?: (this.speed min other.speed)
+//
+//    val thisToOther = SimplexLink(other.owner.notificationChl, maxBw = computedLinkBW)
+//    this.txLink = thisToOther
+//    other.rxLink = thisToOther
+//
+//    val notif = poolAggr.getOrAdd(Port.Connect) {
+//        TODO()
+//    }.dispenser().acquire()
+//    notif.other = this
+//
+////    if (duplex && notifyOther) {
+//    runCatching { other.connect(other = this, duplex = true, linkBW = computedLinkBW, notifyOther = false) }
+//        .also {
+//            if (it.isFailure) {
+//                // disconnects the established 1 way link before rethrowing exception
+//                this.disconnect()
+//                throw it.exceptionOrNull()!!
+//            }
+//        }
+//    }
+//}
 
-    val computedLinkBW: DataRate = linkBW ?: (this.maxSpeed min other.maxSpeed)
-
-    val thisToOther = SimplexLink(senderP = this, receiverP = other, linkBW = computedLinkBW)
-    this.sendLink = thisToOther
-    other.receiveLink = thisToOther
-
-    if (duplex && notifyOther) {
-        runCatching { other.connect(other = this, duplex = true, linkBW = computedLinkBW, notifyOther = false) }
-            .also {
-                if (it.isFailure) {
-                    // disconnects the established 1 way link before rethrowing exception
-                    this.disconnect()
-                    throw it.exceptionOrNull()!!
-                }
-            }
-    }
-}
-
-internal suspend fun `Port.bk`.disconnect() {
+internal suspend fun Port.disconnect() {
     if (this.isConnected.not()) return log.warn("unable to disconnect port $this, port not connected")
 
     val update: RateUpdt? = receiveLink?.incomingRateById?.mapValues { (_, rate) -> -rate }?.toRateUpdt()

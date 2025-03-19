@@ -6,7 +6,7 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.opendc.simulator.network.components.Network
+import org.opendc.simulator.network.components.networks.`Network.bak`
 import org.opendc.simulator.network.simscope.NetSimConfig
 import org.opendc.simulator.network.simscope.NetSimScope
 

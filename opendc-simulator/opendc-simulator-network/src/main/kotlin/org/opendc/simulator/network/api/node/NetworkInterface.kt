@@ -27,13 +27,13 @@ import org.opendc.common.logger.errAndNull
 import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.FlowId
-import org.opendc.simulator.network.flow.neww.publics.NetFlow
+import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshotOf
 import org.opendc.simulator.network.components.EndPointNode
 import org.opendc.simulator.network.components.Internet
-import org.opendc.simulator.network.components.Network.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
 import org.opendc.simulator.network.utils.`observable-old`.SusChangeHndlr
@@ -41,7 +41,7 @@ import org.opendc.simulator.network.utils.`observable-old`.SusChangeHndlr
 /**
  * Type alias for improved understandability.
  */
-public typealias NodeId = Long
+//public typealias NodeId = Long
 
 /**
  * Interface through which control networking of a single node.

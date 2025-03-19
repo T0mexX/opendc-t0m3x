@@ -25,8 +25,8 @@ package org.opendc.simulator.network.policies.fairness
 import kotlinx.serialization.Serializable
 import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.flow.FlowHandler
-import org.opendc.simulator.network.flow.RateUpdt
+import org.opendc.simulator.network.flowOld.FlowHandler
+import org.opendc.simulator.network.flowOld.RateUpdt
 
 @Serializable
 internal sealed interface FairnessPolicy {

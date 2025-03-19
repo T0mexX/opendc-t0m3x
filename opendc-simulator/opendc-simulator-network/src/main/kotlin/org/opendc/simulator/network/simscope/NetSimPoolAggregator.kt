@@ -14,7 +14,7 @@ internal class NetSimPoolAggregator(
     private val poolsById = mutableMapOf<FlyWeightId<*>, FWPool<*, *>>()
 
     @Suppress("UNCHECKED_CAST")
-    fun <T: FlyWeight<T>, O: FlyWeightId<T>> getCreatePool(
+    fun <T: FlyWeight<T>, O: FlyWeightId<T>> getOrAdd(
         id: O,
         objConstructor: suspend (FWPool<T, O>, Idx) -> T
     ): FWPool<T, O> =
@@ -33,7 +33,7 @@ internal class NetSimPoolAggregator(
         context(NetSimScope)
         operator fun invoke(): NetSimPoolAggregator =
             NetSimPoolAggregator(
-                nSubPools = devConfig.nSubPools
+                nSubPools = devConfig.flyWeightConfig.nSubPools
             )
     }
 }

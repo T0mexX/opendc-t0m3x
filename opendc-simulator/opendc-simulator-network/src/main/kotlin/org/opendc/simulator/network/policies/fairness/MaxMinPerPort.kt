@@ -25,11 +25,10 @@ package org.opendc.simulator.network.policies.fairness
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
-import org.opendc.simulator.network.flow.FlowHandler
-import org.opendc.simulator.network.flow.OutFlow
-import org.opendc.simulator.network.flow.RateUpdt
-import org.opendc.simulator.network.flow.tracker.AllByDemand
+import org.opendc.simulator.network.flowOld.FlowHandler
+import org.opendc.simulator.network.flowOld.OutFlow
+import org.opendc.simulator.network.flowOld.RateUpdt
+import org.opendc.simulator.network.flowOld.tracker.AllByDemand
 import org.opendc.simulator.network.utils.ifNull0
 import org.opendc.simulator.network.utils.isSorted
 

@@ -26,7 +26,7 @@ import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.Network
+import org.opendc.simulator.network.components.networks.`Network.bak`
 import org.opendc.simulator.network.utils.CoroutineWorkChannel
 import java.time.Duration
 import java.time.Instant

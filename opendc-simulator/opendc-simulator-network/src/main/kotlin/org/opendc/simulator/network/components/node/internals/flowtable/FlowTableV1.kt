@@ -1,0 +1,53 @@
+package org.opendc.simulator.network.components.node.internals.flowtable
+
+import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flow.publics.NetFlow
+import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
+import org.opendc.simulator.network.utils.tracker.Tracker
+
+internal class FlowTableV1 private constructor(
+    val tracker: Tracker<NodeFlowEntry>,
+    private val nodeFlowEntryDispenser: FWDispenser<NodeFlowEntry>,
+): FlowTable, Tracker<NodeFlowEntry> by tracker {
+
+    private val _flows = mutableMapOf<NetFlow, NodeFlowEntry>()
+
+    context(Node)
+    override suspend fun sendToPorts(updt: Node.RxUpdate) {
+        val entry = _flows.getOrPut(updt.netFlow) {
+            newEntry(updt)
+        }
+        entry.rx = updt.deltaRate
+        entry.node = this@Node
+        val perPort = entry.rx / entry.txPorts.size
+        entry.txPorts.forEach {
+            entry.portFlowEntryIds[it.portIdx] =
+                it.setTxDemand(perPort, entry.netFlow)
+        }
+        updt.dispose()
+    }
+
+    context(Node)
+    private suspend fun newEntry(updt: Node.RxUpdate): NodeFlowEntry {
+        val entry = nodeFlowEntryDispenser.acquire()
+        entry.tracker = this
+        entry.resizeIfNeeded()
+        entry.node = this@Node
+        entry.netFlow = updt.netFlow
+        TODO("Apply routing pol")
+        return entry
+    }
+
+    companion object: FlowTableVersion {
+
+        context(NetSimScope, Node)
+        override suspend fun invoke(): FlowTable = FlowTableV1(
+            nodeFlowEntryDispenser = NodeFlowEntry.dispenser(),
+            tracker = Tracker {
+                (this@Node.flowTable as FlowTableV1)._flows.values
+            },
+        )
+    }
+}

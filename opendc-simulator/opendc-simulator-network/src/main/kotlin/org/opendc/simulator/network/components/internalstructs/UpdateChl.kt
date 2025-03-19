@@ -28,8 +28,8 @@ import kotlinx.coroutines.channels.ChannelResult
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.common.logger.logger
-import org.opendc.simulator.network.components.stability.NetworkStabilityBarrier.Invalidator
-import org.opendc.simulator.network.flow.RateUpdt
+import org.opendc.simulator.network.components.stability.`NetworkStabilityBarrier.bak`.Invalidator
+import org.opendc.simulator.network.flowOld.RateUpdt
 
 /**
  * Channel that collects all incoming [RateUpdt]s that

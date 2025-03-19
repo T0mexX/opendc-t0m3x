@@ -30,7 +30,7 @@ import org.opendc.simulator.network.api.snapshots.NetworkSnapshot
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snapshot
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
-import org.opendc.simulator.network.components.Network.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.INTERNET_ID
 import org.opendc.trace.util.parquet.exporter.Exporter
 import java.io.File
 

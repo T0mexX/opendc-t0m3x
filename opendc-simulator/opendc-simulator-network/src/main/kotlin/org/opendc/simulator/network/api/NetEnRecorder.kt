@@ -28,7 +28,7 @@ import org.opendc.common.units.Power
 import org.opendc.common.units.TimeDelta
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.CustomNetwork
-import org.opendc.simulator.network.components.Network
+import org.opendc.simulator.network.components.networks.`Network.bak`
 import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
 import org.opendc.simulator.network.energy.EnMonitor
 import org.opendc.simulator.network.energy.EnergyConsumer

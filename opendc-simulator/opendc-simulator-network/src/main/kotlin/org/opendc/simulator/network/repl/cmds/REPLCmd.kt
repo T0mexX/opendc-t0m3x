@@ -27,7 +27,7 @@ import com.github.ajalt.clikt.core.requireObject
 import kotlinx.serialization.json.Json
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.components.Network
+import org.opendc.simulator.network.components.networks.`Network.bak`
 import org.opendc.simulator.network.repl.REPLEnv
 import org.opendc.simulator.network.repl.REPLTmSrc
 

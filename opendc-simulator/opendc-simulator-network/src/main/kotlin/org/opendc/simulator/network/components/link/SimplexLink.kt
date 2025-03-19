@@ -1,131 +1,40 @@
-/*
- * Copyright (c) 2024 AtLarge Research
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package org.opendc.simulator.network.components.link
 
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
-import org.opendc.simulator.network.api.FlowId
-import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
-import org.opendc.simulator.network.flow.RateUpdt.Companion.toRateUpdt
-import org.opendc.simulator.network.utils.ifNull0
+import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
+import org.opendc.simulator.network.utils.notifiable.publics.Notification
 
 internal class SimplexLink(
-    private val senderP: Port,
-    private val receiverP: Port,
-    override val linkBW: DataRate = senderP.maxSpeed min receiverP.maxSpeed,
-) : SendLink, ReceiveLink {
-    override var usedBW: DataRate = DataRate.zero
-        private set
+    override val receiverPort: Port,
+    override val maxBw: DataRate,
+): SendLink, ReceiveLink, SendChannel<Notification<Node>> by receiverPort.owner.notificationChl {
+    private var usedBw: DataRate = DataRate.zero
+    private val mtx = Mutex()
 
-    override val util: Percentage
-        get() =
-            (usedBW / maxPort2PortBW).let {
-                check(it in Percentage.zero..Percentage.ofRatio(1.0))
-                it
-            }
-
-    override var maxPort2PortBW: DataRate = minOf(linkBW, senderP.currSpeed, receiverP.currSpeed)
-        private set
-
-    private val rateById = mutableMapOf<FlowId, DataRate>()
-    override val incomingRateById: Map<FlowId, DataRate> get() = rateById
-    override val outgoingRatesById: Map<FlowId, DataRate> get() = rateById
-
-    private val currLinkUpdate = mutableMapOf<FlowId, DataRate>()
-
-    override fun notifyPortSpeedChange() {
-        maxPort2PortBW = minOf(senderP.currSpeed, receiverP.currSpeed, linkBW)
-        TODO()
+    override suspend fun getUtil(): Percentage = mtx.withLock {
+        usedBw / maxBw
     }
 
-    override fun Port.updtFlowRate(
-        fId: FlowId,
-        rqstRate: DataRate,
-    ): DataRate =
-        rateById.compute(fId) { _, oldRate ->
-            if (this !== senderP) throw RuntimeException()
-
-            val wouldBeDeltaBW: DataRate = rqstRate - (oldRate.ifNull0())
-            val wouldBeUsedBW = usedBW + wouldBeDeltaBW
-
-            // handles case max bandwidth is reached,
-            // reducing the bandwidth increase to the maximum available
-            val newRate: DataRate =
-                if (wouldBeUsedBW > maxPort2PortBW) {
-                    (rqstRate - (wouldBeUsedBW - maxPort2PortBW)).roundToIfWithinEpsilon(DataRate.zero)
-                } else {
-                    rqstRate
-                }
-
-            val deltaBw = (newRate - oldRate.ifNull0()).roundToIfWithinEpsilon(DataRate.zero)
-            if (deltaBw.isZero()) return@compute oldRate.ifNull0()
-
-            // Updates the current link bandwidth usage
-            usedBW += deltaBw
-
-            if (deltaBw != DataRate.zero) {
-                currLinkUpdate.compute(fId) { _, oldDelta ->
-                    val newFlowDelta = (deltaBw + (oldDelta.ifNull0())).roundToIfWithinEpsilon(DataRate.zero)
-                    if (newFlowDelta.isZero()) {
-                        null
-                    } else {
-                        newFlowDelta
-                    }
-                }
-            }
-
-            return@compute newRate
-        }!!
-
-    // Only called by sender which has the SendLink interface.
-    override fun outgoingRateOf(fId: FlowId): DataRate = rateById[fId].ifNull0()
-
-    // Only called by receiver which has the ReceiveLink interface.
-    override fun incomingRateOf(fId: FlowId): DataRate = rateById[fId].ifNull0()
-
-    /**
-     * Returns the [Port] on the opposite side of the [SimplexLink].
-     * @param[p]    port of which the opposite is to be returned.
-     */
-    override fun oppositeOf(p: Port): Port {
-        return when {
-            p === senderP -> receiverP
-            p === receiverP -> senderP
-            else -> throw IllegalArgumentException(
-                "Non link port of ${p.owner} requesting its opposite. " +
-                    "This link is between ${senderP.owner} and ${receiverP.owner}",
-            )
+    override suspend fun claimBw(bw: DataRate): DataRate = mtx.withLock {
+        val available: DataRate = maxBw - usedBw
+        return if (bw > available) {
+            usedBw = maxBw
+            available
+        } else {
+            usedBw += bw
+            bw
         }
     }
 
-    override suspend fun notifyReceiver() {
-        // channel has unlimited size => should never suspend
-        if (currLinkUpdate.isEmpty()) return
-
-        // TODO: change
-        receiverP.nodeUpdtChl.send(
-            currLinkUpdate.toRateUpdt(),
-        )
-        currLinkUpdate.clear()
+    override suspend fun releaseBw(bw: DataRate) = mtx.withLock {
+        require(bw < usedBw)
+        usedBw -= bw
     }
 }

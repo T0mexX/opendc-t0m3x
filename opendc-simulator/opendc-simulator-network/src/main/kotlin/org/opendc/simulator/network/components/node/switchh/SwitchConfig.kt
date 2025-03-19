@@ -1,0 +1,14 @@
+package org.opendc.simulator.network.components.node.switchh
+
+import kotlinx.serialization.Serializable
+import org.opendc.common.units.DataRate
+import org.opendc.simulator.network.policies.fairness.FairnessPolicy
+import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
+
+@Serializable
+internal data class SwitchConfig(
+    val defaultNPorts: Int? = null,
+    val defaultPortSpeed: DataRate? = null,
+    val defaultFairnessPolicy: FairnessPolicy? = null,
+    val defaultRoutingPolicy: RoutingPolicy? = null,
+)

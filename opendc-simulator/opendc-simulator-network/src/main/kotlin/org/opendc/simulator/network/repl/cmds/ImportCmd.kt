@@ -30,8 +30,8 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.components.Network
-import org.opendc.simulator.network.components.Specs
+import org.opendc.simulator.network.components.networks.`Network.bak`
+import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.repl.REPLTmSrc
 import java.io.File
 import java.time.Instant

@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.opendc.common.logger.logger
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -19,6 +20,7 @@ internal class NetSimScope(
     val devConfig: NetSimDevConfig
     val poolAggr: NetSimPoolAggregator
     val idDispenser: NetSimIdDispenser
+    val logger by logger()
 
     init {
         var ctx = coroutineContext
@@ -29,7 +31,12 @@ internal class NetSimScope(
                 ctx +=  NetSimBarrier(ctx[NetSimConfig]!!)
             }
             ctx[NetSimPoolAggregator] ?: let {
-                ctx += NetSimPoolAggregator(ctx[NetSimConfig]!!.netSimDevConfig.nSubPools)
+                ctx += NetSimPoolAggregator(
+                    ctx[NetSimConfig]!!
+                        .netSimDevConfig
+                        .flyWeightConfig
+                        .nSubPools
+                )
             }
             ctx[NetSimIdDispenser] ?: let { ctx += NetSimIdDispenser() }
         }

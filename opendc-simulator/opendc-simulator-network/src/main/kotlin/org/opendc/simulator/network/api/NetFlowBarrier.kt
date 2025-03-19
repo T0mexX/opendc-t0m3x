@@ -31,7 +31,7 @@ import org.opendc.common.units.DataSize
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.TimeDelta
 import org.opendc.simulator.network.api.integration.SeqComputeIntegration.Mode
-import org.opendc.simulator.network.flow.neww.publics.NetFlow
+import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.utils.`observable-old`.SusChangeHndlr
 import org.opendc.simulator.network.utils.`observable-old`.DelegatedObservable
 import org.opendc.simulator.network.utils.`observable-old`.Observable

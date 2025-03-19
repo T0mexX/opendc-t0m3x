@@ -2,7 +2,8 @@ package org.opendc.simulator.network.utils.tracker
 
 import java.util.TreeSet
 
-internal interface TrackerMode<T> {
+internal interface TrackerMode<T: Trackable<T>> {
+    val trackedProps: Set<TrackablePropId<T>>
     fun T.compare(other: T): Int
 
     fun T.shouldBeTracked(): Boolean

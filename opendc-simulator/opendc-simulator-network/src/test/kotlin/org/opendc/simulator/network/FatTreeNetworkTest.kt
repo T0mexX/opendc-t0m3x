@@ -34,8 +34,8 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.FatTreeNetwork
 import org.opendc.simulator.network.components.FatTreeNetwork.FatTreeTopologySpecs
 import org.opendc.simulator.network.components.HostNode
-import org.opendc.simulator.network.components.Network
-import org.opendc.simulator.network.components.Specs
+import org.opendc.simulator.network.components.networks.`Network.bak`
+import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.Switch.SwitchSpecs
 import java.io.File
 import kotlin.math.pow
@@ -63,7 +63,7 @@ class FatTreeNetworkTest : FunSpec({
             SwitchSpecs(numOfPorts = 4, portSpeed = DataRate.zero),
             SwitchSpecs(numOfPorts = 6, portSpeed = DataRate.zero),
             SwitchSpecs(numOfPorts = 8, portSpeed = DataRate.zero),
-//            SwitchSpecs(numOfPorts = 10, portSpeed = .0)
+//            SwitchSpecs(nPorts = 10, portSpeed = .0)
         ) { switchSpecs ->
             val k: Int = switchSpecs.numOfPorts
             val fatTree: FatTreeNetwork =

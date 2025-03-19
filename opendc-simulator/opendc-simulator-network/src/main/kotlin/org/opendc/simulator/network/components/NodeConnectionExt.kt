@@ -29,6 +29,8 @@ import org.opendc.simulator.network.components.internalstructs.RoutingVect
 import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
 import org.opendc.simulator.network.components.internalstructs.port.connect
 import org.opendc.simulator.network.components.internalstructs.port.disconnect
+import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.port.Port
 
 private val log by Unit.logger("NodeConnectionExt")
 
@@ -37,27 +39,21 @@ private val log by Unit.logger("NodeConnectionExt")
  */
 internal suspend fun Node.connect(
     other: Node,
-    duplex: Boolean = true,
     linkBW: DataRate? = null,
-): Boolean =
-    updtChl.whileUpdtProcessingLocked {
-        if (other.id in portToNode.keys) {
-            return@whileUpdtProcessingLocked log.withWarn(false, "unable to connect $this to $other, nodesById already connected")
-        }
+): Boolean {
 
-        val freePort: Port =
-            getFreePort()
-                ?: throw RuntimeException("unable to connect, max num of connected nodesById reached ($numOfPorts).")
+    val freePort: Port =
+        getFreePort()
+            ?: throw RuntimeException("unable to connect, max num of connected nodesById reached ($nPorts).")
 
-        val otherPort: Port =
-            other.accept(this)
-                ?: throw RuntimeException("unable to connect, node $other refused connection")
+    val otherPort: Port =
+        other.accept(this)
+            ?: throw RuntimeException("unable to connect, node $other refused connection")
 
-        portToNode[other.id] = freePort
 
-        // TODO: right now everything above the port/link layer does not support non-duplex connections
-        //  in the future it would be nice to add
-        freePort.connect(otherPort, duplex = duplex, linkBW = linkBW)
+//        portToNode[other.id] = freePort
+
+        freePort.connect(otherPort, linkBW = linkBW)
 
         val otherVect: RoutingVect = other.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
         routingTable.mergeRoutingVector(otherVect, vectOwner = other)
@@ -143,7 +139,7 @@ private fun Node.getFreePort(): Port? = ports.firstOrNull { !it.isConnected }
  * and sharing its updated routing vector if needed.
  * @return its own routing vector.
  */
-private suspend fun Node.exchangeRoutVect(
+internal suspend fun Node.exchangeRoutVect(
     routVect: RoutingVect,
     vectOwner: Node,
 ): RoutingVect {
@@ -165,7 +161,7 @@ private suspend fun Node.exchangeRoutVect(
  * @param[exchange]     determines if ***this*** should receive and merge other's vectors as well.
  * If so, the process continues until one iteration of the function is completed without that ***this*** routing vector changes.
  */
-private tailrec suspend fun Node.shareRoutingVect(
+internal tailrec suspend fun Node.shareRoutingVect(
     except: Collection<Node> = listOf(),
     exchange: Boolean = false,
 ) {

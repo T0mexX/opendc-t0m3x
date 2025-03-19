@@ -22,9 +22,10 @@
 
 package org.opendc.simulator.network.components.internalstructs
 
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
+import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.utils.RWLock
 
 /**
@@ -197,7 +198,8 @@ internal class RoutingTable(private val ownerId: NodeId) {
     ) : Comparable<PossiblePath> {
         override fun compareTo(other: PossiblePath): Int = this.numOfHops compareTo other.numOfHops
 
-        fun Node.associatedPort(): Port? = portToNode[this@PossiblePath.nextHop.id]
+        context(Node)
+        fun associatedPort(): Port = ports.find { it.txLink?.receiverPort?.owner == this@PossiblePath.nextHop }!!
     }
 }
 

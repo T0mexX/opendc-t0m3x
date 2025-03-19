@@ -28,6 +28,8 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.components.HostNode.HostNodeSpecs
 import org.opendc.simulator.network.components.Switch.SwitchSpecs
+import org.opendc.simulator.network.components.networks.`Network.bak`
+import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.utils.NonSerializable
 
 /**

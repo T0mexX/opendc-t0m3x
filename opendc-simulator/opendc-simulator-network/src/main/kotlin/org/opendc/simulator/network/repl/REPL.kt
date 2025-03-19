@@ -31,7 +31,7 @@ import com.github.ajalt.clikt.core.subcommands
 import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.api.NetEnRecorder
 import org.opendc.simulator.network.components.CustomNetwork
-import org.opendc.simulator.network.components.Network
+import org.opendc.simulator.network.components.networks.`Network.bak`
 import org.opendc.simulator.network.repl.cmds.AdvTimeCmd
 import org.opendc.simulator.network.repl.cmds.EnRepCmd
 import org.opendc.simulator.network.repl.cmds.ExportCmd

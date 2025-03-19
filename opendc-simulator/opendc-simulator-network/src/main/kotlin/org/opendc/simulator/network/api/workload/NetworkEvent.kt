@@ -28,7 +28,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.FlowId
-import org.opendc.simulator.network.flow.neww.publics.NetFlow
+import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.Node

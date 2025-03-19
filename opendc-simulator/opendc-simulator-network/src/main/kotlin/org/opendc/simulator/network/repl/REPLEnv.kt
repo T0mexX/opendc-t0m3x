@@ -23,7 +23,7 @@
 package org.opendc.simulator.network.repl
 
 import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.components.Network
+import org.opendc.simulator.network.components.networks.`Network.bak`
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 

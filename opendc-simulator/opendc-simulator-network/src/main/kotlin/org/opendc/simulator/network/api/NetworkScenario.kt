@@ -40,8 +40,8 @@ import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.workload.NetworkEvent
 import org.opendc.simulator.network.api.workload.SimNetWorkload
-import org.opendc.simulator.network.components.Network
-import org.opendc.simulator.network.components.Specs
+import org.opendc.simulator.network.components.networks.`Network.bak`
+import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.input.readNetworkWl
 import org.opendc.simulator.network.utils.CoroutineWorkChannel

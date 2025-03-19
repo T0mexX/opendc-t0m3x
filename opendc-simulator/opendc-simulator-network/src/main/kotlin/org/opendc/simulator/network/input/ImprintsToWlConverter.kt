@@ -29,7 +29,7 @@ import org.opendc.simulator.network.api.workload.NetworkEvent.FlowStart
 import org.opendc.simulator.network.api.workload.NetworkEvent.FlowStop
 import org.opendc.simulator.network.api.workload.NetworkEvent.FlowUpdateDemand
 import org.opendc.simulator.network.api.workload.SimNetWorkload
-import org.opendc.simulator.network.components.Network.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.INTERNET_ID
 
 internal class ImprintsToWlConverter private constructor(
     imprints: Collection<NetEventImprint>,

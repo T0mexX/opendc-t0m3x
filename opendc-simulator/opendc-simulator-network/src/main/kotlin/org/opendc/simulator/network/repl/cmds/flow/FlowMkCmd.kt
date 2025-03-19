@@ -29,10 +29,10 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.flow.neww.publics.NetFlow
+import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.EndPointNode
-import org.opendc.simulator.network.components.Network.Companion.getNodesById
+import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.getNodesById
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowMkCmd : REPLCmd("mk") {

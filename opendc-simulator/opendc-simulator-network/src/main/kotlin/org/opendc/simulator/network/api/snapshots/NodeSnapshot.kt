@@ -30,11 +30,11 @@ import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.Network
+import org.opendc.simulator.network.components.networks.`Network.bak`
 import org.opendc.simulator.network.components.Node
 import org.opendc.simulator.network.energy.EnergyConsumer
-import org.opendc.simulator.network.flow.FlowHandler
-import org.opendc.simulator.network.flow.OutFlow
+import org.opendc.simulator.network.flowOld.FlowHandler
+import org.opendc.simulator.network.flowOld.OutFlow
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable

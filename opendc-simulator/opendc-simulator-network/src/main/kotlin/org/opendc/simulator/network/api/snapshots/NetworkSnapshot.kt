@@ -29,14 +29,14 @@ import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.flow.neww.publics.NetFlow
+import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.HDR
 import org.opendc.simulator.network.components.CoreSwitch
 import org.opendc.simulator.network.components.HostNode
-import org.opendc.simulator.network.components.Network
-import org.opendc.simulator.network.components.Network.Companion.getNodesById
+import org.opendc.simulator.network.components.networks.`Network.bak`
+import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.getNodesById
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable

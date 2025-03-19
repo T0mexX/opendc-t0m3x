@@ -1,21 +1,31 @@
 package org.opendc.simulator.network.components.node
 
+import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.FlowView
-import org.opendc.simulator.network.components.Specs
-import org.opendc.simulator.network.components.WithSpecs
-import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
-import org.opendc.simulator.network.sync.invalidatable.Invalidatable
+import org.opendc.simulator.network.components.specs.WithSpecs
+import org.opendc.simulator.network.components.internalstructs.RoutingTable
+import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
+import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flow.publics.NetFlow
+import org.opendc.simulator.network.policies.fairness.FairnessPolicy
+import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
+import org.opendc.simulator.network.utils.Launchable
+import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
+import org.opendc.simulator.network.utils.flyweight.internals.IFW
+import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
+import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
+import org.opendc.simulator.network.utils.notifiable.publics.Notifiable
+import org.opendc.simulator.network.utils.notifiable.publics.Notification
 
 
 /**
  * Interface representing a node in a [Network2].
  */
-internal interface Node : FlowView, WithSpecs<Node>, Invalidatable {
+internal interface Node : WithSpecs<Node>, Invalidatable, Notifiable<Node>, Launchable {
     /**
      * ID of the node. Uniquely identifies the node in the [Network22].
      */
-    val id: NodeId2
+    val id: NodeId
 
     /**
      * Port speed in Kbps full duplex.
@@ -25,26 +35,21 @@ internal interface Node : FlowView, WithSpecs<Node>, Invalidatable {
     /**
      * Number of ports of ***this*** [Node].
      */
-    val numOfPorts: Int get() {
-        return ports.size
-    }
+    val nPorts: Int
 
+    val ports: List<Port>
 
+    val job: Job
 
     /**
      * Policy that determines to which [Port]s the flows are forwarded to.
      */
-    val portSelectionPolicy: PortSelectionPolicy
+    var portSelectionPolicy: RoutingPolicy
 
     /**
      * Policy that determines how the flows data are handled in case of maximum bw reached.
      */
-    val fairnessPolicy: FairnessPolicy
-
-    /**
-     * Handles incoming and outgoing flows.
-     */
-    val flowHandler: FlowHandler
+    var fairnessPolicy: FairnessPolicy
 
     /**
      * Contains network information about the routs
@@ -52,96 +57,67 @@ internal interface Node : FlowView, WithSpecs<Node>, Invalidatable {
      */
     val routingTable: RoutingTable
 
-    /**
-     * Maps each connected [Node]'s id to the [Port] is connected to.
-     */
-    val portToNode: MutableMap<NodeId2, Port>
+    val flowTable: FlowTable
 
-    /**
-     * Property returning the number of [Node]s connected to ***this***.
-     */
-    private val numOfConnectedNodes: Int
-        get() {
-            return ports.count { it.isConnected }
-        }
+    suspend fun connectTo(other: Node, linkBw: DataRate = this.portSpeed min other.portSpeed)
 
-    /**
-     * Aggregates the flow updates from all adjacent nodes.
-     */
-    val updtChl: UpdateChl
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Notifications
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * **Does not return**. Should be launched as an independent coroutine.
-     * Processes incoming updates.
-     * @param[invalidator] used to invalidate the network stability while updates are pending or being processed.
-     */
-    suspend fun run(invalidator: NetworkStabilityBarrier.Invalidator? = null) {
-        invalidator?.let { updtChl.withInvalidator(invalidator) }
-        updtChl.clear()
+    interface RxUpdate: Notification<Node>, IFW<RxUpdate> {
+        var netFlow: NetFlow
+        var deltaRate: DataRate
 
-        while (true) {
-            yield()
-            consumeUpdt()
-        }
+        companion object : FlyWeightId<RxUpdate>
     }
 
-    /**
-     * Consumes a round of updates.
-     */
-    suspend fun consumeUpdt() {
-        var updt: RateUpdt = updtChl.receive()
-        while (true) {
-            yield()
-            updtChl.tryReceiveSus().getOrNull()
-                ?.also { updt = updt.merge(it) }
-                ?: break
-        }
+    interface Connect: Notification<Node>, IFW<Connect> {
+        var other: Node
+        var linkBw: DataRate
+        var reapplyRoutingNotifDispenser: FWDispenser<ReapplyRouting>
+        var portConnectNotifDispenser: FWDispenser<Port.Connect>
 
-        flowHandler.updtFlows(updt)
-
-        notifyAdjNodes()
+        companion object : FlyWeightId<Connect>
     }
 
-    /**
-     * Sends the buffered updates to adjacent nodes.
-     */
-    private suspend fun notifyAdjNodes() {
-        portToNode.values.forEach { it.notifyReceiver() }
+    interface Disconnect: Notification<Node>, IFW<Disconnect> {
+        var other: Node
+        var portDisconnectNotifDispenser: FWDispenser<Port.Disconnect>
+        var reapplyRoutingNotifDispenser: FWDispenser<ReapplyRouting>
+        var notifyOther: Boolean
+
+        companion object : FlyWeightId<Disconnect>
     }
 
-    /**
-     * Updates forwarding of all flows transiting through ***this*** node.
-     */
-    suspend fun updateAllFlows() {
-        updtChl.send(RateUpdt(allTransitingFlowsIds().associateWith { DataRate.zero })) // TODO: change
+    interface ReapplyRouting: Notification<Node>, IFW<ReapplyRouting> {
+        var portProcessNotifDispenser: FWDispenser<Port.StartProcessing>
+
+        companion object : FlyWeightId<ReapplyRouting>
     }
 
-    override suspend fun totIncomingDataRateOf(fId: FlowId): DataRate = flowHandler.outgoingFlows[fId]?.demand.ifNull0()
 
-    override fun totOutgoingDataRateOf(fId: FlowId): DataRate = flowHandler.outgoingFlows[fId]?.totRateOut.ifNull0()
 
-    override fun allTransitingFlowsIds(): Collection<FlowId> =
-        with(flowHandler) {
-            outgoingFlows.keys + consumingFlows.keys
-        }
 
-    /**
-     * @return formatted string representing node information. Preferably to be logged in a new line.
-     */
-    fun fmt(): String =
-        """
-        | Type = ${this::class.simpleName}
-        | numPorts = $numOfPorts
-        | portSpeed = $portSpeed
-        | numConnectedNodes = $numOfConnectedNodes
-        """.trimIndent()
+//    override suspend fun totIncomingDataRateOf(fId: FlowId): DataRate = flowHandler.outgoingFlows[fId]?.demand.ifNull0()
+//
+//    override fun totOutgoingDataRateOf(fId: FlowId): DataRate = flowHandler.outgoingFlows[fId]?.totRateOut.ifNull0()
+//
+//    override fun allTransitingFlowsIds(): Collection<FlowId> =
+//        with(flowHandler) {
+//            outgoingFlows.keys + consumingFlows.keys
+//        }
 
-    override fun toSpecs(): Specs<Node> {
-        TODO("Not yet implemented")
-    }
-
-    override val stabilizer: NetSimStabilizer
-        get() = TODO("Not yet implemented")
+//    /**
+//     * @return formatted string representing node information. Preferably to be logged in a new line.
+//     */
+//    fun fmt(): String =
+//        """
+//        | Type = ${this::class.simpleName}
+//        | numPorts = $nPorts
+//        | portSpeed = $portSpeed
+//        | numConnectedNodes = $numOfConnectedNodes
+//        """.trimIndent()
 }
 
 
