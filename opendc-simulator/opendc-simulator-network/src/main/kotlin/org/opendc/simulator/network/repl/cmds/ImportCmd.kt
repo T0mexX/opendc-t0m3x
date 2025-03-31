@@ -24,15 +24,17 @@ package org.opendc.simulator.network.repl.cmds
 
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.components.networks.`Network.bak`
+import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.repl.REPLTmSrc
+import org.opendc.simulator.network.simscope.NetSimScope
 import java.io.File
 import java.time.Instant
 
@@ -46,21 +48,23 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
     @OptIn(ExperimentalSerializationApi::class)
     override fun run(): Unit =
         runBlocking {
-            net.runnerJob?.cancelAndJoin()
-            try {
-                val newNet: Network =
-                    Json { ignoreUnknownKeys = true }
-                        .decodeFromStream<Specs<Network>>(targetFile.inputStream())
-                        .build()
-                env.network.runnerJob?.cancelAndJoin()
-                env.network = newNet
-                env.energyRecorder = NetEnRecorder(newNet)
-                env.tmSrc = REPLTmSrc(Instant.now())
+            scope.cancel()
+            env.scope = NetSimScope()
+            with(scope) {
+                try {
+                    val newNet: Network =
+                        Json { ignoreUnknownKeys = true }
+                            .decodeFromStream<Specs<Network>>(targetFile.inputStream())
+                            .build()
+                    env.network = newNet
+//                    env.energyRecorder = NetEnRecorder(newNet)
+                    env.tmSrc = REPLTmSrc(Instant.now())
 
-                echo("Network imported successfully")
-                // TODO: display network info
-            } catch (e: Exception) {
-                echo(e.message ?: "unable to import")
+                    echo("Network imported successfully")
+                    // TODO: display network info
+                } catch (e: Exception) {
+                    echo(e.message ?: "unable to import")
+                }
             }
         }
 }

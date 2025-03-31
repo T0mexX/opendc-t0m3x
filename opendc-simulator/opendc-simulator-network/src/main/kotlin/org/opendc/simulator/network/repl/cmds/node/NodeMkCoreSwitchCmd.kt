@@ -25,9 +25,9 @@ package org.opendc.simulator.network.repl.cmds.node
 import com.github.ajalt.clikt.core.requireObject
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.CoreSwitch
-import org.opendc.simulator.network.components.CustomNetwork
+import org.opendc.simulator.network.components.networks.CustomNetwork
+import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 private const val CMD_STR: String = "core-switch"
@@ -46,17 +46,20 @@ internal class NodeMkCoreSwitchCmd : REPLCmd(name = CMD_STR) {
         ) + super.aliases()
 
     override fun run(): Unit =
-        runBlocking(net.validator) {
-            net.awaitStability()
-            val newSwitch =
-                CoreSwitch(
-                    id = id,
-                    portSpeed = speed,
-                    numOfPorts = nPorts,
-                )
+        runBlocking(scope.ctx) {
+            with(scope) {
+                barrier.awaitStability()
 
-            (net as? CustomNetwork)?.addNode(newSwitch)
-                ?.let { echo("| Added node $newSwitch") }
-                ?: issueMessage("Unable to add node.")
+                val newSwitch =
+                    CoreSwitch(
+                        id = id,
+                        portSpeed = speed,
+                        nPorts = nPorts,
+                    )
+
+                (net as? CustomNetwork)?.plus(newSwitch)
+                    ?.let { echo("| Added node $newSwitch") }
+                    ?: issueMessage("Unable to add node.")
+            }
         }
 }

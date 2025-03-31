@@ -27,7 +27,7 @@ internal class CoreSwitch private constructor(
             portSpeed = portSpeed,
             nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
-            portSelectionPolicy = portSelectionPolicy,
+            portSelectionPolicy = routingPolicy,
         )
 
 

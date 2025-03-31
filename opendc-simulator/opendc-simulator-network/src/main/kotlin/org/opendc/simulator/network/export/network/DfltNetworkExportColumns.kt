@@ -28,8 +28,6 @@ import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64
 import org.apache.parquet.schema.Types
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot
-import org.opendc.simulator.network.components.networks.`Network.bak`
-import org.opendc.simulator.network.components.Node
 import org.opendc.trace.util.parquet.exporter.ExportColumn
 
 /**
@@ -65,7 +63,7 @@ public object DfltNetworkExportColumns {
      */
     public val NUM_FLOWS: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("flows"),
+            field = Types.required(INT32).named("flowsById"),
         ) { it.numActiveFlows }
 
     /**

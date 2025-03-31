@@ -1,10 +1,11 @@
 package org.opendc.simulator.network.utils.flyweight.internals
 
 import org.opendc.simulator.network.utils.Idx
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeight
+import org.opendc.simulator.network.utils.flyweight.publics.FW
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
 
-internal interface IFW<T: FlyWeight<T>>: FlyWeight<T> {
-    val pool: FWPool<T>
+internal interface IFW<T: FW<T>>: FW<T> {
+    val pool: FWPool<T, FWId<T>>
     val poolIdx: Idx
 
     @Suppress("UNCHECKED_CAST")

@@ -36,6 +36,6 @@ internal class NetSnapCmd : REPLCmd(name = CMD_STR) {
 
     override fun run() =
         runBlocking {
-            echo(net.snapshot(enRecorder = enRec, instant = tmSrc.currentInstant).fmt())
+//            echo(net.snapshot(enRecorder = enRec, instant = tmSrc.currentInstant).fmt())
         }
 }

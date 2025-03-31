@@ -28,9 +28,8 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.unique
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.components.disconnect
+import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class LinkRmCmd : REPLCmd("rm") {
@@ -40,26 +39,26 @@ internal class LinkRmCmd : REPLCmd("rm") {
             "rem" to listOf("rm"),
         )
 
-    private val nodeIds: Set<NodeId> by option(
+    private val nodeIds: Set<Long> by option(
         help = "The id of the first node",
         names = arrayOf("-n", "--nodes", "--nodeids"),
     ).long().multiple().unique().check("nodes must be 2.") { it.size == 2 }
 
     override fun run(): Unit =
         runBlocking {
-            net.awaitStability()
-            val node1: Node? = net.nodesById[nodeIds.toList()[0]]
-            val node2: Node? = net.nodesById[nodeIds.toList()[1]]
+            scope.barrier.awaitStability()
+            val node1: Node? = net[NodeId(nodeIds.toList()[0])]
+            val node2: Node? = net[NodeId(nodeIds.toList()[1])]
 
             if (node1 == null || node2 == null) {
                 issueMessage("Unable to remove link")
                 return@runBlocking
             }
 
-            if (node1.disconnect(node2)) {
-                echo("Link removed successfully")
-            } else {
+            runCatching {
+                node1.disconnectFrom(node2)
+            }.exceptionOrNull()?.let {
                 issueMessage("Unable to remove link")
-            }
+            } ?: echo("Link removed successfully")
         }
 }

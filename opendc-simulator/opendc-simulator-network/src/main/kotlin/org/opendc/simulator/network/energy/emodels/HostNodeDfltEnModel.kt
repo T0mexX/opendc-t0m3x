@@ -23,11 +23,11 @@
 package org.opendc.simulator.network.energy.emodels
 
 import org.opendc.common.units.DataRate
+import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
-import org.opendc.simulator.network.components.HostNode
-import org.opendc.simulator.network.components.Switch
-import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
+import org.opendc.simulator.network.components.node.host.HostNode
+import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.energy.EnModel
 import kotlin.math.pow
 
@@ -61,12 +61,12 @@ internal object HostNodeDfltEnModel : EnModel<HostNode> {
         val activePorts: Collection<Port> = e.getActivePorts()
         val idlePwr: Power =
             activePorts.sumOfUnit { port ->
-                passivePwrFromMaxPortSpeed(port.currSpeed)
+                passivePwrFromMaxPortSpeed(port.speed)
             }
 //        check(idlePwr > Power.ZERO) {"${idlePwr.toWatts()}, "}
         val activePwr: Power =
             activePorts.sumOfUnit { port ->
-                val currPortRate: DataRate = port.currSpeed * port.util.toRatio()
+                val currPortRate: DataRate = port.speed * port.txLink!!.util.toRatio()
                 activePwrFromCurrRate(currPortRate)
             }
 
@@ -77,5 +77,7 @@ internal object HostNodeDfltEnModel : EnModel<HostNode> {
      *  @return the ports of ***this*** [Switch] that are currently active.
      *  @see[Port.isActive]
      */
-    private fun HostNode.getActivePorts(): Collection<Port> = this.portToNode.values.filter { it.isActive }
+    private fun HostNode.getActivePorts(): Collection<Port> = this.ports.filter {
+        (it.txLink?.util ?: Percentage.zero) > Percentage.zero
+    }
 }

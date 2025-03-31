@@ -26,18 +26,19 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
 import kotlinx.serialization.json.Json
 import org.opendc.common.logger.logger
-import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.components.networks.`Network.bak`
+import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.REPLEnv
 import org.opendc.simulator.network.repl.REPLTmSrc
+import org.opendc.simulator.network.simscope.NetSimScope
 
 internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
     protected val log by logger(name)
 
     protected val env by requireObject<REPLEnv>()
     protected val net: Network by lazy { env.network }
-    protected val enRec: NetEnRecorder by lazy { env.energyRecorder }
+//    protected val enRec: NetEnRecorder by lazy { env.energyRecorder }
     protected val tmSrc: REPLTmSrc by lazy { env.tmSrc }
+    protected val scope: NetSimScope by lazy { env.scope }
 
     override fun aliases(): Map<String, List<String>> =
         registeredSubcommands().flatMap {

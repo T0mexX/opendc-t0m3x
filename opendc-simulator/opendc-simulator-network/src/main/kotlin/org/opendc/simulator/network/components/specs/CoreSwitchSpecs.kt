@@ -29,6 +29,15 @@ internal data class CoreSwitchSpecs(
             portSelectionPolicy = portSelectionPolicy,
         )
 
+    fun toSwitchSpecs(): SwitchSpecs =
+        SwitchSpecs(
+            id = id,
+            portSpeed = portSpeed,
+            nPorts = nPorts,
+            fairnessPolicy = fairnessPolicy,
+            portSelectionPolicy = portSelectionPolicy,
+        )
+
     context(NetSimScope)
     suspend fun buildAsCore(internet: Internet): CoreSwitch =
         this.copy(

@@ -5,6 +5,7 @@ import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.specs.WithSpecs
+import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
@@ -17,7 +18,7 @@ internal interface Network : WithSpecs<Network> {
 
     val nodesById: Map<NodeId, Node>
 
-    val flows: Set<NetFlow>
+    val flowsById: Map<FlowId, NetFlow>
 
     val internet: Internet
 
@@ -32,4 +33,10 @@ internal interface Network : WithSpecs<Network> {
 
     context(NetSimScope)
     suspend fun fmtFlows(mode: NetSimStabilityMode): String
+
+    companion object {
+        internal inline fun <reified T : Node> Network.getNodesById(): Map<NodeId, T> {
+            return this.nodesById.values.filterIsInstance<T>().associateBy { it.id }
+        }
+    }
 }

@@ -1,6 +1,5 @@
 package org.opendc.simulator.network.simscope.barrier
 
-import org.opendc.simulator.network.components.networks.`Network.bak`
 import org.opendc.simulator.network.simscope.NetSimConfig
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext

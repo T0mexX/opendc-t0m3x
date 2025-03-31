@@ -23,14 +23,16 @@
 package org.opendc.simulator.network.repl
 
 import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.components.networks.`Network.bak`
+import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.simscope.NetSimScope
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
 internal data class REPLEnv(
     var network: Network,
-    var energyRecorder: NetEnRecorder,
+//    var energyRecorder: NetEnRecorder,
     var tmSrc: REPLTmSrc,
+    var scope: NetSimScope,
 ) : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<REPLEnv>
 }

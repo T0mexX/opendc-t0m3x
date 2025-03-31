@@ -26,16 +26,16 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
-import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 private const val CMD_STR: String = "snapshot"
 
 internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
-    private val nodeId: NodeId by argument(
+    private val id: Long by argument(
         help = "The id of the node whose snapshot is to be displayed",
-    ).long().check("node does not exist") { net.nodesById.contains(it) }
+    ).long().check("node does not exist") { net.nodesById.contains(NodeId(it)) }
 
     override fun aliases(): Map<String, List<String>> =
         mapOf(
@@ -43,10 +43,12 @@ internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
         )
 
     override fun run(): Unit =
-        runBlocking(net.validator) {
-            net.awaitStability()
-            net.nodesById[nodeId]?.let {
-                echo(it.snapshot(instant = tmSrc.currentInstant).fmt())
-            } ?: issueMessage("Unable to display snapshot")
+        runBlocking(scope.ctx) {
+            with(scope) {
+                barrier.awaitStability()
+                net.nodesById[NodeId(id)]?.let {
+                    echo(it.snapshot(instant = tmSrc.currentInstant).fmt())
+                } ?: issueMessage("Unable to display snapshot")
+            }
         }
 }

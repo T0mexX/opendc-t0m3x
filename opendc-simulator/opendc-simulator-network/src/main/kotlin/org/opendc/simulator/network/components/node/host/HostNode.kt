@@ -8,7 +8,11 @@ import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
-import org.opendc.simulator.network.components.specs.WithSpecs
+import org.opendc.simulator.network.energy.EnModel
+import org.opendc.simulator.network.energy.EnMonitor
+import org.opendc.simulator.network.energy.EnergyConsumer
+import org.opendc.simulator.network.energy.emodels.HostNodeDfltEnModel
+import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -19,10 +23,10 @@ internal class HostNode private constructor(
     override val portSpeed: DataRate,
     override val nPorts: Int,
     override var fairnessPolicy: FairnessPolicy,
-    override var portSelectionPolicy: RoutingPolicy,
+    override var routingPolicy: RoutingPolicy,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-) : NodeV0(id), SenderNode {
+) : NodeV0(id), SenderNode, EnergyConsumer<HostNode> {
 
     override lateinit var ports: List<Port>
 
@@ -32,8 +36,20 @@ internal class HostNode private constructor(
             portSpeed = portSpeed,
             numOfPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
-            portSelectionPolicy = portSelectionPolicy,
+            portSelectionPolicy = routingPolicy,
         )
+
+    override suspend fun startFlow(netflow: NetFlow) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun stopFlow(netFlow: NetFlow) {
+        TODO("Not yet implemented")
+    }
+
+    override val enMonitor: EnMonitor<HostNode> = EnMonitor(this)
+
+    override fun getDfltEnModel(): EnModel<HostNode> = HostNodeDfltEnModel
 
     companion object {
         context(NetSimScope)
@@ -57,7 +73,7 @@ internal class HostNode private constructor(
                 fairnessPolicy = fairnessPolicy
                     ?: hostConfig.defaultFairnessPolicy
                     ?: nodeConfig.defaultFairnessPolicy!!,
-                portSelectionPolicy = portSelectionPolicy
+                routingPolicy = portSelectionPolicy
                     ?: hostConfig.defaultRoutingPolicy
                     ?: nodeConfig.defaultRoutingPolicy!!,
                 flowTable = nodeConfig.flowTableVersion(),

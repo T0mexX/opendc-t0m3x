@@ -4,6 +4,7 @@ import java.util.TreeSet
 
 
 internal interface Tracker<T: Trackable<T>> {
+    var itemsGetter: () -> Iterable<T>
 
     infix operator fun plus(mode: TrackerMode<T>)
 
@@ -32,12 +33,14 @@ internal interface Tracker<T: Trackable<T>> {
     companion object {
         operator fun <T: Trackable<T>> invoke(
             vararg modes: TrackerMode<T>,
-            itemsGetter: () -> Iterable<T>,
+            itemsGetter: (() -> Iterable<T>)? = null,
         ) = object : Tracker<T> {
             private val treesByMode = mutableMapOf<TrackerMode<T>, TreeSet<T>>()
+            override lateinit var itemsGetter: () -> Iterable<T>
 
             init {
                 treesByMode.putAll(modes.associateWith { it.setUp(itemsGetter()) })
+                itemsGetter?.let { this.itemsGetter = itemsGetter }
             }
 
             override operator fun plus(

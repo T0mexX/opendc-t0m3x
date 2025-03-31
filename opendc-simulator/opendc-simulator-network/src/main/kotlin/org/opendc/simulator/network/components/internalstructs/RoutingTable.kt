@@ -22,7 +22,6 @@
 
 package org.opendc.simulator.network.components.internalstructs
 
-import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.port.Port
@@ -189,7 +188,7 @@ internal class RoutingTable(private val ownerId: NodeId) {
      * Represents a possible path to the [Node] corresponding to [destinationId].
      * @param[destinationId]    id of the final destination.
      * @param[numOfHops]        number of [Link]s that need to be traversed.
-     * @param[nextHop]          adjacent [Node] to which forward flows if this path is to be used.
+     * @param[nextHop]          adjacent [Node] to which forward flowsById if this path is to be used.
      */
     data class PossiblePath(
         val destinationId: NodeId,

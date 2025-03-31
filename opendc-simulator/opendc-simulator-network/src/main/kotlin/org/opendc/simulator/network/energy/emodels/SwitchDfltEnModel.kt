@@ -26,8 +26,8 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
-import org.opendc.simulator.network.components.Switch
-import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
+import org.opendc.simulator.network.components.node.switchh.Switch
+import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.energy.EnModel
 import kotlin.math.log
 import kotlin.math.pow
@@ -84,10 +84,12 @@ internal object SwitchDfltEnModel : EnModel<Switch> {
      *  @return the ports of ***this*** [Switch] that are currently active.
      *  @see[Port.isActive]
      */
-    private fun Switch.getActivePorts(): Collection<Port> = this.portToNode.values.filter { it.isActive }
+    private fun Switch.getActivePorts(): Collection<Port> =
+        ports.filter { (it.txLink?.util ?: Percentage.zero) > Percentage.zero }
 
     /**
      * @return average port utilization considering both active and not active ports.
      */
-    private fun Switch.avrgPortUtilization(): Percentage = this.ports.sumOfUnit { it.util } / ports.size
+    private fun Switch.avrgPortUtilization(): Percentage =
+        this.ports.sumOfUnit { it.txLink?.util ?: Percentage.zero } / ports.size
 }

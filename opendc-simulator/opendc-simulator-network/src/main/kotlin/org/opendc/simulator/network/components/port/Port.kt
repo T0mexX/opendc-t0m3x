@@ -10,16 +10,16 @@ import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.IntId
 import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.flyweight.internals.IFW
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeight
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
+import org.opendc.simulator.network.utils.flyweight.publics.FW
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
+import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
 import org.opendc.simulator.network.utils.notifiable.publics.Notifiable
 import org.opendc.simulator.network.utils.notifiable.publics.Notification
 import org.opendc.simulator.network.utils.statefull.publics.State
 import org.opendc.simulator.network.utils.statefull.publics.Stateful
-import org.opendc.simulator.network.utils.tracker.Tracker
 
-internal interface Port: Notifiable<Port>, Stateful<Port>, Invalidatable, Launchable {
+internal interface Port: Notifiable<Port>, Stateful<Port>, IInvalidatable, Launchable {
     val owner: Node
     val speed: DataRate
     val portIdx: Idx
@@ -32,32 +32,34 @@ internal interface Port: Notifiable<Port>, Stateful<Port>, Invalidatable, Launch
 
     suspend fun setTxDemand(txDemand: DataRate, netflow: NetFlow, entryId: IntId? = null): IntId
 
-    suspend fun getTxTput(entryId: IntId): DataRate
+    /**
+     * Not guaranteed to be stable. TOOD: write better
+     */
+    fun getTxTput(entryId: IntId): DataRate
 
-    interface SetDemand: Notification<Port>, FlyWeight<SetDemand> {
+    interface SetDemand: Notification<Port>, FW<SetDemand> {
         var netFlow: NetFlow
         var newDemand: DataRate
         var entryId: IntId
 
-        companion object : FlyWeightId<SetDemand>
+        companion object : FWId<SetDemand>
     }
 
     interface StartProcessing: Notification<Port>, IFW<StartProcessing> {
 
-        companion object : FlyWeightId<StartProcessing>
+        companion object : FWId<StartProcessing>
     }
 
     interface Connect: Notification<Port>, IFW<Connect> {
         var other: Port
-        var notifyOther: Boolean
         var linkBw: DataRate?
 
-        companion object : FlyWeightId<Connect>
+        companion object : FWId<Connect>
     }
 
     interface Disconnect: Notification<Port>, IFW<Disconnect> {
 
-        companion object : FlyWeightId<Disconnect>
+        companion object : FWId<Disconnect>
     }
 
     companion object {
@@ -65,6 +67,8 @@ internal interface Port: Notifiable<Port>, Stateful<Port>, Invalidatable, Launch
         val PROCESSING: State<Port> = object : State<Port> {}
         val DISCONNECTED: State<Port> = object : State<Port> {}
         val IDLE: State<Port> = object : State<Port> {}
+        val CONNECTING: State<Port> = object : State<Port> {}
+        val DISCONNECTING: State<Port> = object : State<Port> {}
     }
 }
 

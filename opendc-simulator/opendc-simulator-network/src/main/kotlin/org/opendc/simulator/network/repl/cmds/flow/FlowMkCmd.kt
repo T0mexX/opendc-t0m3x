@@ -29,10 +29,10 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
+import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
+import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.flow.publics.NetFlow
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.EndPointNode
-import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.getNodesById
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowMkCmd : REPLCmd("mk") {
@@ -44,28 +44,29 @@ internal class FlowMkCmd : REPLCmd("mk") {
             ?: fail("Unable to parse data rate '$it' (e.g. 1Gbps)")
     }.required().check("demand must be positive") { it >= DataRate.zero }
 
-    private val senderId: NodeId by option(
+    private val senderId: Long by option(
         help = "The node id of the sender",
         names = arrayOf("-s", "--senderid"),
-    ).long().required().check("sender invalid") { net.getNodesById<EndPointNode>().contains(it) }
+    ).long().required().check("sender invalid") { net.getNodesById<SenderNode>().contains(NodeId(it)) }
 
-    private val destId: NodeId by option(
+    private val destId: Long by option(
         help = "The node id of the receiver",
         names = arrayOf("-d", "--destinationid", "--destid"),
-    ).long().required().check("destination invalid") { net.getNodesById<EndPointNode>().contains(it) }
+    ).long().required().check("destination invalid") { net.nodesById.contains(NodeId(it)) }
 
     override fun run(): Unit =
-        runBlocking(net.validator) {
-            net.awaitStability()
+        runBlocking {
+            with(scope) {
+                barrier.awaitStability()
 
-            val newFlow =
-                NetFlow(
+                val newFlow = scope.devConfig.netFlowConfig.version(
                     demand = demand,
-                    transmitterId = senderId,
-                    destinationId = destId,
+                    senderId = NodeId(senderId),
+                    destId = NodeId(destId),
                 )
 
-            net.startFlow(newFlow)
-            echo("| Started flow $newFlow")
+                net.startFlow(newFlow)
+                echo("| Started flow $newFlow")
+            }
         }
 }

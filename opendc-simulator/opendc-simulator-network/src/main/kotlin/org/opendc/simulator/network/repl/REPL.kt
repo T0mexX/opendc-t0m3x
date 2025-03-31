@@ -29,11 +29,8 @@ import com.github.ajalt.clikt.core.PrintHelpMessage
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.subcommands
 import kotlinx.coroutines.runBlocking
-import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.components.CustomNetwork
-import org.opendc.simulator.network.components.networks.`Network.bak`
-import org.opendc.simulator.network.repl.cmds.AdvTimeCmd
-import org.opendc.simulator.network.repl.cmds.EnRepCmd
+import org.opendc.simulator.network.components.networks.CustomNetwork
+import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.ExportCmd
 import org.opendc.simulator.network.repl.cmds.ImportCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowCmd
@@ -52,21 +49,24 @@ import org.opendc.simulator.network.repl.cmds.node.NodeMkHostCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkSwitchCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeRmCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeSnapCmd
+import org.opendc.simulator.network.simscope.NetSimScope
 import java.time.Instant
 
-public fun main() {
-    val network: Network = CustomNetwork()
-
-    val energyRecorder = NetEnRecorder(network)
-    val env =
+public suspend fun main() {
+    val scope = NetSimScope()
+    val network: Network
+    val env: REPLEnv
+    with(scope) {
+        network = CustomNetwork()
+//            val energyRecorder = NetEnRecorder(network)
+    }
+    env =
         REPLEnv(
             network = network,
-            energyRecorder = energyRecorder,
+            scope = scope,
+//                    energyRecorder = energyRecorder,
             tmSrc = REPLTmSrc(Instant.now()),
         )
-    runBlocking {
-        network.launchNetwork()
-    }
 
     while (true) {
         val input: String = readln()
@@ -79,13 +79,13 @@ public fun main() {
                     NodeMkCmd().subcommands(NodeMkHostCmd(), NodeMkSwitchCmd(), NodeMkCoreSwitchCmd()),
                     NodeSnapCmd(),
                 ),
-                AdvTimeCmd(),
+//                AdvTimeCmd(),
                 FlowCmd().subcommands(
                     FlowMkCmd(),
                     FlowInfoCmd(),
                     FlowRmCmd(),
                 ),
-                EnRepCmd(),
+//                EnRepCmd(),
                 ExportCmd(),
                 NetCmd().subcommands(
                     NetSnapCmd(),

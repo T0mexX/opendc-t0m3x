@@ -27,17 +27,17 @@ import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
-import com.github.ajalt.clikt.parameters.types.long
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.CustomNetwork
+import org.opendc.simulator.network.components.networks.CustomNetwork
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class NodeMkCmd : REPLCmd(name = "mk") {
     private val id: NodeId by option(
         help = "The id of the new node",
         names = arrayOf("-n", "--nodeid"),
-    ).long().required().check("node with id already exists") { !net.nodesById.keys.contains(it) }
+    ).convert { decodeOrNull<NodeId>(it)!! }
+        .required().check("node with id already exists") { !net.nodesById.keys.contains(it) }
 
     private val portSpeed: DataRate by option(
         help = "Speed of the ports on the node",

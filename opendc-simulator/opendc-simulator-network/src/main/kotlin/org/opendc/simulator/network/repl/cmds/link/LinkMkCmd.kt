@@ -31,9 +31,8 @@ import com.github.ajalt.clikt.parameters.options.unique
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.components.connect
+import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class LinkMkCmd : REPLCmd("mk") {
@@ -45,15 +44,15 @@ internal class LinkMkCmd : REPLCmd("mk") {
             ?: fail("Unable to parse data rate '$it' (e.g. 1Gbps)")
     }.required().check("bandwidth must be >= 0") { it >= DataRate.zero }
 
-    private val nodeIds: Set<NodeId> by option(
+    private val nodeIds: Set<Long> by option(
         help = "The id of the first node",
         names = arrayOf("-n", "--nodes", "--nodeids"),
     ).long().multiple().unique().check("nodes must be 2.") { it.size == 2 }
 
     override fun run(): Unit =
         runBlocking {
-            net.awaitStability()
-            val nodes: List<NodeId> = nodeIds.toList()
+            scope.barrier.awaitStability()
+            val nodes: List<NodeId> = nodeIds.toList().map { NodeId(it) }
             val node1: Node? = net.nodesById[nodes[0]]
             val node2: Node? = net.nodesById[nodes[1]]
 
@@ -62,7 +61,7 @@ internal class LinkMkCmd : REPLCmd("mk") {
                 return@runBlocking
             }
 
-            node1.connect(node2)
+            node1.connectTo(node2)
             echo("Successfully connected node $node1 with  node $node2")
         }
 }

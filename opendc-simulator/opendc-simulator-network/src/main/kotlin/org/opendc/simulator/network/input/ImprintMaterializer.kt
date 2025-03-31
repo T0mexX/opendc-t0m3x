@@ -30,7 +30,9 @@ import org.apache.parquet.schema.MessageType
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.networks.NetworkV0.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.flow.publics.FlowId
 
 internal class ImprintMaterializer(rqstSchema: MessageType) : RecordMaterializer<NetEventImprint>() {
     // To build network events, knowledge about previous events is needed. Since there is no guarantee that
@@ -51,14 +53,14 @@ internal class ImprintMaterializer(rqstSchema: MessageType) : RecordMaterializer
                     TRANSMITTER_ID_FIELD ->
                         object : PrimitiveConverter() {
                             override fun addLong(value: Long) {
-                                imprintBuilder.transmitterId = value
+                                imprintBuilder.transmitterId = NodeId(value)
                             }
                         }
 
                     DEST_ID_FIELD ->
                         object : PrimitiveConverter() {
                             override fun addLong(value: Long) {
-                                imprintBuilder.destId = value
+                                imprintBuilder.destId = NodeId(value)
                             }
                         }
 
@@ -72,7 +74,7 @@ internal class ImprintMaterializer(rqstSchema: MessageType) : RecordMaterializer
                     FLOW_ID_FIELD ->
                         object : PrimitiveConverter() {
                             override fun addLong(value: Long) {
-                                imprintBuilder.flowId = value
+                                imprintBuilder.flowId = FlowId(value)
                             }
                         }
 

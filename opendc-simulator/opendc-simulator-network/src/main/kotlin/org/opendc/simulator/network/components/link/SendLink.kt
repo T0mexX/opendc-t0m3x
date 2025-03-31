@@ -11,7 +11,8 @@ internal interface SendLink: SendChannel<Notification<Node>> {
     val receiverPort: Port
     override suspend fun send(element: Notification<Node>)
     val maxBw: DataRate
-    suspend fun getUtil(): Percentage
+    val availableBw: DataRate
+    val util: Percentage
     suspend fun claimBw(bw: DataRate): DataRate
     suspend fun releaseBw(bw: DataRate)
 }

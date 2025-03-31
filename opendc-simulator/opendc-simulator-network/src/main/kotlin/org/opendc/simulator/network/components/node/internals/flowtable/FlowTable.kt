@@ -11,8 +11,11 @@ import org.opendc.simulator.network.utils.tracker.Tracker
 import org.opendc.simulator.network.utils.tracker.TrackerMode
 
 internal interface FlowTable : Tracker<NodeFlowEntry> {
-    context(RoutingPolicy, RoutingTable)
+    context(Node)
     suspend fun sendToPorts(updt: Node.RxUpdate)
+
+    context(Node)
+    suspend fun reapplyRouting()
 
     companion object {
 
@@ -29,7 +32,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
                 setOf(NodeFlowEntry.Companion.RxProp)
             override fun NodeFlowEntry.shouldBeTracked(): Boolean = rx > DataRate.zero
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int  =
-                (tx() - rx).tobps().toInt() - (other.tx() - other.rx).tobps().toInt()
+                (tput() - rx).tobps().toInt() - (other.tput() - other.rx).tobps().toInt()
         }
 
         object AllByThroughput : TrackerMode<NodeFlowEntry> {
@@ -37,7 +40,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
                 emptySet()
             override fun NodeFlowEntry.shouldBeTracked(): Boolean = true
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int  =
-                tx().tobps().toInt() - other.tx().tobps().toInt()
+                tput().tobps().toInt() - other.tput().tobps().toInt()
         }
 
         object Generated : TrackerMode<NodeFlowEntry> {
@@ -48,13 +51,20 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
 
         object Consumed : TrackerMode<NodeFlowEntry> {
             override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> = emptySet()
-            override fun NodeFlowEntry.shouldBeTracked(): Boolean = node.id == netFlow.senderId
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = node.id == netFlow.destId
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int  = 0
         }
 
-        private fun NodeFlowEntry.tx(): DataRate =
-            this.txPorts.sumOfUnit { port ->
-                port.getTxTput(port.portIdx)
-            }
+        object Outgoing : TrackerMode<NodeFlowEntry> {
+            override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> = emptySet()
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = node.id != netFlow.destId
+            override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int  = 0
+        }
+
+        object Incoming : TrackerMode<NodeFlowEntry> {
+            override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> = emptySet()
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = node.id != netFlow.senderId
+            override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int  = 0
+        }
     }
 }

@@ -3,7 +3,7 @@ package org.opendc.simulator.network.simscope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.flow.publics.FlowId2
+import org.opendc.simulator.network.flow.publics.FlowId
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -31,17 +31,17 @@ internal class NetSimIdDispenser: AbstractCoroutineContextElement(Key) {
     // FlowId Dispensing
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private var nextFlowId = FlowId2(0)
+    private var nextFlowId = FlowId(0)
     private val flowIdMtx = Mutex()
-    private val claimedFlowIds = mutableSetOf<FlowId2>()
+    private val claimedFlowIds = mutableSetOf<FlowId>()
 
-    suspend fun getFlowId(): FlowId2 = nodeIdMtx.withLock {
+    suspend fun getFlowId(): FlowId = nodeIdMtx.withLock {
         while (nextFlowId in claimedFlowIds) claimedFlowIds.remove(nextFlowId)
 
         return nextFlowId++
     }
 
-    suspend fun claimFlowId(id: FlowId2): FlowId2? = nodeIdMtx.withLock {
+    suspend fun claimFlowId(id: FlowId): FlowId? = nodeIdMtx.withLock {
         if (id < nextFlowId || id in claimedFlowIds) null
         else id
     }

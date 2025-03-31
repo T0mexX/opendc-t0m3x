@@ -5,14 +5,8 @@ package org.opendc.simulator.network.utils.invalidatable.internals
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.utils.InternalOdcNetworkApi
 
-internal interface Invalidatable {
-    val stabilizer: NetSimStabilizer
+public interface Invalidatable {
+    public suspend fun invalidate()
 
-    suspend fun invalidate() {
-        stabilizer.invalidate()
-    }
-
-    suspend fun validate() {
-        stabilizer.validate()
-    }
+    public suspend fun validate()
 }

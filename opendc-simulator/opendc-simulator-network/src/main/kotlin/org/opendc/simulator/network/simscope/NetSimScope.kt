@@ -6,7 +6,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.logger.logger
+import org.opendc.simulator.network.components.node.NodeVersion
+import org.opendc.simulator.network.components.port.PortVersion
+import org.opendc.simulator.network.flow.internals.NetFlowVersion
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
+import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -21,6 +26,10 @@ internal class NetSimScope(
     val poolAggr: NetSimPoolAggregator
     val idDispenser: NetSimIdDispenser
     val logger by logger()
+
+    val portVersion: PortVersion
+    val nodeVersion: NodeVersion
+    val netFlowVersion: NetFlowVersion
 
     init {
         var ctx = coroutineContext
@@ -39,12 +48,22 @@ internal class NetSimScope(
                 )
             }
             ctx[NetSimIdDispenser] ?: let { ctx += NetSimIdDispenser() }
+
         }
         config = ctx[NetSimConfig]!!
         barrier = ctx[NetSimBarrier]!!
         devConfig = config.netSimDevConfig
         poolAggr = ctx[NetSimPoolAggregator]!!
         idDispenser = ctx[NetSimIdDispenser]!!
+
+        portVersion = devConfig.portConfig.version
+        nodeVersion = devConfig.nodeConfig.version
+        netFlowVersion = devConfig.netFlowConfig.version
+    }
+
+    private suspend fun initDispensers() {
+        portVersion.initDispensers()
+        nodeVersion.initDispensers()
     }
 
 

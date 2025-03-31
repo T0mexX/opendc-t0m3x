@@ -22,12 +22,14 @@
 
 package org.opendc.simulator.network.energy
 
+import org.opendc.simulator.network.components.node.NodeId
+
 /**
  * Classes that implement this interface consume energy,
  * and their energy consumption can be tracked using [enMonitor].
  */
 internal interface EnergyConsumer<T : EnergyConsumer<T>> {
-    val id: Long
+    val id: NodeId
 
     /**
      * Allows to track the energy consumption of ***this***.

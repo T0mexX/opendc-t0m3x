@@ -26,8 +26,8 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.CustomNetwork
+import org.opendc.simulator.network.components.networks.CustomNetwork
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class NodeRmCmd : REPLCmd(name = "rm") {
@@ -37,17 +37,19 @@ internal class NodeRmCmd : REPLCmd(name = "rm") {
             "rem" to listOf("rm"),
         ) + super.aliases()
 
-    private val id: NodeId by argument(
+    private val id: Long by argument(
         help = "Id of the node",
-    ).long().check("node does not exist") { net.nodesById.contains(it) }
+    ).long().check("node does not exist") { net.nodesById.contains(NodeId(it)) }
 
     override fun run(): Unit =
-        runBlocking(net.validator) {
-            net.awaitStability()
-            (net as? CustomNetwork)?.let { cstNet ->
-                cstNet.rmNode(id)?.let {
-                    echo("Removed node $it")
+        runBlocking(scope.ctx) {
+            with(scope) {
+                barrier.awaitStability()
+
+                // TODO: runcatching
+                (net as? CustomNetwork)?.let { cstNet ->
+                    echo("Removed node ${cstNet.minus(NodeId(id))}") ?: issueMessage("Unable to remove node")
                 } ?: issueMessage("Unable to remove node")
-            } ?: issueMessage("Unable to remove node")
+            }
         }
 }

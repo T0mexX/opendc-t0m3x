@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.networks
 
+import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeV0
@@ -9,7 +10,8 @@ import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.fairness.MaxMinPerPort
+import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
+import org.opendc.simulator.network.policies.fairness.MaxMin
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.policies.forwarding.ECMP
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -22,14 +24,14 @@ internal class Internet(
 
     override val portSpeed: DataRate = DataRate.max
     override var nPorts: Int = 0
-    override var fairnessPolicy: FairnessPolicy = MaxMinPerPort
-    override var portSelectionPolicy: RoutingPolicy = ECMP
+    override var fairnessPolicy: FairnessPolicy = FirstComeFirstServed
+    override var routingPolicy: RoutingPolicy = ECMP
 
-    override fun startFlow(netflow: NetFlow) {
+    override suspend fun startFlow(netflow: NetFlow) {
         TODO("Not yet implemented")
     }
 
-    override fun stopFlow(netFlow: NetFlow) {
+    override suspend fun stopFlow(netFlow: NetFlow) {
         TODO("Not yet implemented")
     }
 

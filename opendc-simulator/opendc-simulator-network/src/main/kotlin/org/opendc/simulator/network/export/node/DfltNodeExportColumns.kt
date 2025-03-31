@@ -29,10 +29,8 @@ import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64
 import org.apache.parquet.schema.Types
-import org.opendc.simulator.network.flow.publics.NetFlow
-import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
-import org.opendc.simulator.network.components.Node
+import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.trace.util.parquet.exporter.ExportColumn
 
 public object DfltNodeExportColumns {
@@ -99,7 +97,7 @@ public object DfltNodeExportColumns {
         ) { it.numConsumedFlows }
 
     /**
-     * The lowest throughput ratio among all flows transiting through this [Node].
+     * The lowest throughput ratio among all flowsById transiting through this [Node].
      */
     public val MIN_F_TPUT: ExportColumn<NodeSnapshot> =
         ExportColumn(
@@ -107,7 +105,7 @@ public object DfltNodeExportColumns {
         ) { it.currMinFlowTputPerc?.toRatio() }
 
     /**
-     * The highest throughput ratio among all flows transiting through this [Node].
+     * The highest throughput ratio among all flowsById transiting through this [Node].
      */
     public val MAX_F_TPUT: ExportColumn<NodeSnapshot> =
         ExportColumn(
@@ -131,7 +129,7 @@ public object DfltNodeExportColumns {
         ) { it.currNodeTputAllFlows.toMbps() }
 
     /**
-     * The sum of the throughput of all flows divided by the sum of demand of all flows.
+     * The sum of the throughput of all flowsById divided by the sum of demand of all flowsById.
      */
     public val TPUT_PERC: ExportColumn<NodeSnapshot> =
         ExportColumn(

@@ -14,6 +14,10 @@ internal class FlowTableV1 private constructor(
 
     private val _flows = mutableMapOf<NetFlow, NodeFlowEntry>()
 
+    init {
+        tracker.itemsGetter = { _flows.values }
+    }
+
     context(Node)
     override suspend fun sendToPorts(updt: Node.RxUpdate) {
         val entry = _flows.getOrPut(updt.netFlow) {
@@ -26,7 +30,10 @@ internal class FlowTableV1 private constructor(
             entry.portFlowEntryIds[it.portIdx] =
                 it.setTxDemand(perPort, entry.netFlow)
         }
-        updt.dispose()
+    }
+
+    context(Node) override suspend fun reapplyRouting() {
+        TODO("Not yet implemented")
     }
 
     context(Node)
@@ -42,12 +49,10 @@ internal class FlowTableV1 private constructor(
 
     companion object: FlowTableVersion {
 
-        context(NetSimScope, Node)
+        context(NetSimScope)
         override suspend fun invoke(): FlowTable = FlowTableV1(
             nodeFlowEntryDispenser = NodeFlowEntry.dispenser(),
-            tracker = Tracker {
-                (this@Node.flowTable as FlowTableV1)._flows.values
-            },
+            tracker = Tracker(),
         )
     }
 }

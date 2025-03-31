@@ -2,6 +2,8 @@ package org.opendc.simulator.network.utils.invalidatable.internals
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
+import kotlinx.coroutines.selects.SelectClause1
+import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -41,6 +43,19 @@ internal open class InvalidatorChl<T> private constructor(
     )
     override fun tryReceive(): ChannelResult<T> = throw UnsupportedOperationException()
 
+    suspend fun bo() {
+        select<Unit> {
+            delegatedChl.onReceive {
+
+            }
+
+        }
+    }
+
+    /**
+     * This override also works when [onReceive] is used, since [onReceive]
+     * is called only once when the method will succeed.
+     */
     override suspend fun receive(): T {
         pendingMtx.withLock {
             if (--pending == 0) receiver.validate()

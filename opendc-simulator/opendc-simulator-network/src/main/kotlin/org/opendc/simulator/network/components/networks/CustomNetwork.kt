@@ -11,7 +11,7 @@ import org.opendc.simulator.network.utils.NonSerializable
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-internal class CustomNetwork(
+internal class CustomNetwork private constructor(
     nodes: Collection<Node>,
     override val internet: Internet,
 ): NetworkV0() {
@@ -37,7 +37,7 @@ internal class CustomNetwork(
 
         val n: Node = _nodesById.remove(nodeId)!!
         (n as? SenderNode)?.let { _sendNodesById -= it.id }
-        n.job.cancel()
+        n.job?.cancel()
     }
 
     /**
@@ -97,7 +97,7 @@ internal class CustomNetwork(
 
     companion object {
         context(NetSimScope)
-        suspend operator fun invoke(nodes: Collection<Node>): CustomNetwork =
+        suspend operator fun invoke(nodes: Collection<Node> = emptyList()): CustomNetwork =
             CustomNetwork(
                 nodes = nodes,
                 internet = Internet(),

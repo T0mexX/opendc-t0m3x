@@ -24,10 +24,9 @@ package org.opendc.simulator.network.api.workload
 
 import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.api.NetworkController
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.networks.`Network.bak`
-import org.opendc.simulator.network.utils.CoroutineWorkChannel
+import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.components.networks.NetworkV0.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.node.NodeId
 import java.time.Duration
 import java.time.Instant
 import java.util.LinkedList
@@ -65,55 +64,55 @@ public class SimNetWorkload(
     private val hostIds: Set<NodeId> =
         buildSet {
             events.forEach { addAll(it.involvedIds()) }
-        }.filterNot { it == Network.INTERNET_ID }.toSet()
+        }.filterNot { it == INTERNET_ID }.toSet()
 
     init {
         check(events.isNotEmpty()) { "Network workload is empty." }
     }
 
-    /**
-     * If this method successfully completes, the controller is then able to execute ***this*** workload,
-     * even if the workload node ids do not correspond to physical node ids.
-     *
-     * @param[controller]   the [NetworkController] on which to perform the mapping.
-     */
-    internal fun performVirtualMappingOn(controller: NetworkController) {
-        // vId = virtual id
-        // pId = physical id
+//    /**
+//     * If this method successfully completes, the controller is then able to execute ***this*** workload,
+//     * even if the workload node ids do not correspond to physical node ids.
+//     *
+//     * @param[controller]   the [NetworkController] on which to perform the mapping.
+//     */
+//    internal fun performVirtualMappingOn(controller: NetworkController) {
+//        // vId = virtual id
+//        // pId = physical id
+//
+//        // map host node ids of the workload to physical host nodesById of the network
+//        hostIds.forEach { vId ->
+//            checkNotNull(
+//                controller.claimNextHostNode()?.nodeId?.let {
+//                        pId ->
+//                    controller.virtualMap(vId, pId)
+//                },
+//            ) { "unable to map workload to network, not enough host nodes claimable in the network (${hostIds.size} needed)" }
+//        }
+//    }
 
-        // map host node ids of the workload to physical host nodesById of the network
-        hostIds.forEach { vId ->
-            checkNotNull(
-                controller.claimNextHostNode()?.nodeId?.let {
-                        pId ->
-                    controller.virtualMap(vId, pId)
-                },
-            ) { "unable to map workload to network, not enough host nodes claimable in the network (${hostIds.size} needed)" }
-        }
-    }
-
-    /**
-     * Executes the next [NetworkEvent].
-     */
-    internal suspend fun NetworkController.execNext() {
-        events.poll()?.let { with(it) { execIfNotPassed() } }
-            ?: LOG.error("unable to execute network event, no more events remaining in the workload")
-    }
+//    /**
+//     * Executes the next [NetworkEvent].
+//     */
+//    internal suspend fun NetworkController.execNext() {
+//        events.poll()?.let { with(it) { execIfNotPassed() } }
+//            ?: LOG.error("unable to execute network event, no more events remaining in the workload")
+//    }
 
     /**
      * @return `true` if there is at least one [NetworkEvent] that has not been executed, `false` otherwise.
      */
     internal fun hasNext(): Boolean = events.isNotEmpty()
 
-    internal suspend fun NetworkController.execUntil(
-        until: Timestamp,
-        workChl: CoroutineWorkChannel<NetworkEvent>,
-    ): Long {
-        var consumed: Long = 0
-        while ((events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
-            workChl.send(events.poll())
-            consumed++
-        }
+//    internal suspend fun NetworkController.execUntil(
+//        until: Timestamp,
+//        workChl: CoroutineWorkChannel<NetworkEvent>,
+//    ): Long {
+//        var consumed: Long = 0
+//        while ((events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
+//            workChl.send(events.poll())
+//            consumed++
+//        }
 //        coroutineScope {
 // //            while ((events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
 // //                events.poll()?.let { with(it) { launch { execIfNotPassed() } } }
@@ -121,11 +120,11 @@ public class SimNetWorkload(
 // //            }
 //            pollUntil(until).map { launch { it.execIfNotPassed() } }.also { consumed += it.size }
 //        }
-
-        advanceBy(until.timeDelta(lastUpdate))
-
-        return consumed
-    }
+//
+//        advanceBy(until.timeDelta(lastUpdate))
+//
+//        return consumed
+//    }
 
     private fun pollUntil(until: Timestamp): Collection<NetworkEvent> =
         buildList {

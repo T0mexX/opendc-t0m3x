@@ -29,14 +29,13 @@ import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.NetEnRecorder
-import org.opendc.simulator.network.flow.publics.NetFlow
-import org.opendc.simulator.network.api.NetworkController
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
-import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.HDR
-import org.opendc.simulator.network.components.CoreSwitch
-import org.opendc.simulator.network.components.HostNode
-import org.opendc.simulator.network.components.networks.`Network.bak`
-import org.opendc.simulator.network.components.networks.`Network.bak`.Companion.getNodesById
+import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
+import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
+import org.opendc.simulator.network.components.node.host.HostNode
+import org.opendc.simulator.network.flow.publics.NetFlow
+import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable
@@ -50,10 +49,10 @@ import java.time.Instant
  * @property[numHostNodes]              The number of host nodesById in the network at the instant the snapshot is taken.
  * @property[claimedHostNodes]          The number of host nodesById whose interface was claimed at the instant the snapshot was taken.
  * @property[numCoreSwitches]           The number of core switches in the network at the instant the snapshot is taken.
- * @property[numActiveFlows]            The number of flows transiting through the network at the instant the snapshot is taken.
- * @property[totTput]                   The total throughput of the flows, as the sum of their throughput.
- * @property[totTputPerc]               The total throughput percentage of the flows, as the sum of their throughput divided by the sum of their demand.
- * @property[avrgTputPerc]              The average throughput among all flows, as the sum of the throughput percentage of each flow, divided by the number of flows.
+ * @property[numActiveFlows]            The number of flowsById transiting through the network at the instant the snapshot is taken.
+ * @property[totTput]                   The total throughput of the flowsById, as the sum of their throughput.
+ * @property[totTputPerc]               The total throughput percentage of the flowsById, as the sum of their throughput divided by the sum of their demand.
+ * @property[avrgTputPerc]              The average throughput among all flowsById, as the sum of the throughput percentage of each flow, divided by the number of flowsById.
  * @property[currPwrUse]                The power usage at the instant the snapshot was taken.
  * @property[avrgPwrUseOverTime]        The average power usage of the network, from the instant the node was started until the instant the snapshot was taken.
  * @property[totEnConsumed]             The energy consumed from the instant the network was started until the instant the snapshot was taken.
@@ -115,7 +114,7 @@ public class NetworkSnapshot private constructor(
             flags.ifSet(NODES) { appendPad("nodes") }
             flags.ifSet(HOST_NODES) { appendPad("hosts (assigned)") }
             flags.ifSet(CORE_SWITCHES) { appendPad("core switches") }
-            flags.ifSet(FLOWS) { appendPad("active flows") }
+            flags.ifSet(FLOWS) { appendPad("active flowsById") }
             flags.ifSet(TOT_TPUT) { appendPad("tot throughput") }
             flags.ifSet(TOT_TPUT_PERC) { appendPad("tot throughput %") }
             flags.ifSet(AVRG_TPUT_PERC) { appendPad("avrg throughput %") }
@@ -149,7 +148,7 @@ public class NetworkSnapshot private constructor(
         public val CORE_SWITCHES: Flag<NetworkSnapshot> = Flag()
 
         /**
-         * The number of flows transiting through the network at the instant the snapshot is taken.
+         * The number of flowsById transiting through the network at the instant the snapshot is taken.
          */
         public val FLOWS: Flag<NetworkSnapshot> = Flag()
 
@@ -159,13 +158,13 @@ public class NetworkSnapshot private constructor(
         public val TOT_TPUT: Flag<NetworkSnapshot> = Flag()
 
         /**
-         * The total throughput percentage of all the flows transiting through
+         * The total throughput percentage of all the flowsById transiting through
          * the network as the sum of their throughput divided by the sum of their demand.
          */
         public val TOT_TPUT_PERC: Flag<NetworkSnapshot> = Flag()
 
         /**NodeSna
-         * The average throughput percentage of all the flows transiting through
+         * The average throughput percentage of all the flowsById transiting through
          * the network at the instant the snapshot was taken.
          */
         public val AVRG_TPUT_PERC: Flag<NetworkSnapshot> = Flag()
@@ -199,20 +198,21 @@ public class NetworkSnapshot private constructor(
 
         private var lastSnapshot: NetworkSnapshot? = null
 
-        /**
-         * Retrieves a snapshot of [this].
-         * @param[noCache] if `true` prevents the use of cache. Cache use needs to
-         * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
-         */
-        public suspend fun NetworkController.snapshot(noCache: Boolean = false): NetworkSnapshot =
-            network.snapshot(noCache, instantSrc.instant(), energyRecorder)
+//        /**
+//         * Retrieves a snapshot of [this].
+//         * @param[noCache] if `true` prevents the use of cache. Cache use needs to
+//         * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
+//         */
+//        public suspend fun NetworkController.snapshot(noCache: Boolean = false): NetworkSnapshot =
+//            network.snapshot(noCache, instantSrc.instant(), energyRecorder)
 
         /**
          * Retrieves a snapshot of [this].
          * @param[noCache] if `true` prevents the use of cache. Cache use needs to
          * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
          */
-        public suspend fun Network.snapshot(
+        context(NetSimScope)
+        internal suspend fun Network.snapshot(
             noCache: Boolean = false,
             instant: Instant,
             enRecorder: NetEnRecorder,
@@ -222,25 +222,26 @@ public class NetworkSnapshot private constructor(
                     if (it.instant == instant) return it
                 }
             }
+            // TODO: STABILITY
 
             val flows: Collection<NetFlow> = this.flowsById.values
-            val activeFlows: Collection<NetFlow> = flows.filterNot { it.getDemand().isZero() }
-            val totDemand: DataRate = flows.sumOfUnit { it.getDemand() }
-            val totThroughput: DataRate = flows.sumOfUnit { it.getThroughput() }
+            val activeFlows: Collection<NetFlow> = flows.filterNot { it.demand.isZero() }
+            val totDemand: DataRate = flows.sumOfUnit { it.demand }
+            val totThroughput: DataRate = flows.sumOfUnit { it.throughput }
 
-            this@snapshot.awaitStability()
+            barrier.awaitStability()
 
             return NetworkSnapshot(
                 instant = instant,
-                numNodes = this.nodesById.size,
-                numHostNodes = this.getNodesById<HostNode>().size,
-                claimedHostNodes = this.getNodesById<HostNode>().size,
-                numCoreSwitches = this.getNodesById<CoreSwitch>().size,
+                numNodes = nodesById.size,
+                numHostNodes = getNodesById<HostNode>().size,
+                claimedHostNodes = getNodesById<HostNode>().size,
+                numCoreSwitches = getNodesById<CoreSwitch>().size,
                 numActiveFlows = activeFlows.size,
                 totTput = totThroughput,
                 totTputPerc = if (activeFlows.isEmpty()) null else totThroughput roundedPercentageOf totDemand,
-                avrgTputPerc = activeFlows.averageOfUnitOrNull { it.getThroughput() roundedPercentageOf it.getDemand() },
-                worstTputPerc = activeFlows.minOfOrNull { it.getThroughput() roundedPercentageOf it.getDemand() },
+                avrgTputPerc = activeFlows.averageOfUnitOrNull { it.throughput roundedPercentageOf it.demand },
+                worstTputPerc = activeFlows.minOfOrNull { it.throughput roundedPercentageOf it.demand },
                 currPwrUse = enRecorder.currPwrUsage,
                 avrgPwrUseOverTime = enRecorder.avrgPwrUsage,
                 totEnConsumed = enRecorder.totalConsumption,

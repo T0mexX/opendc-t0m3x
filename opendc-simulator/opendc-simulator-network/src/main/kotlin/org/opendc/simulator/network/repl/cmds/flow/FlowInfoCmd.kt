@@ -25,14 +25,14 @@ package org.opendc.simulator.network.repl.cmds.flow
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.Node
+import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 private const val CMD_STR: String = "info"
 
 internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
-    private val nodeId: NodeId? by option(
+    private val nodeId: Long? by option(
         help = "Id of the node to display info of",
         names = arrayOf("-n", "--node"),
     ).long()
@@ -43,14 +43,14 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
         )
 
     override fun run(): Unit =
-        runBlocking(net.validator) {
-            net.awaitStability()
+        runBlocking {
+            scope.barrier.awaitStability()
 
             nodeId?.let {
                 // NodeId2 specified.
-                val node: Node? = net.nodesById[it]
+                val node: Node? = net[NodeId(it)]
                 checkNotNull(node)
-                echo(node.fmtFlows())
-            } ?: echo(net.fmtFlows())
+//                echo(node.fmtFlows())
+            } //?: echo(net.fmtFlows())
         }
 }

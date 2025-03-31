@@ -28,6 +28,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.opendc.simulator.network.simscope.NetSimScope
 import java.io.File
 import java.io.IOException
 import kotlin.io.path.createParentDirectories
@@ -41,7 +42,7 @@ internal class ExportCmd : REPLCmd(name = CMD_STR) {
 
     override fun run(): Unit =
         runBlocking {
-            net.awaitStability()
+            scope.barrier.awaitStability()
             try {
                 if (targetFile.exists().not()) {
                     targetFile.toPath().normalize().createParentDirectories()

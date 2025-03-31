@@ -26,7 +26,6 @@ import org.opendc.common.annotations.InternalUse
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.TimeDelta
-import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
 import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
 import org.opendc.simulator.network.utils.`observable-old`.DelegatedObservable
 import org.opendc.simulator.network.utils.`observable-old`.Observable
@@ -102,7 +101,8 @@ internal class EnMonitor<T : EnergyConsumer<T>>(
         }
 
         if (checkStability) {
-            coroutineContext.getNetStabilityChecker().checkIsStableWhile { foo() }
+//            coroutineContext.getNetStabilityChecker().checkIsStableWhile { foo() }
+            // TODO
         } else {
             foo()
         }

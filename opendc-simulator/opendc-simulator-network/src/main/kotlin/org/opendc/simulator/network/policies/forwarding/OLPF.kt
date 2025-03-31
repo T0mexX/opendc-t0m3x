@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
-import org.opendc.simulator.network.policies.forwarding.OSPF.onlyMinimal
 
 @Serializable
 @SerialName("olpf")

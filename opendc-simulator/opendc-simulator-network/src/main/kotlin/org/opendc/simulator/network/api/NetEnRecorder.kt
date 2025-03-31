@@ -26,10 +26,9 @@ import org.opendc.common.logger.logger
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.TimeDelta
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.CustomNetwork
-import org.opendc.simulator.network.components.networks.`Network.bak`
-import org.opendc.simulator.network.components.stability.NetworkStabilityChecker.Key.getNetStabilityChecker
+import org.opendc.simulator.network.components.networks.CustomNetwork
+import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.energy.EnMonitor
 import org.opendc.simulator.network.energy.EnergyConsumer
 import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
@@ -39,6 +38,7 @@ import kotlin.coroutines.coroutineContext
 
 /**
  * Records the network's power draw and energy consumption.
+ * TODO: Refactor
  */
 public class NetEnRecorder internal constructor(network: Network) {
     public var currPwrUsage: Power = Power.zero
@@ -66,31 +66,31 @@ public class NetEnRecorder internal constructor(network: Network) {
         consumersById.values.forEach { it.enMonitor.update() }
 
         // Sets up callback for whenever a node is added to the network.
-        (network as? CustomNetwork)?.onNodeAdded { _, node ->
-            (node as? EnergyConsumer<*>)?.let { newConsumer ->
-                newConsumer.enMonitor.onPwrUseChange(powerUseChangeHndlr)
-                consumersById.compute(newConsumer.id) { _, oldConsumer ->
-                    // If new consumer replaces an old one-log warning msg
-                    oldConsumer?.let {
-                        if (oldConsumer !== newConsumer) {
-                            log.warn("energy consumer $oldConsumer is being replaced by $newConsumer which has the same id")
-                        }
-                    }
-                    newConsumer.also {
-                        it.enMonitor.onPwrUseChange(powerUseChangeHndlr)
-                        it.enMonitor.update()
-                    }
-                }
-            }
-        }
+//        (network as? CustomNetwork)?.onNodeAdded { _, node ->
+//            (node as? EnergyConsumer<*>)?.let { newConsumer ->
+//                newConsumer.enMonitor.onPwrUseChange(powerUseChangeHndlr)
+//                consumersById.compute(newConsumer.id) { _, oldConsumer ->
+//                    // If new consumer replaces an old one-log warning msg
+//                    oldConsumer?.let {
+//                        if (oldConsumer !== newConsumer) {
+//                            log.warn("energy consumer $oldConsumer is being replaced by $newConsumer which has the same id")
+//                        }
+//                    }
+//                    newConsumer.also {
+//                        it.enMonitor.onPwrUseChange(powerUseChangeHndlr)
+//                        it.enMonitor.update()
+//                    }
+//                }
+//            }
+//        }
 
         // Sets up a callback for whenever a node is removed from the network.
-        (network as? CustomNetwork)?.onNodeRemoved { _, node ->
-            (node as? EnergyConsumer<*>)?.let {
-                consumersById.remove(it.id)
-                    ?: log.warn("energy consumer was removed from the network $network, but it was not tracked by the energy recorder")
-            }
-        }
+//        (network as? CustomNetwork)?.onNodeRemoved { _, node ->
+//            (node as? EnergyConsumer<*>)?.let {
+//                consumersById.remove(it.id)
+//                    ?: log.warn("energy consumer was removed from the network $network, but it was not tracked by the energy recorder")
+//            }
+//        }
     }
 
     /**
@@ -127,11 +127,11 @@ public class NetEnRecorder internal constructor(network: Network) {
             totTimeElapsed += deltaTime
         }
 
-        if (checkStability) {
-            coroutineContext.getNetStabilityChecker().checkIsStableWhile { foo() }
-        } else {
+//        if (checkStability) {
+//            coroutineContext.getNetStabilityChecker().checkIsStableWhile { foo() }
+//        } else {
             foo()
-        }
+//        }
     }
 
     public companion object {

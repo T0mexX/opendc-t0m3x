@@ -1,6 +1,5 @@
 package org.opendc.simulator.network.components.link
 
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -8,7 +7,6 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
-import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
 import org.opendc.simulator.network.utils.notifiable.publics.Notification
 
 internal class SimplexLink(
@@ -17,6 +15,8 @@ internal class SimplexLink(
 ): SendLink, ReceiveLink, SendChannel<Notification<Node>> by receiverPort.owner.notificationChl {
     private var usedBw: DataRate = DataRate.zero
     private val mtx = Mutex()
+    override val availableBw: DataRate get() = maxBw - usedBw
+    override val util: Percentage get() = usedBw / maxBw
 
     override suspend fun getUtil(): Percentage = mtx.withLock {
         usedBw / maxBw

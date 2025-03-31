@@ -27,11 +27,9 @@ import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.api.FlowId
+import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
-import org.opendc.simulator.network.api.NetworkController
-import org.opendc.simulator.network.api.node.NodeId
-import org.opendc.simulator.network.components.Node
 
 /**
  * Represents a single network event occurring at [deadline].
@@ -70,27 +68,27 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
      */
     internal open fun involvedIds(): Set<NodeId> = setOf()
 
-    /**
-     * Executes *this* event on [this] controller.
-     */
-    protected abstract suspend fun NetworkController.exec()
+//    /**
+//     * Executes *this* event on [this] controller.
+//     */
+//    protected abstract suspend fun NetworkController.exec()
 
-    /**
-     * Executes *this* event on this controller if the deadline is not passed.
-     */
-    context(NetworkController)
-    internal suspend fun execIfNotPassed() {
-        val msSinceLastUpdate: TimeDelta = deadline.timeDelta(Timestamp.ofInstant(instantSrc.instant()))
-        if (msSinceLastUpdate < TimeDelta.zero) {
-            return log.error(
-                "unable to execute network event, " +
-                    "deadline is passed (deadline=${deadline.toInstant()}, " +
-                    "currentInstant=${instantSrc.instant()})",
-            )
-        }
-
-        exec()
-    }
+//    /**
+//     * Executes *this* event on this controller if the deadline is not passed.
+//     */
+//    context(NetworkController)
+//    internal suspend fun execIfNotPassed() {
+//        val msSinceLastUpdate: TimeDelta = deadline.timeDelta(Timestamp.ofInstant(instantSrc.instant()))
+//        if (msSinceLastUpdate < TimeDelta.zero) {
+//            return log.error(
+//                "unable to execute network event, " +
+//                    "deadline is passed (deadline=${deadline.toInstant()}, " +
+//                    "currentInstant=${instantSrc.instant()})",
+//            )
+//        }
+//
+//        exec()
+//    }
 
     override fun compareTo(other: NetworkEvent): Int = this.deadline.compareTo(other.deadline)
 
@@ -102,10 +100,10 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
         val newDemand: DataRate,
         override var targetFlowGetter: () -> NetFlow,
     ) : NetworkEvent() {
-        override suspend fun NetworkController.exec() {
-            val flow = targetFlow
-            flow.setDemand(newDemand)
-        }
+//        override suspend fun NetworkController.exec() {
+//            val flow = targetFlow
+//            flow.setDemand(newDemand)
+//        }
     }
 
     /**
@@ -117,15 +115,15 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
         val from: NodeId,
         val to: NodeId,
         val demand: DataRate,
-        val flowId: FlowId = runBlocking { NetFlow.nextId() },
+        val flowId: FlowId = TODO(),
     ) : NetworkEvent() {
-        override suspend fun NetworkController.exec() {
-            this.startFlow(
-                transmitterId = from,
-                destinationId = to,
-                demand = demand,
-            ) ?. let { targetFlowGetter = { it } }
-        }
+//        override suspend fun NetworkController.exec() {
+//            this.startFlow(
+//                transmitterId = from,
+//                destinationId = to,
+//                demand = demand,
+//            ) ?. let { targetFlowGetter = { it } }
+//        }
 
         override fun involvedIds(): Set<NodeId> = setOf(from, to)
     }
@@ -137,10 +135,10 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
         override val deadline: Timestamp,
         override var targetFlowGetter: () -> NetFlow,
     ) : NetworkEvent() {
-        override suspend fun NetworkController.exec() {
-            this.stopFlow(
-                flowId = targetFlow.id,
-            )
-        }
+//        override suspend fun NetworkController.exec() {
+//            this.stopFlow(
+//                flowId = targetFlow.id,
+//            )
+//        }
     }
 }

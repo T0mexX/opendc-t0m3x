@@ -10,10 +10,11 @@ import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.utils.Launchable
-import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.internals.IFW
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
+import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
+import org.opendc.simulator.network.utils.notifiable.publics.AnsweredNotification
 import org.opendc.simulator.network.utils.notifiable.publics.Notifiable
 import org.opendc.simulator.network.utils.notifiable.publics.Notification
 
@@ -21,7 +22,7 @@ import org.opendc.simulator.network.utils.notifiable.publics.Notification
 /**
  * Interface representing a node in a [Network2].
  */
-internal interface Node : WithSpecs<Node>, Invalidatable, Notifiable<Node>, Launchable {
+internal interface Node : WithSpecs<Node>, IInvalidatable, Notifiable<Node>, Launchable {
     /**
      * ID of the node. Uniquely identifies the node in the [Network22].
      */
@@ -39,15 +40,15 @@ internal interface Node : WithSpecs<Node>, Invalidatable, Notifiable<Node>, Laun
 
     val ports: List<Port>
 
-    val job: Job
+    val job: Job?
 
     /**
-     * Policy that determines to which [Port]s the flows are forwarded to.
+     * Policy that determines to which [Port]s the flowsById are forwarded to.
      */
-    var portSelectionPolicy: RoutingPolicy
+    var routingPolicy: RoutingPolicy
 
     /**
-     * Policy that determines how the flows data are handled in case of maximum bw reached.
+     * Policy that determines how the flowsById data are handled in case of maximum bw reached.
      */
     var fairnessPolicy: FairnessPolicy
 
@@ -61,6 +62,8 @@ internal interface Node : WithSpecs<Node>, Invalidatable, Notifiable<Node>, Laun
 
     suspend fun connectTo(other: Node, linkBw: DataRate = this.portSpeed min other.portSpeed)
 
+    suspend fun disconnectFrom(other: Node)
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Notifications
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,31 +72,33 @@ internal interface Node : WithSpecs<Node>, Invalidatable, Notifiable<Node>, Laun
         var netFlow: NetFlow
         var deltaRate: DataRate
 
-        companion object : FlyWeightId<RxUpdate>
+        companion object : FWId<RxUpdate>
     }
 
     interface Connect: Notification<Node>, IFW<Connect> {
         var other: Node
         var linkBw: DataRate
-        var reapplyRoutingNotifDispenser: FWDispenser<ReapplyRouting>
-        var portConnectNotifDispenser: FWDispenser<Port.Connect>
 
-        companion object : FlyWeightId<Connect>
+        companion object : FWId<Connect>
     }
 
     interface Disconnect: Notification<Node>, IFW<Disconnect> {
         var other: Node
-        var portDisconnectNotifDispenser: FWDispenser<Port.Disconnect>
-        var reapplyRoutingNotifDispenser: FWDispenser<ReapplyRouting>
         var notifyOther: Boolean
 
-        companion object : FlyWeightId<Disconnect>
+        companion object : FWId<Disconnect>
     }
 
     interface ReapplyRouting: Notification<Node>, IFW<ReapplyRouting> {
-        var portProcessNotifDispenser: FWDispenser<Port.StartProcessing>
 
-        companion object : FlyWeightId<ReapplyRouting>
+        companion object : FWId<ReapplyRouting>
+    }
+
+    interface AcceptConnection: AnsweredNotification<Node, Port>, IFW<AcceptConnection> {
+        var toBeAccepted: Port
+        var linkBw: DataRate
+
+        companion object : FWId<AcceptConnection>
     }
 
 

@@ -5,22 +5,17 @@ import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
 
 @Serializable
 internal sealed interface PortVersion {
     context(NetSimScope)
     suspend operator fun invoke(owner: Node, portIdx: Idx): Port
 
-    context(NetSimScope)
-    suspend fun dispenser(id: FlyWeightId<Port.StartProcessing>): FWDispenser<Port.StartProcessing>
+    val startProcessingDisp: FWDispenser<Port.StartProcessing>
+    val setDemandDisp: FWDispenser<Port.SetDemand>
+    val connectDisp: FWDispenser<Port.Connect>
+    val disconnectDisp: FWDispenser<Port.Disconnect>
 
     context(NetSimScope)
-    suspend fun dispenser(id: FlyWeightId<Port.SetDemand>): FWDispenser<Port.SetDemand>
-
-    context(NetSimScope)
-    suspend fun dispenser(id: FlyWeightId<Port.Connect>): FWDispenser<Port.Connect>
-
-    context(NetSimScope)
-    suspend fun dispenser(id: FlyWeightId<Port.Disconnect>): FWDispenser<Port.Disconnect>
+    suspend fun initDispensers()
 }

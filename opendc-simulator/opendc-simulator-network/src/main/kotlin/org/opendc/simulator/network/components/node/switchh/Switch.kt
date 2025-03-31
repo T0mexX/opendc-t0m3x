@@ -7,6 +7,10 @@ import org.opendc.simulator.network.components.node.internals.flowtable.FlowTabl
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
+import org.opendc.simulator.network.energy.EnModel
+import org.opendc.simulator.network.energy.EnMonitor
+import org.opendc.simulator.network.energy.EnergyConsumer
+import org.opendc.simulator.network.energy.emodels.SwitchDfltEnModel
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -17,10 +21,10 @@ internal open class Switch protected constructor(
     override val portSpeed: DataRate,
     override val nPorts: Int,
     override var fairnessPolicy: FairnessPolicy,
-    override var portSelectionPolicy: RoutingPolicy,
+    override var routingPolicy: RoutingPolicy,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-): NodeV0(id) {
+): NodeV0(id), EnergyConsumer<Switch> {
 
     override lateinit var  ports: List<Port>
 
@@ -28,10 +32,15 @@ internal open class Switch protected constructor(
         SwitchSpecs(
             id = id,
             portSpeed = portSpeed,
-            numOfPorts = nPorts,
+            nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
-            portSelectionPolicy = portSelectionPolicy,
+            portSelectionPolicy = routingPolicy,
         )
+
+    @Suppress("LeakingThis")
+    override val enMonitor: EnMonitor<Switch> = EnMonitor(this)
+
+    override fun getDfltEnModel(): EnModel<Switch> = SwitchDfltEnModel
 
     companion object {
         context(NetSimScope)
@@ -55,7 +64,7 @@ internal open class Switch protected constructor(
                 fairnessPolicy = fairnessPolicy
                     ?: switchConfig.defaultFairnessPolicy
                     ?: nodeConfig.defaultFairnessPolicy!!,
-                portSelectionPolicy = portSelectionPolicy
+                routingPolicy = portSelectionPolicy
                     ?: switchConfig.defaultRoutingPolicy
                     ?: nodeConfig.defaultRoutingPolicy!!,
                 flowTable = nodeConfig.flowTableVersion(),

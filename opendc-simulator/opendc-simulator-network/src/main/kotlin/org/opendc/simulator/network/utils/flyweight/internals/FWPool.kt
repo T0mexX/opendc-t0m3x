@@ -4,11 +4,11 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.simulator.network.utils.Idx
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeight
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
+import org.opendc.simulator.network.utils.flyweight.publics.FW
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
 
 
-internal class FWPool<T: FlyWeight<T>, O: FlyWeightId<T>>(
+internal class FWPool<T: FW<T>, O: FWId<T>>(
     private val nSubPools: Int = 10,
     private val objConstructor: suspend (FWPool<T, O>, Idx) -> T
 ) {

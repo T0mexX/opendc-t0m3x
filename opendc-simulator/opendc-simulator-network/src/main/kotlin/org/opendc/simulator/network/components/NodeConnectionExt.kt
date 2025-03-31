@@ -26,116 +26,113 @@ import org.opendc.common.logger.logger
 import org.opendc.common.logger.withWarn
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.internalstructs.RoutingVect
-import org.opendc.simulator.network.components.internalstructs.port.`Port.bk`
-import org.opendc.simulator.network.components.internalstructs.port.connect
-import org.opendc.simulator.network.components.internalstructs.port.disconnect
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
 
-private val log by Unit.logger("NodeConnectionExt")
-
-/**
- * @return `true` on success, `false` otherwise.
- */
-internal suspend fun Node.connect(
-    other: Node,
-    linkBW: DataRate? = null,
-): Boolean {
-
-    val freePort: Port =
-        getFreePort()
-            ?: throw RuntimeException("unable to connect, max num of connected nodesById reached ($nPorts).")
-
-    val otherPort: Port =
-        other.accept(this)
-            ?: throw RuntimeException("unable to connect, node $other refused connection")
-
-
+//private val log by Unit.logger("NodeConnectionExt")
+//
+///**
+// * @return `true` on success, `false` otherwise.
+// */
+//internal suspend fun Node.connect(
+//    other: Node,
+//    linkBW: DataRate? = null,
+//): Boolean {
+//
+//    val freePort: Port =
+//        getFreePort()
+//            ?: throw RuntimeException("unable to connect, max num of connected nodesById reached ($nPorts).")
+//
+//    val otherPort: Port =
+//        other.accept(this)
+//            ?: throw RuntimeException("unable to connect, node $other refused connection")
+//
+//
+////        portToNode[other.id] = freePort
+//
+//        freePort.connect(otherPort, linkBW = linkBW)
+//
+//        val otherVect: RoutingVect = other.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
+//        routingTable.mergeRoutingVector(otherVect, vectOwner = other)
+//        shareRoutingVect(except = listOf(other))
+//
+//        with(flowHandler) { updtAllRouts() }
+//        updateAllFlows()
+//
+//        true
+//    }
+//
+///**
+// * Accepts a connection request from `other` [Node],
+// * second part of method [connect].
+// * @see connect
+// * @param[other]    node that is requesting to connect.
+// */
+//private suspend fun Node.accept(other: Node): Port? =
+//    updtChl.whileUpdtProcessingLocked {
+//        val freePort: Port =
+//            getFreePort()
+//                ?: let {
+//                    log.error("Unable to accept connection, maximum number of connected nodesById reached ($numOfPorts).")
+//                    return@whileUpdtProcessingLocked null
+//                }
+//
 //        portToNode[other.id] = freePort
-
-        freePort.connect(otherPort, linkBW = linkBW)
-
-        val otherVect: RoutingVect = other.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
-        routingTable.mergeRoutingVector(otherVect, vectOwner = other)
-        shareRoutingVect(except = listOf(other))
-
-        with(flowHandler) { updtAllRouts() }
-        updateAllFlows()
-
-        true
-    }
-
-/**
- * Accepts a connection request from `other` [Node],
- * second part of method [connect].
- * @see connect
- * @param[other]    node that is requesting to connect.
- */
-private suspend fun Node.accept(other: Node): Port? =
-    updtChl.whileUpdtProcessingLocked {
-        val freePort: Port =
-            getFreePort()
-                ?: let {
-                    log.error("Unable to accept connection, maximum number of connected nodesById reached ($numOfPorts).")
-                    return@whileUpdtProcessingLocked null
-                }
-
-        portToNode[other.id] = freePort
-
-        freePort
-    }
-
-internal suspend fun Node.disconnect(other: Node) = this.disconnect(other = other, notifyOther = true)
-
-/**
- * Disconnects all ports of ***this*** node.
- */
-internal suspend fun Node.disconnectAll() {
-    portToNode.mapNotNull { (_, port) ->
-        port.otherEndNode
-    }.forEach { disconnect(it, notifyOther = true) }
-}
-
-/**
- * Disconnects ***this*** from [other].
- * @return `true` on success, `false` otherwise.
- */
-private suspend fun Node.disconnect(
-    other: Node,
-    notifyOther: Boolean,
-): Boolean =
-    updtChl.whileUpdtProcessingLocked {
-        val portToOther: Port =
-            portToNode[other.id]
-                ?: return@whileUpdtProcessingLocked log.withWarn(
-                    false,
-                    "unable to disconnect $this from $other, nodesById are not connected",
-                )
-
-        if (notifyOther) {
-            other.disconnect(this, notifyOther = false)
-        }
-
-        portToOther.disconnect()
-
-        routingTable.removeNextHop(other)
-        portToNode.remove(other.id)
-
-        shareRoutingVect(exchange = true)
-
-        with(flowHandler) { updtAllRouts() }
-        updateAllFlows()
-
-        true
-    }
+//
+//        freePort
+//    }
+//
+//internal suspend fun Node.disconnect(other: Node) = this.disconnect(other = other, notifyOther = true)
+//
+///**
+// * Disconnects all ports of ***this*** node.
+// */
+//internal suspend fun Node.disconnectAll() {
+//    portToNode.mapNotNull { (_, port) ->
+//        port.otherEndNode
+//    }.forEach { disconnect(it, notifyOther = true) }
+//}
+//
+///**
+// * Disconnects ***this*** from [other].
+// * @return `true` on success, `false` otherwise.
+// */
+//private suspend fun Node.disconnect(
+//    other: Node,
+//    notifyOther: Boolean,
+//): Boolean =
+//    updtChl.whileUpdtProcessingLocked {
+//        val portToOther: Port =
+//            portToNode[other.id]
+//                ?: return@whileUpdtProcessingLocked log.withWarn(
+//                    false,
+//                    "unable to disconnect $this from $other, nodesById are not connected",
+//                )
+//
+//        if (notifyOther) {
+//            other.disconnect(this, notifyOther = false)
+//        }
+//
+//        portToOther.disconnect()
+//
+//        routingTable.removeNextHop(other)
+//        portToNode.remove(other.id)
+//
+//        shareRoutingVect(exchange = true)
+//
+//        with(flowHandler) { updtAllRouts() }
+//        updateAllFlows()
+//
+//        true
+//    }
+//
+///**
+// * Returns an available port if exists, else null.
+// */
+//private fun Node.getFreePort(): Port? = ports.firstOrNull { !it.isConnected }
 
 /**
- * Returns an available port if exists, else null.
- */
-private fun Node.getFreePort(): Port? = ports.firstOrNull { !it.isConnected }
-
-/**
- * Merges [routVect] in the [this.routingTable], updating flows
+ * Merges [routVect] in the [this.routingTable], updating flowsById
  * and sharing its updated routing vector if needed.
  * @return its own routing vector.
  */
@@ -146,8 +143,9 @@ internal suspend fun Node.exchangeRoutVect(
     routingTable.mergeRoutingVector(routVect, vectOwner)
 
     if (!routingTable.isTableChanged) return routingTable.getVect()
-    with(flowHandler) { updtAllRouts() }
-    updateAllFlows()
+//    with(flowHandler) { updtAllRouts() }
+//    updateAllFlows()
+    TODO()
 
     if (!routingTable.isVectChanged) return routingTable.getVect()
     shareRoutingVect(except = listOf(vectOwner))
@@ -165,25 +163,26 @@ internal tailrec suspend fun Node.shareRoutingVect(
     except: Collection<Node> = listOf(),
     exchange: Boolean = false,
 ) {
-    portToNode.forEach { (_, port) ->
-        val adjNode: Node = port.otherEndNode ?: return@forEach
-        if (adjNode !in except) {
-            if (exchange) {
-                val otherVect: RoutingVect = adjNode.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
-                routingTable.mergeRoutingVector(otherVect, vectOwner = adjNode)
-                if (!routingTable.isTableChanged) return@forEach
-                with(flowHandler) { updtAllRouts() }
-                updateAllFlows()
-
-                if (!routingTable.isVectChanged) return@forEach
-                shareRoutingVect(except = listOf(adjNode), exchange = true)
-                return
-            } else {
-                adjNode.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
-            }
-        }
-    }
-
-    with(flowHandler) { updtAllRouts() }
-    updateAllFlows()
+    TODO()
+//    portToNode.forEach { (_, port) ->
+//        val adjNode: Node = port.otherEndNode ?: return@forEach
+//        if (adjNode !in except) {
+//            if (exchange) {
+//                val otherVect: RoutingVect = adjNode.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
+//                routingTable.mergeRoutingVector(otherVect, vectOwner = adjNode)
+//                if (!routingTable.isTableChanged) return@forEach
+//                with(flowHandler) { updtAllRouts() }
+//                updateAllFlows()
+//
+//                if (!routingTable.isVectChanged) return@forEach
+//                shareRoutingVect(except = listOf(adjNode), exchange = true)
+//                return
+//            } else {
+//                adjNode.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
+//            }
+//        }
+//    }
+//
+//    with(flowHandler) { updtAllRouts() }
+//    updateAllFlows()
 }

@@ -1,23 +1,25 @@
 package org.opendc.simulator.network.components.node
 
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.exchangeRoutVect
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.RoutingVect
+import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.shareRoutingVect
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
 import org.opendc.simulator.network.utils.notifiable.publics.Notification
 
@@ -29,21 +31,49 @@ internal abstract class NodeV0 protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override val routingTable: RoutingTable = RoutingTable(id)
+    override var job: Job? = null
 
     override suspend fun connectTo(other: Node, linkBw: DataRate) {
-        TODO("Not yet implemented")
+        val notif = connectDisp.acquire()
+        notif.other = other
+        notif.linkBw = linkBw
+        _notificationChl.send(notif)
+    }
+
+    override suspend fun disconnectFrom(other: Node) {
+        val notif = disconnectDisp.acquire()
+        notif.other = other
+        _notificationChl.send(notif)
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Node Implementation
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private suspend fun awaitPorts() {
+        combine(ports.map { it.state }) { states ->
+            states.all { it == Port.STABLE || it == Port.IDLE || it == Port.DISCONNECTED }
+        }.first { it }
+    }
+
+    context(NetSimScope)
+    private suspend fun portProcess() {
+        ports.forEach {
+            it.notificationChl.send(portVersion.startProcessingDisp.acquire())
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Launchable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    context(NetSimScope) override fun netLaunch(): Job = this@NetSimScope.scopeLaunch {
-        while (isActive) {
-            acceptMtx.withLock {
-                notificationChl.receive().handle()
+    context(NetSimScope) override fun netLaunch(): Job {
+        job = this@NetSimScope.scopeLaunch {
+            while (isActive) {
+                _notificationChl.receive().handle()
             }
         }
+        return job!!
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,22 +82,10 @@ internal abstract class NodeV0 protected constructor(
 
     override val notificationChl: SendChannel<Notification<Node>> get() = _notificationChl
     @Suppress("LeakingThis")
-    protected val _notificationChl: InvalidatorChl<Notification<Node>> = InvalidatorChl(receiver = this)
+    private val _notificationChl: InvalidatorChl<Notification<Node>> = InvalidatorChl(receiver = this)
     override val priorityNotificationChl: SendChannel<Notification<Node>> get() = _priorityNotificationChl
     @Suppress("LeakingThis")
-    protected val _priorityNotificationChl: InvalidatorChl<Notification<Node>> = InvalidatorChl(receiver = this)
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Impl
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private val acceptMtx = Mutex()
-    private suspend fun accept(n: Node): Port {
-        acceptMtx.withLock {
-            TODO()
-        }
-    }
+    private val _priorityNotificationChl: InvalidatorChl<Notification<Node>> = InvalidatorChl(receiver = this)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NodeVersion
@@ -81,8 +99,32 @@ internal abstract class NodeV0 protected constructor(
         // Notifications
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<Node.RxUpdate>
+        override val rxUpdateDisp: FWDispenser<Node.RxUpdate> get() = _rxUpdateDisp
+        private lateinit var _rxUpdateDisp: FWDispenser<Node.RxUpdate>
+
+        override val connectDisp: FWDispenser<Node.Connect> get() = _connectDisp
+        private lateinit var _connectDisp: FWDispenser<Node.Connect>
+
+        override val disconnectDisp: FWDispenser<Node.Disconnect> get() = _disconnectDisp
+        private lateinit var _disconnectDisp: FWDispenser<Node.Disconnect>
+
+        override val reapplyRoutingDisp: FWDispenser<Node.ReapplyRouting> get() = _reapplyRoutingDisp
+        private lateinit var _reapplyRoutingDisp: FWDispenser<Node.ReapplyRouting>
+
+        override val acceptConnectionDisp: FWDispenser<Node.AcceptConnection> get() = _acceptConnectioDisp
+        private lateinit var _acceptConnectioDisp: FWDispenser<Node.AcceptConnection>
+
+
+        context(NetSimScope) override suspend fun initDispensers() {
+            _rxUpdateDisp = dispenser(Node.RxUpdate)
+            _connectDisp = dispenser(Node.Connect)
+            _disconnectDisp = dispenser(Node.Disconnect)
+            _reapplyRoutingDisp = dispenser(Node.ReapplyRouting)
+            _acceptConnectioDisp = dispenser(Node.AcceptConnection)
+        }
+
+        context(NetSimScope) private suspend fun dispenser(
+            id: FWId<Node.RxUpdate>
         ): FWDispenser<Node.RxUpdate> =
             poolAggr.getOrAdd(id) { pool, idx ->
                 object : Node.RxUpdate {
@@ -93,24 +135,21 @@ internal abstract class NodeV0 protected constructor(
 
                     context(Node)
                     override suspend fun handle() {
-                        TODO("Not yet implemented")
+                        flowTable.sendToPorts(this)
+                        dispose()
                     }
                 }
             }.dispenser()
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<Node.Connect>
+        context(NetSimScope) private suspend fun dispenser(
+            id: FWId<Node.Connect>
         ): FWDispenser<Node.Connect> =
             poolAggr.getOrAdd(id) { pool, idx ->
-                val disp1 = devConfig.portConfig.version.dispenser(Port.Connect)
-                val disp2 = dispenser(Node.ReapplyRouting)
                 object : Node.Connect {
                     override val pool = pool
                     override val poolIdx = idx
                     override lateinit var other: Node
                     override var linkBw = DataRate.zero
-                    override var portConnectNotifDispenser = disp1
-                    override var reapplyRoutingNotifDispenser = disp2
 
                     context(Node)
                     override suspend fun handle() {
@@ -118,36 +157,48 @@ internal abstract class NodeV0 protected constructor(
                         val otherN = other as NodeV0
                         val freePort: Port = n.ports.firstOrNull { it.txLink == null }!!
 
-                        val otherPort: Port = otherN.accept(n)
-                        val notif = portConnectNotifDispenser.acquire()
+                        //
+                        n.awaitPorts()
+
+                        // Ask another node to accept connection and retrieve its port.
+                        val answNotif: Node.AcceptConnection = nodeVersion.acceptConnectionDisp.acquire()
+                        answNotif.toBeAccepted = freePort
+                        otherN.notificationChl.send(answNotif)
+                        val otherPort = answNotif.answerChl.receive()
+
+                        // Dispose of the "flyweight" `AnsweredNotification` after receiving answer.
+                        answNotif.dispose()
+
+                        // Ask the port on this node to connect to the port on the other node.
+                        val notif = portVersion.connectDisp.acquire()
                         notif.linkBw = this.linkBw
-                        notif.notifyOther = true
                         notif.other = otherPort
                         freePort.notificationChl.send(notif)
 
+                        // Update routing tables of all nodes.
                         val otherVect: RoutingVect = other.exchangeRoutVect(routingTable.getVect(), vectOwner = n)
                         routingTable.mergeRoutingVector(otherVect, vectOwner = other)
                         shareRoutingVect(except = listOf(other))
 
-                        n.priorityNotificationChl.send(reapplyRoutingNotifDispenser.acquire())
+                        // Reapply routing after routing table update.
+                        n.priorityNotificationChl.send(reapplyRoutingDisp.acquire())
 
+                        // Dispose of the "flyweight" notification received.
                         dispose()
                     }
                 }
             }.dispenser()
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<Node.Disconnect>
+        context(NetSimScope) private suspend fun dispenser(
+            id: FWId<Node.Disconnect>
         ): FWDispenser<Node.Disconnect> =
             poolAggr.getOrAdd(id) { pool, idx ->
-                val disp1 = devConfig.portConfig.version.dispenser(Port.Disconnect)
-                val disp2 = dispenser(Node.ReapplyRouting)
+                val portDisconnectDisp = portVersion.disconnectDisp
+                val nodeReapplyRoutingDisp = reapplyRoutingDisp
                 object : Node.Disconnect {
                     override val pool = pool
                     override val poolIdx = idx
                     override lateinit var other: Node
-                    override var portDisconnectNotifDispenser = disp1
-                    override var reapplyRoutingNotifDispenser = disp2
                     override var notifyOther = false
 
                     context(Node)
@@ -163,36 +214,67 @@ internal abstract class NodeV0 protected constructor(
                             other.priorityNotificationChl.send(notif)
                         }
 
-                        val notif = portDisconnectNotifDispenser.acquire()
+                        val notif = portDisconnectDisp.acquire()
                         portToOther.priorityNotificationChl.send(notif)
 
                         routingTable.removeNextHop(other)
                         shareRoutingVect(exchange = true)
-                        n.priorityNotificationChl.send(reapplyRoutingNotifDispenser.acquire())
+                        n.priorityNotificationChl.send(nodeReapplyRoutingDisp.acquire())
 
                         dispose()
                     }
                 }
             }.dispenser()
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<Node.ReapplyRouting>
+        context(NetSimScope) private suspend fun dispenser(
+            id: FWId<Node.ReapplyRouting>
         ): FWDispenser<Node.ReapplyRouting> =
             poolAggr.getOrAdd(id) { pool, idx ->
-                val disp1 = devConfig.portConfig.version.dispenser(Port.StartProcessing)
                 object : Node.ReapplyRouting {
                     override val pool = pool
                     override val poolIdx = idx
-                    override var portProcessNotifDispenser = disp1
 
                     context(Node)
                     override suspend fun handle() {
                         val n = this@Node as NodeV0
-                        TODO()
+
+                        n.flowTable.reapplyRouting()
 
                         n.ports.forEach {
-                            it.priorityNotificationChl.send(portProcessNotifDispenser.acquire())
+                            it.priorityNotificationChl.send(portVersion.startProcessingDisp.acquire())
                         }
+
+                        dispose()
+                    }
+                }
+            }.dispenser()
+
+        context(NetSimScope) private suspend fun dispenser(
+            id: FWId<Node.AcceptConnection>
+        ): FWDispenser<Node.AcceptConnection> =
+            poolAggr.getOrAdd(id) { pool, idx ->
+                object : Node.AcceptConnection {
+                    override val pool = pool
+                    override val poolIdx = idx
+                    override lateinit var toBeAccepted: Port
+                    override val answerChl = Channel<Port>()
+                    override var linkBw: DataRate = DataRate.zero
+
+                    context(Node)
+                    override suspend fun handle() {
+                        val n = this@Node as NodeV0
+
+                        n.portProcess()
+                        n.awaitPorts()
+
+                        val freePort: Port = ports.find { it.txLink == null }!!
+                        val notif = portVersion.connectDisp.acquire()
+                        notif.other = toBeAccepted
+                        notif.linkBw = linkBw
+                        freePort.priorityNotificationChl.send(notif)
+                        n.awaitPorts()
+
+                        answerChl.send(freePort)
 
                         dispose()
                     }

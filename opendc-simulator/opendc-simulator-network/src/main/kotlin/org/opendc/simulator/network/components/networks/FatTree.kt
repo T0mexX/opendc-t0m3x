@@ -20,10 +20,10 @@ import kotlin.math.pow
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal class FatTree private constructor(
-    coreSpecs: CoreSwitchSpecs,
-    aggrSpecs: SwitchSpecs,
-    torSpecs: SwitchSpecs,
-    hostNodeSpecs: HostNodeSpecs,
+    private val coreSpecs: CoreSwitchSpecs,
+    private val aggrSpecs: SwitchSpecs,
+    private val torSpecs: SwitchSpecs,
+    private val hostNodeSpecs: HostNodeSpecs,
     nodesById: Map<NodeId, Node>,
     override val internet: Internet,
 ): NetworkV0() {
@@ -35,7 +35,7 @@ internal class FatTree private constructor(
 
     override fun toSpecs(): Specs<FatTree> =
         FatTreeSpecs(
-            coreSwitchSpecs = coreSpec,
+            coreSwitchSpecs = coreSpecs.toSwitchSpecs(),
             aggrSwitchSpecs = aggrSpecs,
             torSwitchSpecs = torSpecs,
             hostNodeSpecs = hostNodeSpecs,

@@ -14,7 +14,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 internal data class SwitchSpecs(
     val id: NodeId? = null,
     val portSpeed: DataRate? = null,
-    val numOfPorts: Int? = null,
+    val nPorts: Int? = null,
     val fairnessPolicy: FairnessPolicy?,
     val portSelectionPolicy: RoutingPolicy?,
 ): Specs<Switch> {
@@ -23,7 +23,7 @@ internal data class SwitchSpecs(
         Switch(
             id = id,
             portSpeed = portSpeed,
-            nPorts = numOfPorts,
+            nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
             portSelectionPolicy = portSelectionPolicy,
         )
@@ -32,7 +32,7 @@ internal data class SwitchSpecs(
         CoreSwitchSpecs(
             id = id,
             portSpeed = portSpeed,
-            nPorts = numOfPorts,
+            nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
             portSelectionPolicy = portSelectionPolicy,
         )

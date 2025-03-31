@@ -8,19 +8,19 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.flow.publics.FlowId2
+import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.Launchable
-import org.opendc.simulator.network.utils.eventEmitter.publics.Event
+import org.opendc.simulator.network.utils.`eventEmitter-old`.publics.Event
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
-import org.opendc.simulator.network.utils.flyweight.publics.FlyWeightId
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.flyweight.internals.FWPool
 import org.opendc.simulator.network.utils.flyweight.internals.IFW
-import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
+import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorFlow
 import org.opendc.simulator.network.utils.invalidatable.internals.MutableInvalidatorFlow
@@ -29,10 +29,10 @@ import org.opendc.simulator.network.utils.notifiable.publics.Notification
 internal class NetFlowV1 private constructor(
     override val senderId: NodeId,
     override val destId: NodeId,
-    override val id: FlowId2,
+    override val id: FlowId,
     demand: DataRate,
     override val stabilizer: NetSimStabilizer,
-): INetFlow, Invalidatable, Launchable {
+): INetFlow, IInvalidatable, Launchable {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // INetFlow
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +87,8 @@ internal class NetFlowV1 private constructor(
 
     private val _notificationChl: Channel<Notification<NetFlow>> = InvalidatorChl(this)
     override val notificationChl: SendChannel<Notification<NetFlow>> = _notificationChl
+    private val _priorityNotificationChl: Channel<Notification<NetFlow>> = InvalidatorChl(this)
+    override val priorityNotificationChl: SendChannel<Notification<NetFlow>> = _priorityNotificationChl
 
     private lateinit var setDemandNotifDispenser: FWDispenser<NetFlow.SetDemand>
     private lateinit var setTputNotifDispenser: FWDispenser<INetFlow.SetThroughput>
@@ -103,7 +105,7 @@ internal class NetFlowV1 private constructor(
         override suspend operator fun invoke(
             senderId: NodeId,
             destId: NodeId,
-            id: FlowId2?,
+            id: FlowId?,
             demand: DataRate,
         ): NetFlowV1 = NetFlowV1(
             senderId = senderId,
@@ -126,11 +128,11 @@ internal class NetFlowV1 private constructor(
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<NetFlow.DemandChanged>
+            id: FWId<NetFlow.DemandChanged>
         ): FWDispenser<NetFlow.DemandChanged> =
             poolAggr.getOrAdd(id) { pool, idx ->
                 object : NetFlow.DemandChanged, IFW<NetFlow.DemandChanged> {
-                    override val pool: FWPool<NetFlow.DemandChanged, FlyWeightId<NetFlow.DemandChanged>> = pool
+                    override val pool: FWPool<NetFlow.DemandChanged, FWId<NetFlow.DemandChanged>> = pool
                     override val poolIdx: Idx = idx
                     override var old: DataRate = DataRate.zero
                     override var new: DataRate = DataRate.zero
@@ -139,22 +141,22 @@ internal class NetFlowV1 private constructor(
             }.dispenser()
 
         context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<NetFlow.FragmentCompleted>
+            id: FWId<NetFlow.FragmentCompleted>
         ): FWDispenser<NetFlow.FragmentCompleted> =
             poolAggr.getOrAdd(id) { pool, idx ->
                 object : NetFlow.FragmentCompleted, IFW<NetFlow.FragmentCompleted> {
-                    override val pool: FWPool<NetFlow.FragmentCompleted, FlyWeightId<NetFlow.FragmentCompleted>> = pool
+                    override val pool: FWPool<NetFlow.FragmentCompleted, FWId<NetFlow.FragmentCompleted>> = pool
                     override val poolIdx: Idx = idx
                     override lateinit var netFlow: NetFlow
                 }
             }.dispenser()
 
         context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<NetFlow.ThroughputChanged>
+            id: FWId<NetFlow.ThroughputChanged>
         ): FWDispenser<NetFlow.ThroughputChanged> =
             poolAggr.getOrAdd(id) { pool, idx ->
                 object : NetFlow.ThroughputChanged, IFW<NetFlow.ThroughputChanged> {
-                    override val pool: FWPool<NetFlow.ThroughputChanged, FlyWeightId<NetFlow.ThroughputChanged>> = pool
+                    override val pool: FWPool<NetFlow.ThroughputChanged, FWId<NetFlow.ThroughputChanged>> = pool
                     override val poolIdx: Idx = idx
                     override var old: DataRate = DataRate.zero
                     override var new: DataRate = DataRate.zero
@@ -167,12 +169,12 @@ internal class NetFlowV1 private constructor(
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<NetFlow.SetDemand>
+            id: FWId<NetFlow.SetDemand>
         ): FWDispenser<NetFlow.SetDemand> =
             poolAggr.getOrAdd(id) { pool, idx ->
                 val stab = barrier.stabilizer()
-                object : NetFlow.SetDemand, IFW<NetFlow.SetDemand>, Invalidatable {
-                    override val pool: FWPool<NetFlow.SetDemand, FlyWeightId<NetFlow.SetDemand>> = pool
+                object : NetFlow.SetDemand, IFW<NetFlow.SetDemand>, IInvalidatable {
+                    override val pool: FWPool<NetFlow.SetDemand, FWId<NetFlow.SetDemand>> = pool
                     override val poolIdx: Idx = idx
                     override val stabilizer: NetSimStabilizer = stab
                     override var newDemand: DataRate = DataRate.zero
@@ -193,13 +195,13 @@ internal class NetFlowV1 private constructor(
             }.dispenser()
 
         context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<INetFlow.SetThroughput>
+            id: FWId<INetFlow.SetThroughput>
         ): FWDispenser<INetFlow.SetThroughput> =
             poolAggr.getOrAdd(id) { pool, idx ->
                 val stab = barrier.stabilizer()
-                object : INetFlow.SetThroughput, Invalidatable {
+                object : INetFlow.SetThroughput, IInvalidatable {
                     override val stabilizer: NetSimStabilizer = stab
-                    override val pool: FWPool<INetFlow.SetThroughput, FlyWeightId<INetFlow.SetThroughput>> = pool
+                    override val pool: FWPool<INetFlow.SetThroughput, FWId<INetFlow.SetThroughput>> = pool
                     override val poolIdx: Idx = idx
                     override var newThroughput: DataRate = DataRate.zero
 
@@ -219,12 +221,12 @@ internal class NetFlowV1 private constructor(
             }.dispenser()
 
         context(NetSimScope) override suspend fun dispenser(
-            id: FlyWeightId<INetFlow.IncreaseThroughput>
+            id: FWId<INetFlow.IncreaseThroughput>
         ): FWDispenser<INetFlow.IncreaseThroughput> =
             poolAggr.getOrAdd(id) { pool, idx ->
                 val stab = barrier.stabilizer()
-                object : INetFlow.IncreaseThroughput, Invalidatable {
-                    override val pool: FWPool<INetFlow.IncreaseThroughput, FlyWeightId<INetFlow.IncreaseThroughput>> = pool
+                object : INetFlow.IncreaseThroughput, IInvalidatable {
+                    override val pool: FWPool<INetFlow.IncreaseThroughput, FWId<INetFlow.IncreaseThroughput>> = pool
                     override val poolIdx: Idx = idx
                     override val stabilizer: NetSimStabilizer = stab
                     override var amount: DataRate = DataRate.zero
