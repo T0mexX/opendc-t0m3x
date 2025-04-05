@@ -7,7 +7,6 @@ import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
-import org.opendc.simulator.network.utils.flyweight.publics.FWId
 
 @Serializable
 internal sealed interface NetFlowVersion {
@@ -20,27 +19,19 @@ internal sealed interface NetFlowVersion {
         demand: DataRate = DataRate.zero,
     ): NetFlow
 
-    context(NetSimScope) suspend fun dispenser(
-        id: FWId<NetFlow.DemandChanged>
-    ): FWDispenser<NetFlow.DemandChanged>
 
-    context(NetSimScope) suspend fun dispenser(
-        id: FWId<NetFlow.FragmentCompleted>
-    ): FWDispenser<NetFlow.FragmentCompleted>
+    val setDemandDisp: FWDispenser<INetFlow.SetDemand>
 
-    context(NetSimScope)suspend fun dispenser(
-        id: FWId<NetFlow.ThroughputChanged>
-    ): FWDispenser<NetFlow.ThroughputChanged>
+    val demandChangedDisp: FWDispenser<NetFlow.DemandChanged>
 
-    context(NetSimScope)suspend fun dispenser(
-        id: FWId<NetFlow.SetDemand>
-    ): FWDispenser<NetFlow.SetDemand>
+    val throughputChangedDisp: FWDispenser<NetFlow.ThroughputChanged>
 
-    context(NetSimScope)suspend fun dispenser(
-        id: FWId<INetFlow.SetThroughput>
-    ): FWDispenser<INetFlow.SetThroughput>
+    val fragmentCompletedDisp: FWDispenser<NetFlow.FragmentCompleted>
 
-    context(NetSimScope)suspend fun dispenser(
-        id: FWId<INetFlow.IncreaseThroughput>
-    ): FWDispenser<INetFlow.IncreaseThroughput>
+    val setTputDisp: FWDispenser<INetFlow.SetThroughput>
+
+    val increaseTputDisp: FWDispenser<INetFlow.IncreaseThroughput>
+
+    context(NetSimScope)
+    suspend fun initDispensers()
 }

@@ -27,11 +27,13 @@ internal abstract class NetworkV0 : Network {
 
     override operator fun get(nId: NodeId): Node? = this.nodesById[nId]
 
+    context(NetSimScope)
     override suspend fun startFlow(f: NetFlow) {
         sendNodesById[f.senderId]!!.startFlow(f)
         _flows += f.id to f
     }
 
+    context(NetSimScope)
     override suspend fun stopFlow(f: NetFlow) {
         sendNodesById[f.senderId]!!.stopFlow(f)
         _flows -= f.id

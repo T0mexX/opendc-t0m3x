@@ -59,11 +59,13 @@ internal class NetSimScope(
         portVersion = devConfig.portConfig.version
         nodeVersion = devConfig.nodeConfig.version
         netFlowVersion = devConfig.netFlowConfig.version
+        runBlocking { initDispensers() }
     }
 
     private suspend fun initDispensers() {
         portVersion.initDispensers()
         nodeVersion.initDispensers()
+        netFlowVersion.initDispensers()
     }
 
 

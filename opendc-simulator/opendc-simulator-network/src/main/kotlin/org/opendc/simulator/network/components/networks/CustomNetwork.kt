@@ -23,7 +23,7 @@ internal class CustomNetwork private constructor(
     // TODO: do not crash when error for REPL
     context(NetSimScope)
     operator fun plus(node: Node) {
-        require(node.id == internet.id)
+        require(node.id != internet.id)
         require(node.id !in nodesById)
 
         _nodesById[node.id] = node

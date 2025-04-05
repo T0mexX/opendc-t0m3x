@@ -7,10 +7,10 @@ import org.opendc.simulator.network.utils.`eventEmitter-old`.publics.EventEmitte
 import org.opendc.simulator.network.utils.flyweight.publics.FW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
-import org.opendc.simulator.network.utils.notifiable.publics.Notifiable
-import org.opendc.simulator.network.utils.notifiable.publics.Notification
+import org.opendc.simulator.network.utils.notifiable.Msgable
+import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
-public interface NetFlow: EventEmitter<NetFlow>, Notifiable<NetFlow>, Invalidatable {
+public interface NetFlow: EventEmitter<NetFlow>, Invalidatable {
     public val id: FlowId
     public val senderId: NodeId
     public val destId: NodeId
@@ -43,16 +43,6 @@ public interface NetFlow: EventEmitter<NetFlow>, Notifiable<NetFlow>, Invalidata
         public var new: DataRate
 
         public companion object : FWId<DemandChanged>
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Notifications
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public interface SetDemand: Notification<NetFlow>, FW<SetDemand> {
-        public var newDemand: DataRate
-
-        public companion object : FWId<SetDemand>
     }
 }
 

@@ -13,13 +13,13 @@ import org.opendc.simulator.network.utils.flyweight.internals.IFW
 import org.opendc.simulator.network.utils.flyweight.publics.FW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
-import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
-import org.opendc.simulator.network.utils.notifiable.publics.Notifiable
-import org.opendc.simulator.network.utils.notifiable.publics.Notification
-import org.opendc.simulator.network.utils.statefull.publics.State
-import org.opendc.simulator.network.utils.statefull.publics.Stateful
+import org.opendc.simulator.network.utils.notifiable.Msg
+import org.opendc.simulator.network.utils.notifiable.Msgable
+import org.opendc.simulator.network.utils.notifiable.MsgImpl
+import org.opendc.simulator.network.utils.statefull.State
+import org.opendc.simulator.network.utils.statefull.Stateful
 
-internal interface Port: Notifiable<Port>, Stateful<Port>, IInvalidatable, Launchable {
+internal interface Port: Msgable<Port>, Stateful<Port>, IInvalidatable, Launchable {
     val owner: Node
     val speed: DataRate
     val portIdx: Idx
@@ -37,7 +37,7 @@ internal interface Port: Notifiable<Port>, Stateful<Port>, IInvalidatable, Launc
      */
     fun getTxTput(entryId: IntId): DataRate
 
-    interface SetDemand: Notification<Port>, FW<SetDemand> {
+    interface SetDemand: Msg<Port, SetDemand> {
         var netFlow: NetFlow
         var newDemand: DataRate
         var entryId: IntId
@@ -45,19 +45,19 @@ internal interface Port: Notifiable<Port>, Stateful<Port>, IInvalidatable, Launc
         companion object : FWId<SetDemand>
     }
 
-    interface StartProcessing: Notification<Port>, IFW<StartProcessing> {
+    interface StartProcessing: Msg<Port, StartProcessing> {
 
         companion object : FWId<StartProcessing>
     }
 
-    interface Connect: Notification<Port>, IFW<Connect> {
+    interface Connect: Msg<Port, Connect> {
         var other: Port
         var linkBw: DataRate?
 
         companion object : FWId<Connect>
     }
 
-    interface Disconnect: Notification<Port>, IFW<Disconnect> {
+    interface Disconnect: Msg<Port, Disconnect> {
 
         companion object : FWId<Disconnect>
     }

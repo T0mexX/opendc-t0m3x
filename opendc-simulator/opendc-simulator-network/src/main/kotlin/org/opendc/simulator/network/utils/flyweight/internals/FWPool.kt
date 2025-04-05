@@ -8,7 +8,7 @@ import org.opendc.simulator.network.utils.flyweight.publics.FW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 
 
-internal class FWPool<T: FW<T>, O: FWId<T>>(
+internal class FWPool<out T: FW<T>, out O: FWId<T>>(
     private val nSubPools: Int = 10,
     private val objConstructor: suspend (FWPool<T, O>, Idx) -> T
 ) {
@@ -30,7 +30,7 @@ internal class FWPool<T: FW<T>, O: FWId<T>>(
         }
     }
 
-    suspend fun dispose(obj: T) {
+    suspend fun dispose(obj: @UnsafeVariance T) {
         subPools[(obj as IFW<*>).poolIdx].send(obj)
     }
 }

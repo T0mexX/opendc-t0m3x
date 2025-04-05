@@ -33,6 +33,7 @@ import org.opendc.simulator.network.components.networks.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.ExportCmd
 import org.opendc.simulator.network.repl.cmds.ImportCmd
+import org.opendc.simulator.network.repl.cmds.QuitCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowInfoCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowMkCmd
@@ -91,6 +92,7 @@ public suspend fun main() {
                     NetSnapCmd(),
                 ),
                 ImportCmd(),
+                QuitCmd(),
             )
         try {
             cmd.parse(inputArr)

@@ -1,9 +1,8 @@
 package org.opendc.simulator.network.components.networks
 
-import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.node.NodeV0
+import org.opendc.simulator.network.components.node.NodeV1
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
@@ -11,7 +10,6 @@ import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
-import org.opendc.simulator.network.policies.fairness.MaxMin
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.policies.forwarding.ECMP
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -20,14 +18,14 @@ import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 internal class Internet(
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-): NodeV0(NetworkV0.INTERNET_ID), SenderNode {
+): NodeV1(NetworkV0.INTERNET_ID), SenderNode {
 
     override val portSpeed: DataRate = DataRate.max
     override var nPorts: Int = 0
     override var fairnessPolicy: FairnessPolicy = FirstComeFirstServed
     override var routingPolicy: RoutingPolicy = ECMP
 
-    override suspend fun startFlow(netflow: NetFlow) {
+    override suspend fun startFlow(netFlow: NetFlow) {
         TODO("Not yet implemented")
     }
 

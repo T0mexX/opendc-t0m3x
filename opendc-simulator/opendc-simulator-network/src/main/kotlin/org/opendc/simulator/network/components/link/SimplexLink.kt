@@ -7,12 +7,13 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
-import org.opendc.simulator.network.utils.notifiable.publics.Notification
+import org.opendc.simulator.network.utils.notifiable.Msg
+import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
 internal class SimplexLink(
     override val receiverPort: Port,
     override val maxBw: DataRate,
-): SendLink, ReceiveLink, SendChannel<Notification<Node>> by receiverPort.owner.notificationChl {
+): SendLink, ReceiveLink, SendChannel<Msg<Node, *>> by receiverPort.owner.msgChl {
     private var usedBw: DataRate = DataRate.zero
     private val mtx = Mutex()
     override val availableBw: DataRate get() = maxBw - usedBw

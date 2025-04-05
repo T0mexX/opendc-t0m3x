@@ -35,7 +35,7 @@ internal class FlowRmCmd : REPLCmd("rm") {
     ).long().check("flow does not exist") { long -> net.flowsById.contains(FlowId(long)) }
 
     override fun run(): Unit =
-        runBlocking {
+        runBlocking(scope.ctx) {
             with(scope) {
                 barrier.awaitStability()
                 val f = net.flowsById[FlowId(id)] ?: let {

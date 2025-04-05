@@ -13,16 +13,15 @@ import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.flyweight.internals.IFW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
-import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
-import org.opendc.simulator.network.utils.notifiable.publics.AnsweredNotification
-import org.opendc.simulator.network.utils.notifiable.publics.Notifiable
-import org.opendc.simulator.network.utils.notifiable.publics.Notification
+import org.opendc.simulator.network.utils.notifiable.ReqMsg
+import org.opendc.simulator.network.utils.notifiable.Msg
+import org.opendc.simulator.network.utils.notifiable.Msgable
 
 
 /**
  * Interface representing a node in a [Network2].
  */
-internal interface Node : WithSpecs<Node>, IInvalidatable, Notifiable<Node>, Launchable {
+internal interface Node : WithSpecs<Node>, IInvalidatable, Msgable<Node>, Launchable {
     /**
      * ID of the node. Uniquely identifies the node in the [Network22].
      */
@@ -68,33 +67,33 @@ internal interface Node : WithSpecs<Node>, IInvalidatable, Notifiable<Node>, Lau
     // Notifications
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    interface RxUpdate: Notification<Node>, IFW<RxUpdate> {
+    interface RxUpdate: Msg<Node, RxUpdate> {
         var netFlow: NetFlow
         var deltaRate: DataRate
 
         companion object : FWId<RxUpdate>
     }
 
-    interface Connect: Notification<Node>, IFW<Connect> {
+    interface Connect: Msg<Node, Connect> {
         var other: Node
         var linkBw: DataRate
 
         companion object : FWId<Connect>
     }
 
-    interface Disconnect: Notification<Node>, IFW<Disconnect> {
+    interface Disconnect: Msg<Node, Disconnect> {
         var other: Node
         var notifyOther: Boolean
 
         companion object : FWId<Disconnect>
     }
 
-    interface ReapplyRouting: Notification<Node>, IFW<ReapplyRouting> {
+    interface ReapplyRouting: Msg<Node, ReapplyRouting> {
 
         companion object : FWId<ReapplyRouting>
     }
 
-    interface AcceptConnection: AnsweredNotification<Node, Port>, IFW<AcceptConnection> {
+    interface AcceptConnection: ReqMsg<Node, Port, AcceptConnection> {
         var toBeAccepted: Port
         var linkBw: DataRate
 

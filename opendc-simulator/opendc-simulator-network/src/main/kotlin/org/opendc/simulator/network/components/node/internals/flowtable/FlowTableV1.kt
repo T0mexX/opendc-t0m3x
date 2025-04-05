@@ -1,7 +1,9 @@
 package org.opendc.simulator.network.components.node.internals.flowtable
 
+import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
@@ -23,17 +25,28 @@ internal class FlowTableV1 private constructor(
         val entry = _flows.getOrPut(updt.netFlow) {
             newEntry(updt)
         }
-        entry.rx = updt.deltaRate
+        entry.rx += updt.deltaRate
         entry.node = this@Node
         val perPort = entry.rx / entry.txPorts.size
         entry.txPorts.forEach {
             entry.portFlowEntryIds[it.portIdx] =
                 it.setTxDemand(perPort, entry.netFlow)
         }
+        if (entry.rx approx DataRate.zero) _flows.remove(updt.netFlow)
     }
 
     context(Node) override suspend fun reapplyRouting() {
         TODO("Not yet implemented")
+    }
+
+    override suspend fun reset(f: NetFlow) {
+        val entry = _flows[f]!!
+        entry.rx = DataRate.zero
+        entry.txPorts.forEach {
+            entry.portFlowEntryIds[it.portIdx] =
+                it.setTxDemand(DataRate.zero, entry.netFlow)
+        }
+        _flows.remove(f)
     }
 
     context(Node)
@@ -43,7 +56,7 @@ internal class FlowTableV1 private constructor(
         entry.resizeIfNeeded()
         entry.node = this@Node
         entry.netFlow = updt.netFlow
-        TODO("Apply routing pol")
+        this@Node.routingPolicy.selectPorts(entry)
         return entry
     }
 

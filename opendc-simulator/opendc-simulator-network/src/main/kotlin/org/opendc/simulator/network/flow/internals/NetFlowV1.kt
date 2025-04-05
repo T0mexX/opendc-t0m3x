@@ -24,7 +24,8 @@ import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorFlow
 import org.opendc.simulator.network.utils.invalidatable.internals.MutableInvalidatorFlow
-import org.opendc.simulator.network.utils.notifiable.publics.Notification
+import org.opendc.simulator.network.utils.notifiable.Msg
+import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
 internal class NetFlowV1 private constructor(
     override val senderId: NodeId,
@@ -43,21 +44,21 @@ internal class NetFlowV1 private constructor(
         private set
 
     override suspend fun setDemand(demand: DataRate) {
-        val notif = setDemandNotifDispenser.acquire()
+        val notif = setDemandDisp.acquire()
         notif.newDemand = demand
-        notificationChl.send(notif)
+        msgChl.send(notif)
     }
 
     override suspend fun setThroughput(newThroughput: DataRate) {
-        val notif = setTputNotifDispenser.acquire()
+        val notif = setTputDisp.acquire()
         notif.newThroughput = newThroughput
-        notificationChl.send(notif)
+        msgChl.send(notif)
     }
 
     override suspend fun increaseThroughputBy(amount: DataRate) {
-        val notif = increaseTputNotifDispenser.acquire()
+        val notif = increaseTputDisp.acquire()
         notif.amount = amount
-        notificationChl.send(notif)
+        msgChl.send(notif)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,22 +78,15 @@ internal class NetFlowV1 private constructor(
     private val _eventFlow: MutableInvalidatorFlow<Event<NetFlow>> = MutableInvalidatorFlow()
     override val eventFlow: InvalidatorFlow<Event<NetFlow>> = _eventFlow
 
-    private lateinit var tputChangedEvntDispenser: FWDispenser<NetFlow.ThroughputChanged>
-    private lateinit var fragCompletedEvntDispenser: FWDispenser<NetFlow.FragmentCompleted>
-    private lateinit var demandChangedEvntDispenser: FWDispenser<NetFlow.DemandChanged>
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Notifiable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private val _notificationChl: Channel<Notification<NetFlow>> = InvalidatorChl(this)
-    override val notificationChl: SendChannel<Notification<NetFlow>> = _notificationChl
-    private val _priorityNotificationChl: Channel<Notification<NetFlow>> = InvalidatorChl(this)
-    override val priorityNotificationChl: SendChannel<Notification<NetFlow>> = _priorityNotificationChl
+    private val _notificationChl: Channel<Msg<INetFlow, *>> = InvalidatorChl(this)
+    override val msgChl: SendChannel<Msg<INetFlow, *>> = _notificationChl
 
-    private lateinit var setDemandNotifDispenser: FWDispenser<NetFlow.SetDemand>
-    private lateinit var setTputNotifDispenser: FWDispenser<INetFlow.SetThroughput>
-    private lateinit var increaseTputNotifDispenser: FWDispenser<INetFlow.IncreaseThroughput>
+    private val _priorityNotificationChl: Channel<Msg<INetFlow, *>> = InvalidatorChl(this)
+    override val priorityMsgChl: SendChannel<Msg<INetFlow, *>> = _priorityNotificationChl
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NetFlowVersion
@@ -113,24 +107,54 @@ internal class NetFlowV1 private constructor(
             id = id ?: idDispenser.getFlowId(),
             demand = demand,
             stabilizer = barrier.stabilizer(),
-        ).also {
-            // Set event dispensers.
-            it.tputChangedEvntDispenser = dispenser(NetFlow.ThroughputChanged)
-            it.fragCompletedEvntDispenser = dispenser(NetFlow.FragmentCompleted)
-            it.demandChangedEvntDispenser = dispenser(NetFlow.DemandChanged)
+        )
 
-            // Set notification dispensers.
-            it.setDemandNotifDispenser = dispenser(NetFlow.SetDemand)
-        }
+        override val setDemandDisp: FWDispenser<INetFlow.SetDemand> get() = _setDemandDisp
+        private lateinit var _setDemandDisp: FWDispenser<INetFlow.SetDemand>
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Events
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        override val demandChangedDisp: FWDispenser<NetFlow.DemandChanged> get() = _demandChangedDisp
+        private lateinit var _demandChangedDisp: FWDispenser<NetFlow.DemandChanged>
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FWId<NetFlow.DemandChanged>
-        ): FWDispenser<NetFlow.DemandChanged> =
-            poolAggr.getOrAdd(id) { pool, idx ->
+        override val throughputChangedDisp: FWDispenser<NetFlow.ThroughputChanged> get() = _throughputChangedDisp
+        private lateinit var _throughputChangedDisp: FWDispenser<NetFlow.ThroughputChanged>
+
+        override val fragmentCompletedDisp: FWDispenser<NetFlow.FragmentCompleted> get() = _fragmentCompletedDisp
+        private lateinit var _fragmentCompletedDisp: FWDispenser<NetFlow.FragmentCompleted>
+
+        override val setTputDisp: FWDispenser<INetFlow.SetThroughput> get() = _setTputDisp
+        private lateinit var _setTputDisp: FWDispenser<INetFlow.SetThroughput>
+
+        override val increaseTputDisp: FWDispenser<INetFlow.IncreaseThroughput> get() = _increaseTputDisp
+        private lateinit var _increaseTputDisp: FWDispenser<INetFlow.IncreaseThroughput>
+
+        context(NetSimScope)
+        override suspend fun initDispensers() {
+            _setDemandDisp = poolAggr.getOrAdd(INetFlow.SetDemand as FWId<INetFlow.SetDemand>) { pool, idx ->
+                val stab = barrier.stabilizer()
+                object : INetFlow.SetDemand, IInvalidatable, MsgImpl<INetFlow, INetFlow.SetDemand>() {
+                    override val pool: FWPool<INetFlow.SetDemand, FWId<INetFlow.SetDemand>> = pool
+                    override val poolIdx: Idx = idx
+                    override val stabilizer: NetSimStabilizer = stab
+                    override var newDemand: DataRate = DataRate.zero
+
+                    context(NetFlow)
+                    override suspend fun handle() {
+                        val f = this@NetFlow as NetFlowV1
+                        val old: DataRate = f.demand
+                        f.demand = newDemand
+                        val evnt = _demandChangedDisp.acquire()
+                        evnt.netFlow = f
+                        evnt.old = old
+                        evnt.new = f.demand
+                        f._eventFlow.emit(evnt)
+                        dispose()
+                    }
+                }
+            }.dispenser()
+
+
+
+            _demandChangedDisp = poolAggr.getOrAdd(NetFlow.DemandChanged as FWId<NetFlow.DemandChanged>) { pool, idx ->
                 object : NetFlow.DemandChanged, IFW<NetFlow.DemandChanged> {
                     override val pool: FWPool<NetFlow.DemandChanged, FWId<NetFlow.DemandChanged>> = pool
                     override val poolIdx: Idx = idx
@@ -140,21 +164,9 @@ internal class NetFlowV1 private constructor(
                 }
             }.dispenser()
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FWId<NetFlow.FragmentCompleted>
-        ): FWDispenser<NetFlow.FragmentCompleted> =
-            poolAggr.getOrAdd(id) { pool, idx ->
-                object : NetFlow.FragmentCompleted, IFW<NetFlow.FragmentCompleted> {
-                    override val pool: FWPool<NetFlow.FragmentCompleted, FWId<NetFlow.FragmentCompleted>> = pool
-                    override val poolIdx: Idx = idx
-                    override lateinit var netFlow: NetFlow
-                }
-            }.dispenser()
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FWId<NetFlow.ThroughputChanged>
-        ): FWDispenser<NetFlow.ThroughputChanged> =
-            poolAggr.getOrAdd(id) { pool, idx ->
+
+            _throughputChangedDisp = poolAggr.getOrAdd(NetFlow.ThroughputChanged as FWId<NetFlow.ThroughputChanged>) { pool, idx ->
                 object : NetFlow.ThroughputChanged, IFW<NetFlow.ThroughputChanged> {
                     override val pool: FWPool<NetFlow.ThroughputChanged, FWId<NetFlow.ThroughputChanged>> = pool
                     override val poolIdx: Idx = idx
@@ -164,86 +176,65 @@ internal class NetFlowV1 private constructor(
                 }
             }.dispenser()
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Notifications
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FWId<NetFlow.SetDemand>
-        ): FWDispenser<NetFlow.SetDemand> =
-            poolAggr.getOrAdd(id) { pool, idx ->
-                val stab = barrier.stabilizer()
-                object : NetFlow.SetDemand, IFW<NetFlow.SetDemand>, IInvalidatable {
-                    override val pool: FWPool<NetFlow.SetDemand, FWId<NetFlow.SetDemand>> = pool
+
+            _fragmentCompletedDisp = poolAggr.getOrAdd(NetFlow.FragmentCompleted as FWId<NetFlow.FragmentCompleted>) { pool, idx ->
+                object : NetFlow.FragmentCompleted, IFW<NetFlow.FragmentCompleted> {
+                    override val pool: FWPool<NetFlow.FragmentCompleted, FWId<NetFlow.FragmentCompleted>> = pool
                     override val poolIdx: Idx = idx
-                    override val stabilizer: NetSimStabilizer = stab
-                    override var newDemand: DataRate = DataRate.zero
-
-                    context(NetFlow)
-                    override suspend fun handle() {
-                        val f = this@NetFlow as NetFlowV1
-                        val old: DataRate = demand
-                        f.demand = newDemand
-                        val evnt = f.demandChangedEvntDispenser.acquire()
-                        evnt.netFlow = f
-                        evnt.old = old
-                        evnt.new = demand
-                        f._eventFlow.emit(evnt)
-                        dispose()
-                    }
+                    override lateinit var netFlow: NetFlow
                 }
             }.dispenser()
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FWId<INetFlow.SetThroughput>
-        ): FWDispenser<INetFlow.SetThroughput> =
-            poolAggr.getOrAdd(id) { pool, idx ->
-                val stab = barrier.stabilizer()
-                object : INetFlow.SetThroughput, IInvalidatable {
-                    override val stabilizer: NetSimStabilizer = stab
-                    override val pool: FWPool<INetFlow.SetThroughput, FWId<INetFlow.SetThroughput>> = pool
-                    override val poolIdx: Idx = idx
-                    override var newThroughput: DataRate = DataRate.zero
 
-                    context(NetFlow)
-                    override suspend fun handle() {
-                        val f = this@NetFlow as NetFlowV1
-                        val old: DataRate = throughput
-                        f.throughput = newThroughput
-                        val evnt = f.tputChangedEvntDispenser.acquire()
-                        evnt.old = old
-                        evnt.new = throughput
-                        evnt.netFlow = f
-                        f._eventFlow.emit(evnt)
-                        dispose()
+
+            _setTputDisp = poolAggr.getOrAdd(INetFlow.SetThroughput as FWId<INetFlow.SetThroughput>) { pool, idx ->
+                    val stab = barrier.stabilizer()
+                    object : INetFlow.SetThroughput, IInvalidatable, MsgImpl<INetFlow, INetFlow.SetThroughput>() {
+                        override val stabilizer: NetSimStabilizer = stab
+                        override val pool: FWPool<INetFlow.SetThroughput, FWId<INetFlow.SetThroughput>> = pool
+                        override val poolIdx: Idx = idx
+                        override var newThroughput: DataRate = DataRate.zero
+
+                        context(NetFlow)
+                        override suspend fun handle() {
+                            val f = this@NetFlow as NetFlowV1
+                            val old: DataRate = throughput
+                            f.throughput = newThroughput
+                            val evnt = _throughputChangedDisp.acquire()
+                            evnt.old = old
+                            evnt.new = throughput
+                            evnt.netFlow = f
+                            f._eventFlow.emit(evnt)
+                            dispose()
+                        }
                     }
-                }
-            }.dispenser()
+                }.dispenser()
 
-        context(NetSimScope) override suspend fun dispenser(
-            id: FWId<INetFlow.IncreaseThroughput>
-        ): FWDispenser<INetFlow.IncreaseThroughput> =
-            poolAggr.getOrAdd(id) { pool, idx ->
-                val stab = barrier.stabilizer()
-                object : INetFlow.IncreaseThroughput, IInvalidatable {
-                    override val pool: FWPool<INetFlow.IncreaseThroughput, FWId<INetFlow.IncreaseThroughput>> = pool
-                    override val poolIdx: Idx = idx
-                    override val stabilizer: NetSimStabilizer = stab
-                    override var amount: DataRate = DataRate.zero
 
-                    context(NetFlow)
-                    override suspend fun handle() {
-                        val f = this@NetFlow as NetFlowV1
-                        val old: DataRate = throughput
-                        f.throughput += amount
-                        val evnt = f.tputChangedEvntDispenser.acquire()
-                        evnt.netFlow = f
-                        evnt.old = old
-                        evnt.new = throughput
-                        f._eventFlow.emit(evnt)
-                        dispose()
+
+            _increaseTputDisp = poolAggr.getOrAdd(INetFlow.IncreaseThroughput as FWId<INetFlow.IncreaseThroughput>) { pool, idx ->
+                    val stab = barrier.stabilizer()
+                    object : INetFlow.IncreaseThroughput, IInvalidatable, MsgImpl<INetFlow, INetFlow.IncreaseThroughput>() {
+                        override val pool: FWPool<INetFlow.IncreaseThroughput, FWId<INetFlow.IncreaseThroughput>> = pool
+                        override val poolIdx: Idx = idx
+                        override val stabilizer: NetSimStabilizer = stab
+                        override var amount: DataRate = DataRate.zero
+
+                        context(NetFlow)
+                        override suspend fun handle() {
+                            val f = this@NetFlow as NetFlowV1
+                            val old: DataRate = throughput
+                            f.throughput += amount
+                            val evnt = _throughputChangedDisp.acquire()
+                            evnt.netFlow = f
+                            evnt.old = old
+                            evnt.new = throughput
+                            f._eventFlow.emit(evnt)
+                            dispose()
+                        }
                     }
-                }
-            }.dispenser()
+                }.dispenser()
+        }
     }
 }

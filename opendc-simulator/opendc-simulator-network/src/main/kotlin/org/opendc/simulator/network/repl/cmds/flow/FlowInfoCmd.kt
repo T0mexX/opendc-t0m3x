@@ -43,14 +43,16 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
         )
 
     override fun run(): Unit =
-        runBlocking {
-            scope.barrier.awaitStability()
+        runBlocking(scope.ctx) {
+            with(scope) {
+                scope.barrier.awaitStability()
 
-            nodeId?.let {
-                // NodeId2 specified.
-                val node: Node? = net[NodeId(it)]
-                checkNotNull(node)
+                nodeId?.let {
+                    // NodeId2 specified.
+                    val node: Node? = net[NodeId(it)]
+                    checkNotNull(node)
 //                echo(node.fmtFlows())
-            } //?: echo(net.fmtFlows())
+                } ?: echo(net.fmtFlows())
+            }
         }
 }

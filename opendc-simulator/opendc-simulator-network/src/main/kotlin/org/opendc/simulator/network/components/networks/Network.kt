@@ -24,15 +24,17 @@ internal interface Network : WithSpecs<Network> {
 
     operator fun get(nId: NodeId): Node?
 
+    context(NetSimScope)
     suspend fun startFlow(f: NetFlow)
 
+    context(NetSimScope)
     suspend fun stopFlow(f: NetFlow)
 
     context(NetSimScope)
     suspend fun fmtNodes(mode: NetSimStabilityMode = config.stabilityMode): String
 
     context(NetSimScope)
-    suspend fun fmtFlows(mode: NetSimStabilityMode): String
+    suspend fun fmtFlows(mode: NetSimStabilityMode = config.stabilityMode): String
 
     companion object {
         internal inline fun <reified T : Node> Network.getNodesById(): Map<NodeId, T> {

@@ -3,7 +3,6 @@ package org.opendc.simulator.network.components.node.internals.flowtable
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.node.NodeV0
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope

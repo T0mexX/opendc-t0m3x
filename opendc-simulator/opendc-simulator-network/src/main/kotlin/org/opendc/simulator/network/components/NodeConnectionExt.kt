@@ -22,12 +22,8 @@
 
 package org.opendc.simulator.network.components
 
-import org.opendc.common.logger.logger
-import org.opendc.common.logger.withWarn
-import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.internalstructs.RoutingVect
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.port.Port
 
 //private val log by Unit.logger("NodeConnectionExt")
 //
@@ -144,8 +140,9 @@ internal suspend fun Node.exchangeRoutVect(
 
     if (!routingTable.isTableChanged) return routingTable.getVect()
 //    with(flowHandler) { updtAllRouts() }
+
 //    updateAllFlows()
-    TODO()
+//    TODO()
 
     if (!routingTable.isVectChanged) return routingTable.getVect()
     shareRoutingVect(except = listOf(vectOwner))
@@ -163,26 +160,29 @@ internal tailrec suspend fun Node.shareRoutingVect(
     except: Collection<Node> = listOf(),
     exchange: Boolean = false,
 ) {
-    TODO()
-//    portToNode.forEach { (_, port) ->
-//        val adjNode: Node = port.otherEndNode ?: return@forEach
-//        if (adjNode !in except) {
-//            if (exchange) {
-//                val otherVect: RoutingVect = adjNode.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
-//                routingTable.mergeRoutingVector(otherVect, vectOwner = adjNode)
-//                if (!routingTable.isTableChanged) return@forEach
-//                with(flowHandler) { updtAllRouts() }
-//                updateAllFlows()
-//
-//                if (!routingTable.isVectChanged) return@forEach
-//                shareRoutingVect(except = listOf(adjNode), exchange = true)
-//                return
-//            } else {
-//                adjNode.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
-//            }
-//        }
-//    }
-//
-//    with(flowHandler) { updtAllRouts() }
-//    updateAllFlows()
+//    TODO()
+
+    ports.forEach { p ->
+        // If port not connected then skip.
+        p.txLink ?: return@forEach
+
+        val adjN = p.txLink!!.receiverPort.owner
+        // If the adjacent node is in the `except` list, then skip.
+        if (adjN in except) return@forEach
+
+        val otherVct = adjN.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
+        if (exchange) {
+            routingTable.mergeRoutingVector(otherVct, vectOwner = adjN)
+
+            // If no changes to the routing table, then go to the next port.
+            if (routingTable.isTableChanged.not()) return@forEach
+
+            // TODO: remove old code.
+            // with(flowHandler) { updtAllRouts() }
+            // updateAllFlows()
+            if (routingTable.isVectChanged.not()) return@forEach
+            @Suppress("NON_TAIL_RECURSIVE_CALL")
+            shareRoutingVect(except = listOf(adjN), exchange = true)
+        }
+    }
 }

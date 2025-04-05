@@ -3,7 +3,7 @@ package org.opendc.simulator.network.components.node.host
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.NodeV0
+import org.opendc.simulator.network.components.node.NodeV1
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
@@ -18,6 +18,9 @@ import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
+/**
+ * TODO
+ */
 internal class HostNode private constructor(
     id: NodeId,
     override val portSpeed: DataRate,
@@ -26,7 +29,7 @@ internal class HostNode private constructor(
     override var routingPolicy: RoutingPolicy,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-) : NodeV0(id), SenderNode, EnergyConsumer<HostNode> {
+) : NodeV1(id), SenderNode, EnergyConsumer<HostNode> {
 
     override lateinit var ports: List<Port>
 
@@ -39,12 +42,19 @@ internal class HostNode private constructor(
             portSelectionPolicy = routingPolicy,
         )
 
-    override suspend fun startFlow(netflow: NetFlow) {
-        TODO("Not yet implemented")
+    context(NetSimScope)
+    override suspend fun startFlow(netFlow: NetFlow) {
+        // TODO: maybe check that flow does not exist
+        val notif = nodeVersion.rxUpdateDisp.acquire()
+        notif.deltaRate = netFlow.demand
+        notif.netFlow = netFlow
+        flowTable.sendToPorts(notif)
+        notif.dispose()
     }
 
+    context(NetSimScope)
     override suspend fun stopFlow(netFlow: NetFlow) {
-        TODO("Not yet implemented")
+        flowTable.reset(netFlow)
     }
 
     override val enMonitor: EnMonitor<HostNode> = EnMonitor(this)

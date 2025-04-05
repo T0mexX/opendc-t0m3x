@@ -50,7 +50,7 @@ internal class LinkMkCmd : REPLCmd("mk") {
     ).long().multiple().unique().check("nodes must be 2.") { it.size == 2 }
 
     override fun run(): Unit =
-        runBlocking {
+        runBlocking(scope.ctx) {
             scope.barrier.awaitStability()
             val nodes: List<NodeId> = nodeIds.toList().map { NodeId(it) }
             val node1: Node? = net.nodesById[nodes[0]]

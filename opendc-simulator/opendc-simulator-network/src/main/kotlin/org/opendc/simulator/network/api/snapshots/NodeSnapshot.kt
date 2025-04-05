@@ -122,14 +122,14 @@ public class NodeSnapshot internal constructor(
         buildString {
             appendPad("| node")
             flags.ifSet(INSTANT) { appendPad("instant", pad = 30) }
-            flags.ifSet(NUM_FLOWS_IN) { appendPad("flowsById in") }
-            flags.ifSet(NUM_FLOWS_OUT) { appendPad("flowsById out") }
-            flags.ifSet(NUM_GEN_FLOWS) { appendPad("generating n flowsById") }
-            flags.ifSet(NUM_CONS_FLOWS) { appendPad("consuming n flowsById") }
+            flags.ifSet(NUM_FLOWS_IN) { appendPad("flows in") }
+            flags.ifSet(NUM_FLOWS_OUT) { appendPad("flows out") }
+            flags.ifSet(NUM_GEN_FLOWS) { appendPad("generating n flows") }
+            flags.ifSet(NUM_CONS_FLOWS) { appendPad("consuming n flows") }
             flags.ifSet(MIN_TPUT_PERC) { appendPad("curr min flow tput %") }
             flags.ifSet(MAX_TPUT_PERC) { appendPad("curr max flow tput %") }
             flags.ifSet(AVRG_TPUT_PERC) { appendPad("curr avrg flow tput %") }
-            flags.ifSet(TOT_NODE_THROUGHPUT) { appendPad("curr tput (all flowsById) (%)") }
+            flags.ifSet(TOT_NODE_THROUGHPUT) { appendPad("curr tput (all flows) (%)") }
             flags.ifSet(TOT_NODE_PORT_USAGE) { appendPad("curr node port usage %") }
             flags.ifSet(CURR_PWR_USE) { appendPad("curr pwr use") }
             flags.ifSet(AVRG_PWR_USE) { appendPad("avrg pwr over time") }
