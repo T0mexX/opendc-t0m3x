@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.clikt)
     implementation(projects.opendcTrace.opendcTraceParquet)
     runtimeOnly("com.github.ajalt:clikt:$cliktVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.7.3")
 
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-property:$version")

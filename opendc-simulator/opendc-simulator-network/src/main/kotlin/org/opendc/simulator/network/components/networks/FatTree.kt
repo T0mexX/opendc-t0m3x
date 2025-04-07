@@ -1,6 +1,5 @@
 package org.opendc.simulator.network.components.networks
 
-import kotlinx.coroutines.Job
 import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
@@ -12,7 +11,6 @@ import org.opendc.simulator.network.components.specs.FatTreeSpecs
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NonSerializable
 import kotlin.math.pow
@@ -26,7 +24,7 @@ internal class FatTree private constructor(
     private val hostNodeSpecs: HostNodeSpecs,
     nodesById: Map<NodeId, Node>,
     override val internet: Internet,
-): NetworkV0() {
+): NetworkImpl() {
     override val _nodesById: MutableMap<NodeId, Node> =
         nodesById.toMutableMap()
 
@@ -83,7 +81,7 @@ internal class FatTree private constructor(
                 buildMap {
                     putAll((leafs + torSwitches + aggregationSwitches + coreSwitches).associateBy { it.id })
                     check(internet.id !in this) {
-                        "unable to create network: one node has id ${NetworkV0.INTERNET_ID}, " +
+                        "unable to create network: one node has id ${NetworkImpl.INTERNET_ID}, " +
                             "which is reserved for internet abstraction"
                     }
                     put(internet.id, internet)

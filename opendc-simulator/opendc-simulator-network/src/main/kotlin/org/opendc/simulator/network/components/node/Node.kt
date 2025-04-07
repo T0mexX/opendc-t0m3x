@@ -7,7 +7,6 @@ import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.utils.Launchable
@@ -59,7 +58,7 @@ internal interface Node : WithSpecs<Node>, IInvalidatable, Msgable<Node>, Launch
 
     val flowTable: FlowTable
 
-    suspend fun sendRxUpdt(deltaRate: DataRate, netF: INetFlow)
+    suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow)
 
     suspend fun connectTo(other: Node, linkBw: DataRate = this.portSpeed min other.portSpeed)
 

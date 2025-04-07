@@ -1,12 +1,32 @@
 package org.opendc.simulator.network.components.node
 
 import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 
-internal interface SenderNode: Node {
+/**
+ * TODO
+ */
+internal abstract class SenderNode(id: NodeId): NodeImpl(id) {
+    /**
+     * TODO
+     */
     context(NetSimScope)
-    suspend fun startFlow(netF: INetFlow)
+    suspend fun startFlow(netF: INetFlow) {
+        // TODO: maybe check that flow does not exist
+        netF.senderNode = this
+        val msg = nodeVersion.rxUpdateDisp.acquire().reset()
+        msg.deltaRate = netF.demand
+        msg.netF = netF
+        flowTable.rxUpdt(msg)
+        portProcessAwait()
+        msg.dispose()
+    }
+
+    /**
+     * TODO
+     */
     context(NetSimScope)
-    suspend fun stopFlow(netF: INetFlow)
+    suspend fun stopFlow(netF: INetFlow) {
+        flowTable.reset(netF)
+    }
 }

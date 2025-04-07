@@ -50,7 +50,7 @@ internal class PortV1 private constructor(
     }
 
     override suspend fun msgSetTxDemand(txDemand: DataRate, netF: INetFlow, entryId: IntId?): IntId {
-        val msg = setDemandDisp.acquire()
+        val msg = setDemandDisp.acquire().reset()
         msg.newDemand = txDemand
         val id = entryId ?: newEntry()
         msg.entryId = id
@@ -202,7 +202,7 @@ internal class PortV1 private constructor(
                         entry.netF = netF
                         entry.demand = newDemand
                         if (newDemand < oldDemand && entry.tput > newDemand) {
-                            p.txLink!!.releaseBw(oldDemand - newDemand)
+                            p.txLink!!.releaseBw(entry.tput - newDemand, netF)
                             entry.tput = newDemand
                         }
 
@@ -259,6 +259,8 @@ internal class PortV1 private constructor(
                             require(p.txLink != null) { "unable to disconnect port $this, port not connected" }
 
                             p.entries.forEach {
+
+                                TODO("change")
                                 val msg = nodeVersion.rxUpdateDisp.acquire()
                                 msg.netF = it.netF
                                 msg.deltaRate = -it.tput

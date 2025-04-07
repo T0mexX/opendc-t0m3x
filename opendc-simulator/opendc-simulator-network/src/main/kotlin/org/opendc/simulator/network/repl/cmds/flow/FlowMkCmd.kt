@@ -32,7 +32,6 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowMkCmd : REPLCmd("mk") {

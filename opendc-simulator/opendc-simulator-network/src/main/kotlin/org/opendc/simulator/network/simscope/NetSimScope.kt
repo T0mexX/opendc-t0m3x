@@ -3,6 +3,7 @@ package org.opendc.simulator.network.simscope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.logger.logger
@@ -33,6 +34,7 @@ internal class NetSimScope(
 
     init {
         var ctx = coroutineContext
+        DebugProbes.install()
         runBlocking {
             ctx[Job] ?: let { ctx += Job() }
             ctx[NetSimConfig] ?: let { ctx += NetSimConfig.DEFAULT }

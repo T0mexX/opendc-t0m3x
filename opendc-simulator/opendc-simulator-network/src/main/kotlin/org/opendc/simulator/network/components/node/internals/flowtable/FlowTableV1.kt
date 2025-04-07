@@ -23,7 +23,7 @@ internal class FlowTableV1 private constructor(
      * TODO
      */
     context(Node)
-    override suspend fun sendToPorts(updt: Node.RxUpdate) {
+    override suspend fun rxUpdt(updt: Node.RxUpdate) {
         var new: Boolean = false
         val entry = _flows.getOrPut(updt.netF) {
             new = true
@@ -31,6 +31,11 @@ internal class FlowTableV1 private constructor(
         }
         entry.rx += updt.deltaRate
         entry.node = this@Node
+        if (updt.netF.destId == this@Node.id) {
+            updt.netF.setThroughput(entry.rx)
+            return
+        }
+
         val perPort = entry.rx / entry.txPorts.size
         entry.txPorts.forEach {
             if (new) {

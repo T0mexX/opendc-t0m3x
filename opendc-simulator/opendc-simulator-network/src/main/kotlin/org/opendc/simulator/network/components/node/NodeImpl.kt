@@ -18,7 +18,6 @@ import org.opendc.simulator.network.components.internalstructs.RoutingVect
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.shareRoutingVect
 import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
@@ -28,7 +27,7 @@ import org.opendc.simulator.network.utils.notifiable.ReqMsgImpl
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
-internal abstract class NodeV1 protected constructor(
+internal abstract class NodeImpl protected constructor(
     final override val id: NodeId,
 ) : Node {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,7 +37,7 @@ internal abstract class NodeV1 protected constructor(
     override val routingTable: RoutingTable = RoutingTable(id)
     override var job: Job? = null
 
-    override suspend fun sendRxUpdt(deltaRate: DataRate, netF: INetFlow) {
+    override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {
         val msg = rxUpdateDisp.acquire().reset()
         msg.deltaRate = deltaRate
         msg.netF = netF
@@ -63,6 +62,7 @@ internal abstract class NodeV1 protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private suspend fun awaitPorts() {
+        if (ports.isEmpty()) return
         combine(ports.map { it.state }) { states ->
             states.all { it == Port.STABLE || it == Port.IDLE || it == Port.DISCONNECTED }
         }.first { it }
@@ -70,10 +70,16 @@ internal abstract class NodeV1 protected constructor(
 
     /**
      * TODO
+     */
+    context(NetSimScope)
+    protected open suspend fun getFreePort(): Port = ports.first { it.txLink == null }
+
+    /**
+     * TODO
      * this awaits for process to finish
      */
     context(NetSimScope)
-    protected suspend fun portProcess() {
+    protected suspend fun portProcessAwait() {
         coroutineScope {
             ports.asFlow().onEach { p ->
                 portVersion
@@ -85,6 +91,27 @@ internal abstract class NodeV1 protected constructor(
                     .dispose()
             }.launchIn(this)
         }
+//        ports.map { p ->
+//            portVersion
+//                .startProcessingDisp
+//                .acquire()
+//                .reset()
+//                .sendToPrioritized(p, dispose = false)
+//        }.forEach {
+//            it.awaitHandling().dispose()
+//        }
+//
+//        coroutineScope {
+//            ports.asFlow().onEach { p ->
+//                portVersion
+//                    .startProcessingDisp
+//                    .acquire()
+//                    .reset()
+//                    .sendToPrioritized(p, dispose = false)
+//                    .awaitHandling()
+//                    .dispose()
+//            }.launchIn(this)
+//        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -153,15 +180,10 @@ internal abstract class NodeV1 protected constructor(
 
                         context(Node)
                         override suspend fun handle() {
-                            val n = this@Node as NodeV1
-                            if (netF.destId == n.id) {
-                                val msg = netFlowVersion.increaseTputDisp.acquire().reset()
-                                msg.amount = deltaRate
-                                msg.sendTo(netF)
-                            } else {
-                                flowTable.sendToPorts(this)
-                            }
-                            n.portProcess()
+                            val n = this@Node as NodeImpl
+                            flowTable.rxUpdt(this)
+                            // TODO: change
+                            n.portProcessAwait()
                             handled()
                         }
                     }
@@ -179,15 +201,16 @@ internal abstract class NodeV1 protected constructor(
 
                         context(Node)
                         override suspend fun handle() {
-                            val n = this@Node as NodeV1
-                            val otherN = other as NodeV1
-                            val freePort: Port = n.ports.firstOrNull { it.txLink == null }!!
+                            val n = this@Node as NodeImpl
+                            val otherN = other as NodeImpl
+                            val freePort: Port = n.getFreePort()
 
                             //
                             n.awaitPorts()
 
                             // Ask another node to accept connection and retrieve its port.
-                            val reqMsg = nodeVersion.acceptConnectionDisp.acquire().reset() as Node.AcceptConnection
+                            val reqMsg = nodeVersion.acceptConnectionDisp.acquire().reset()
+                            reqMsg.linkBw = linkBw
                             reqMsg.toBeAccepted = freePort
                             val otherPort = reqMsg.sendTo(otherN).awaitResponse()
 
@@ -195,7 +218,7 @@ internal abstract class NodeV1 protected constructor(
                             reqMsg.dispose()
 
                             // Ask the port on this node to connect to the port on the other node.
-                            val msg = portVersion.connectDisp.acquire().reset() as Port.Connect
+                            val msg = portVersion.connectDisp.acquire().reset()
                             msg.linkBw = this.linkBw
                             msg.other = otherPort
                             msg.sendTo(freePort, dispose = false).awaitHandling().dispose()
@@ -228,8 +251,8 @@ internal abstract class NodeV1 protected constructor(
 
                         context(Node)
                         override suspend fun handle() {
-                            val n = this@Node as NodeV1
-                            val otherN = other as NodeV1
+                            val n = this@Node as NodeImpl
+                            val otherN = other as NodeImpl
                             val portToOther: Port = n.ports.firstOrNull { it.txLink?.receiverPort?.owner === otherN }!!
 
                             if (notifyOther) {
@@ -261,12 +284,12 @@ internal abstract class NodeV1 protected constructor(
 
                         context(Node)
                         override suspend fun handle() {
-                            val n = this@Node as NodeV1
+                            val n = this@Node as NodeImpl
 
                             n.flowTable.reapplyRouting()
 
                             // Make ports reapply fairness policy
-                            n.portProcess()
+                            n.portProcessAwait()
 //                            coroutineScope {
 //                                n.ports.asFlow().onEach { p ->
 //                                    portVersion
@@ -299,12 +322,12 @@ internal abstract class NodeV1 protected constructor(
 
                     context(Node)
                     override suspend fun handle() {
-                        val n = this@Node as NodeV1
+                        val n = this@Node as NodeImpl
 
-                        n.portProcess()
+                        n.portProcessAwait()
                         n.awaitPorts()
 
-                        val freePort: Port = ports.find { it.txLink == null }!!
+                        val freePort: Port = n.getFreePort()
                         val msg = portVersion.connectDisp.acquire().reset() as Port.Connect
                         msg.other = toBeAccepted
                         msg.linkBw = linkBw

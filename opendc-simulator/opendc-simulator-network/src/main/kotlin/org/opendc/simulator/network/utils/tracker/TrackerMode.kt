@@ -30,7 +30,7 @@ internal interface TrackerMode<T: Trackable<T>> {
                 }
             }
 
-        treeSet.addAll(items)
+        treeSet.addAll(items.filter { it.shouldBeTracked() })
         return treeSet
     }
 }

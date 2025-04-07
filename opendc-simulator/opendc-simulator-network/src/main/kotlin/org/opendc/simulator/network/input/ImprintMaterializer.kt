@@ -30,7 +30,7 @@ import org.apache.parquet.schema.MessageType
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.components.networks.NetworkV0.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.flow.publics.FlowId
 

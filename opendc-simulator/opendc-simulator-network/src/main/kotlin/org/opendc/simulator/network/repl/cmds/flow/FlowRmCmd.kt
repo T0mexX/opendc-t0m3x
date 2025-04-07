@@ -31,7 +31,7 @@ import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowRmCmd : REPLCmd("rm") {
     private val id: Long by argument(
-        help = "The node id of the receiver",
+        help = "The id of the flow to be remvoed",
     ).long().check("flow does not exist") { long -> net.flowsById.contains(FlowId(long)) }
 
     override fun run(): Unit =

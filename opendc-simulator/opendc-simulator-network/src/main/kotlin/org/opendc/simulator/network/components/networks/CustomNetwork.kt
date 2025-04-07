@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
+import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
 import org.opendc.simulator.network.components.specs.CustomNetworkSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -14,7 +15,7 @@ import org.opendc.simulator.network.utils.NonSerializable
 internal class CustomNetwork private constructor(
     nodes: Collection<Node>,
     override val internet: Internet,
-): NetworkV0() {
+): NetworkImpl() {
 
     override val _nodesById: MutableMap<NodeId, Node> = nodes.associateBy { it.id }.toMutableMap()
     override val _sendNodesById: MutableMap<NodeId, SenderNode> =
@@ -22,13 +23,14 @@ internal class CustomNetwork private constructor(
 
     // TODO: do not crash when error for REPL
     context(NetSimScope)
-    operator fun plus(node: Node) {
+    suspend operator fun plus(node: Node) {
         require(node.id != internet.id)
         require(node.id !in nodesById)
 
         _nodesById[node.id] = node
         (node as? SenderNode)?.let { _sendNodesById[it.id] = it }
         node.netLaunch()
+        (node as? CoreSwitch)?.connectTo(internet)
     }
 
     context(NetSimScope)
@@ -101,6 +103,8 @@ internal class CustomNetwork private constructor(
             CustomNetwork(
                 nodes = nodes,
                 internet = Internet(),
-            )
+            ).also {
+                it.internet.netLaunch()
+            }
     }
 }

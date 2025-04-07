@@ -24,8 +24,7 @@ package org.opendc.simulator.network.api.workload
 
 import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.components.networks.Network
-import org.opendc.simulator.network.components.networks.NetworkV0.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.node.NodeId
 import java.time.Duration
 import java.time.Instant

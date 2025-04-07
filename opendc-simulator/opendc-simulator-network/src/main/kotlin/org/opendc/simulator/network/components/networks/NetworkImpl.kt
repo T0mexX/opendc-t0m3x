@@ -8,14 +8,13 @@ import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
 import org.opendc.simulator.network.components.node.host.HostNode
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-internal abstract class NetworkV0 : Network {
+internal abstract class NetworkImpl : Network {
 
     override val sendNodesById: Map<NodeId, SenderNode> get() = _sendNodesById
     protected abstract val _sendNodesById: MutableMap<NodeId, SenderNode>
@@ -80,7 +79,7 @@ internal abstract class NetworkV0 : Network {
         }
 
     companion object {
-        internal inline fun <reified T : Node> NetworkV0.getNodesById(): Map<NodeId, T> {
+        internal inline fun <reified T : Node> NetworkImpl.getNodesById(): Map<NodeId, T> {
             return this.nodesById.values.filterIsInstance<T>().associateBy { it.id }
         }
 

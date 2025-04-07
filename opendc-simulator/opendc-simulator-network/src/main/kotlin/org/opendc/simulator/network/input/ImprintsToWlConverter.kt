@@ -26,7 +26,7 @@ import org.opendc.simulator.network.api.workload.NetworkEvent
 import org.opendc.simulator.network.api.workload.NetworkEvent.FlowStart
 import org.opendc.simulator.network.api.workload.NetworkEvent.FlowStop
 import org.opendc.simulator.network.api.workload.SimNetWorkload
-import org.opendc.simulator.network.components.networks.NetworkV0.Companion.INTERNET_ID
+import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.flow.publics.FlowId
 

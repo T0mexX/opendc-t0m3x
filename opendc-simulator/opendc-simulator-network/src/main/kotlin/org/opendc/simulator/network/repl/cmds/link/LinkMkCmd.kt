@@ -62,6 +62,7 @@ internal class LinkMkCmd : REPLCmd("mk") {
             }
 
             node1.connectTo(node2)
+            scope.barrier.awaitStability()
             echo("Successfully connected node $node1 with  node $node2")
         }
 }

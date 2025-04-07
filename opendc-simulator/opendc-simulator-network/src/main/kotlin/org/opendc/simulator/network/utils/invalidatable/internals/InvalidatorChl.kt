@@ -7,6 +7,9 @@ import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/**
+ * TODO
+ */
 internal open class InvalidatorChl<T> private constructor(
     private val delegatedChl: Channel<T>,
     private val receiver: Invalidatable

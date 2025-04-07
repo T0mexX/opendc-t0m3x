@@ -25,6 +25,7 @@ internal abstract class ReqMsgImpl<T: Msgable<T>, A, Self: ReqMsg<T, A, Self>> :
      */
     final override suspend fun reset(): Self {
         state.emit(Msg.State.UNTRACKED)
+        sender = null
         resp.emit(null)
 
         @Suppress("UNCHECKED_CAST")

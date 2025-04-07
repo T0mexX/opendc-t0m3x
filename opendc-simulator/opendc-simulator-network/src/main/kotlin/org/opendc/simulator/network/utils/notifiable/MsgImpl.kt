@@ -1,7 +1,9 @@
 package org.opendc.simulator.network.utils.notifiable
 
+import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -18,7 +20,7 @@ internal abstract class MsgImpl<T, Self: Msg<T, Self>> : Msg<T, Self>
     /**
      * TODO
      */
-    private var sender: CoroutineContext? = null
+    protected var sender: CoroutineContext? = null
 
     /**
      * TODO
@@ -27,7 +29,7 @@ internal abstract class MsgImpl<T, Self: Msg<T, Self>> : Msg<T, Self>
         state.first {
             // If `state` is `null`, msg was sent with `dispose = true` which means
             // the message flyweight object might have been reused by now.
-            check(sender == coroutineContext) {"await on recycled msg" }
+            check(sender == coroutineContext) { "await on recycled msg" }
             it == Msg.State.HANDLED
         }
         @Suppress("UNCHECKED_CAST")
@@ -38,14 +40,14 @@ internal abstract class MsgImpl<T, Self: Msg<T, Self>> : Msg<T, Self>
      * TODO
      */
     final override suspend fun sendTo(to: T, dispose: Boolean): Self {
-        to.msgChl.send(this)
-
         // If dispose is false, `sender` wants to wait for the msg to be handled;
         // hence `state` is going to be tracked, and this `msg` is not going to be disposed by the receiver.
         if (dispose.not()) {
             sender = coroutineContext
             state.emit(Msg.State.PENDING)
         }
+
+        to.msgChl.send(this)
         @Suppress("UNCHECKED_CAST")
         return this as Self
     }
@@ -54,14 +56,14 @@ internal abstract class MsgImpl<T, Self: Msg<T, Self>> : Msg<T, Self>
      * TODO
      */
     final override suspend fun sendToPrioritized(to: T, dispose: Boolean): Self {
-        to.priorityMsgChl.send(this)
-
         // If dispose is false, `sender` wants to wait for the msg to be handled;
         // hence `state` is going to be tracked, and this `msg` is not going to be disposed by the receiver.
         if (dispose.not()) {
             sender = coroutineContext
             state.emit(Msg.State.PENDING)
         }
+
+        to.priorityMsgChl.send(this)
         @Suppress("UNCHECKED_CAST")
         return this as Self
     }
@@ -71,6 +73,7 @@ internal abstract class MsgImpl<T, Self: Msg<T, Self>> : Msg<T, Self>
      */
     override suspend fun reset(): Self {
         state.emit(Msg.State.UNTRACKED)
+        sender = null
         @Suppress("UNCHECKED_CAST")
         return this as Self
     }

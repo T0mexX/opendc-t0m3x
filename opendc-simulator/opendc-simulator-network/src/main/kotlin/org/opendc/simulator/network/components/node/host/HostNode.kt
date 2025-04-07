@@ -3,7 +3,7 @@ package org.opendc.simulator.network.components.node.host
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.NodeV1
+import org.opendc.simulator.network.components.node.NodeImpl
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
@@ -13,7 +13,6 @@ import org.opendc.simulator.network.energy.EnMonitor
 import org.opendc.simulator.network.energy.EnergyConsumer
 import org.opendc.simulator.network.energy.emodels.HostNodeDfltEnModel
 import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -30,7 +29,7 @@ internal class HostNode private constructor(
     override var routingPolicy: RoutingPolicy,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-) : NodeV1(id), SenderNode, EnergyConsumer<HostNode> {
+) : SenderNode(id), EnergyConsumer<HostNode> {
 
     override lateinit var ports: List<Port>
 
@@ -42,22 +41,6 @@ internal class HostNode private constructor(
             fairnessPolicy = fairnessPolicy,
             portSelectionPolicy = routingPolicy,
         )
-
-    context(NetSimScope)
-    override suspend fun startFlow(netF: INetFlow) {
-        // TODO: maybe check that flow does not exist
-        val msg = nodeVersion.rxUpdateDisp.acquire()
-        msg.deltaRate = netF.demand
-        msg.netF = netF
-        flowTable.sendToPorts(msg)
-        portProcess()
-        msg.dispose()
-    }
-
-    context(NetSimScope)
-    override suspend fun stopFlow(netF: INetFlow) {
-        flowTable.reset(netF)
-    }
 
     override val enMonitor: EnMonitor<HostNode> = EnMonitor(this)
 

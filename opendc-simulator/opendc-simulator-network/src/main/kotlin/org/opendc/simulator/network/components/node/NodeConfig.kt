@@ -15,7 +15,7 @@ import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 
 @Serializable
 internal data class NodeConfig(
-    val version: NodeVersion = NodeV1,
+    val version: NodeVersion = NodeImpl,
     val flowTableVersion: FlowTableVersion = FlowTableV1,
     val portConfig: PortConfig = PortConfig(),
     val hostNodeConfig: HostNodeConfig = HostNodeConfig(),

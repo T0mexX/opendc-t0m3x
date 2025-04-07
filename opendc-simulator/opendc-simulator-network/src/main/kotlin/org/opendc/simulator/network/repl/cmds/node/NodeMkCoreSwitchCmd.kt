@@ -43,6 +43,7 @@ internal class NodeMkCoreSwitchCmd : REPLCmd(name = CMD_STR) {
             "cs" to listOf(CMD_STR),
             "core-s" to listOf(CMD_STR),
             "c-switch" to listOf(CMD_STR),
+            "core" to listOf(CMD_STR),
         ) + super.aliases()
 
     override fun run(): Unit =

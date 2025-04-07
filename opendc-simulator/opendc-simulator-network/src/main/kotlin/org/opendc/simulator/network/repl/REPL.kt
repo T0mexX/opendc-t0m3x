@@ -38,6 +38,7 @@ import org.opendc.simulator.network.repl.cmds.flow.FlowCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowInfoCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowMkCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowRmCmd
+import org.opendc.simulator.network.repl.cmds.flow.FlowUpdtCmd
 import org.opendc.simulator.network.repl.cmds.link.LinkCmd
 import org.opendc.simulator.network.repl.cmds.link.LinkMkCmd
 import org.opendc.simulator.network.repl.cmds.link.LinkRmCmd
@@ -85,6 +86,7 @@ public suspend fun main() {
                     FlowMkCmd(),
                     FlowInfoCmd(),
                     FlowRmCmd(),
+                    FlowUpdtCmd(),
                 ),
 //                EnRepCmd(),
                 ExportCmd(),

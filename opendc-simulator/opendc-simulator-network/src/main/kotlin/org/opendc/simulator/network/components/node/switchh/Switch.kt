@@ -2,7 +2,8 @@ package org.opendc.simulator.network.components.node.switchh
 
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.NodeV1
+import org.opendc.simulator.network.components.node.NodeImpl
+import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.Specs
@@ -24,7 +25,7 @@ internal open class Switch protected constructor(
     override var routingPolicy: RoutingPolicy,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-): NodeV1(id), EnergyConsumer<Switch> {
+): NodeImpl(id), EnergyConsumer<Switch> {
 
     override lateinit var  ports: List<Port>
 

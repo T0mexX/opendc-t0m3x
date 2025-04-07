@@ -329,7 +329,7 @@ public class NodeSnapshot internal constructor(
             return NodeSnapshot(
                 node = this,
                 instant = instant,
-                numIncomingFlows = cons.size + all.size - gen.size,
+                numIncomingFlows = all.size - gen.size,
                 numOutgoingFlows = all.size - cons.size,
                 numGeneratingFlows = gen.size,
                 numConsumedFlows = cons.size,

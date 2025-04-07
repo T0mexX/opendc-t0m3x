@@ -7,9 +7,13 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
+/**
+ *
+ */
 internal class SimplexLink(
     override val receiverPort: Port,
     override val maxBw: DataRate,
@@ -34,8 +38,13 @@ internal class SimplexLink(
         }
     }
 
-    override suspend fun releaseBw(bw: DataRate) = mtx.withLock {
+    override suspend fun releaseBw(bw: DataRate, netF: INetFlow) = mtx.withLock {
         require(bw < usedBw)
         usedBw -= bw
+        receiverPort.owner.msgAsyncRxUpdt(-bw, netF)
+    }
+
+    override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {
+        receiverPort.owner.msgAsyncRxUpdt(deltaRate, netF)
     }
 }

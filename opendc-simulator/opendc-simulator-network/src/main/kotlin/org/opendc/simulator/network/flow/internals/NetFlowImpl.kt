@@ -8,13 +8,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.utils.Idx
-import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.`eventEmitter-old`.publics.Event
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
@@ -27,7 +27,7 @@ import org.opendc.simulator.network.utils.invalidatable.internals.MutableInvalid
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
-internal class NetFlowV1 private constructor(
+internal class NetFlowImpl private constructor(
     override val senderId: NodeId,
     override val destId: NodeId,
     override val id: FlowId,
@@ -38,25 +38,26 @@ internal class NetFlowV1 private constructor(
     // INetFlow
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    override lateinit var senderNode: SenderNode
     override var throughput: DataRate = DataRate.zero
         private set
     override var demand: DataRate = demand
         private set
 
     override suspend fun setDemand(demand: DataRate) {
-        val notif = setDemandDisp.acquire()
-        notif.newDemand = demand
-        msgChl.send(notif)
+        val msg = setDemandDisp.acquire().reset()
+        msg.newDemand = demand
+        msgChl.send(msg)
     }
 
     override suspend fun setThroughput(newThroughput: DataRate) {
-        val notif = setTputDisp.acquire()
+        val notif = setTputDisp.acquire().reset()
         notif.newThroughput = newThroughput
         msgChl.send(notif)
     }
 
-    override suspend fun increaseThroughputBy(amount: DataRate) {
-        val notif = increaseTputDisp.acquire()
+    override suspend fun msgAsyncIncreaseTputBy(amount: DataRate) {
+        val notif = increaseTputDisp.acquire().reset()
         notif.amount = amount
         msgChl.send(notif)
     }
@@ -89,6 +90,12 @@ internal class NetFlowV1 private constructor(
     override val priorityMsgChl: SendChannel<Msg<INetFlow, *>> = _priorityNotificationChl
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Other
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    override fun toString(): String = "NetFlow(id=$id)"
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NetFlowVersion
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -101,7 +108,7 @@ internal class NetFlowV1 private constructor(
             destId: NodeId,
             id: FlowId?,
             demand: DataRate,
-        ): NetFlowV1 = NetFlowV1(
+        ): NetFlowImpl = NetFlowImpl(
             senderId = senderId,
             destId = destId,
             id = id ?: idDispenser.getFlowId(),
@@ -139,14 +146,18 @@ internal class NetFlowV1 private constructor(
 
                     context(NetFlow)
                     override suspend fun handle() {
-                        val f = this@NetFlow as NetFlowV1
+                        val f = this@NetFlow as NetFlowImpl
                         val old: DataRate = f.demand
                         f.demand = newDemand
-                        val evnt = _demandChangedDisp.acquire()
-                        evnt.netFlow = f
-                        evnt.old = old
-                        evnt.new = f.demand
-                        f._eventFlow.emit(evnt)
+                        val deltaDemand = newDemand - old
+                        //TODO
+//                        val evnt = _demandChangedDisp.acquire()
+//                        evnt.netFlow = f
+//                        evnt.old = old
+//                        evnt.new = f.demand
+//                        f._eventFlow.emit(evnt)
+                        f.senderNode.msgAsyncRxUpdt(deltaDemand, f)
+
                         dispose()
                     }
                 }
@@ -198,7 +209,7 @@ internal class NetFlowV1 private constructor(
 
                         context(NetFlow)
                         override suspend fun handle() {
-                            val f = this@NetFlow as NetFlowV1
+                            val f = this@NetFlow as NetFlowImpl
                             val old: DataRate = throughput
                             f.throughput = newThroughput
                             val evnt = _throughputChangedDisp.acquire()
@@ -223,7 +234,7 @@ internal class NetFlowV1 private constructor(
 
                         context(NetFlow)
                         override suspend fun handle() {
-                            val f = this@NetFlow as NetFlowV1
+                            val f = this@NetFlow as NetFlowImpl
                             val old: DataRate = throughput
                             f.throughput += amount
                             val evnt = _throughputChangedDisp.acquire()

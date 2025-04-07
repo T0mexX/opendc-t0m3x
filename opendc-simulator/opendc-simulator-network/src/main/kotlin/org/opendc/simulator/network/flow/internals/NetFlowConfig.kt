@@ -4,5 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class NetFlowConfig internal constructor(
-    val version: NetFlowVersion = NetFlowV1
+    val version: NetFlowVersion = NetFlowImpl
 )
