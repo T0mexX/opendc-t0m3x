@@ -4,18 +4,16 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.link.ReceiveLink
 import org.opendc.simulator.network.components.link.SendLink
 import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.IntId
 import org.opendc.simulator.network.utils.Launchable
-import org.opendc.simulator.network.utils.flyweight.internals.IFW
-import org.opendc.simulator.network.utils.flyweight.publics.FW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.Msgable
-import org.opendc.simulator.network.utils.notifiable.MsgImpl
 import org.opendc.simulator.network.utils.statefull.State
 import org.opendc.simulator.network.utils.statefull.Stateful
 
@@ -28,9 +26,15 @@ internal interface Port: Msgable<Port>, Stateful<Port>, IInvalidatable, Launchab
 
     var fairnessPolicy: FairnessPolicy
 
-    suspend fun startProcessing()
+    /**
+     * TODO
+     */
+    suspend fun msgProcess()
 
-    suspend fun setTxDemand(txDemand: DataRate, netflow: NetFlow, entryId: IntId? = null): IntId
+    /**
+     * TODO
+     */
+    suspend fun msgSetTxDemand(txDemand: DataRate, netF: INetFlow, entryId: IntId? = null): IntId
 
     /**
      * Not guaranteed to be stable. TOOD: write better
@@ -38,16 +42,16 @@ internal interface Port: Msgable<Port>, Stateful<Port>, IInvalidatable, Launchab
     fun getTxTput(entryId: IntId): DataRate
 
     interface SetDemand: Msg<Port, SetDemand> {
-        var netFlow: NetFlow
+        var netF: INetFlow
         var newDemand: DataRate
         var entryId: IntId
 
         companion object : FWId<SetDemand>
     }
 
-    interface StartProcessing: Msg<Port, StartProcessing> {
+    interface Process: Msg<Port, Process> {
 
-        companion object : FWId<StartProcessing>
+        companion object : FWId<Process>
     }
 
     interface Connect: Msg<Port, Connect> {

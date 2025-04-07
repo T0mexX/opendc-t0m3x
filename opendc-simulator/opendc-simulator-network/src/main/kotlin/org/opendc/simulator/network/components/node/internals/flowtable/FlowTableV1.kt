@@ -1,9 +1,8 @@
 package org.opendc.simulator.network.components.node.internals.flowtable
 
+import kotlinx.coroutines.flow.asFlow
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.port.Port
-import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
@@ -20,31 +19,57 @@ internal class FlowTableV1 private constructor(
         tracker.itemsGetter = { _flows.values }
     }
 
+    /**
+     * TODO
+     */
     context(Node)
     override suspend fun sendToPorts(updt: Node.RxUpdate) {
-        val entry = _flows.getOrPut(updt.netFlow) {
+        var new: Boolean = false
+        val entry = _flows.getOrPut(updt.netF) {
+            new = true
             newEntry(updt)
         }
         entry.rx += updt.deltaRate
         entry.node = this@Node
         val perPort = entry.rx / entry.txPorts.size
         entry.txPorts.forEach {
-            entry.portFlowEntryIds[it.portIdx] =
-                it.setTxDemand(perPort, entry.netFlow)
+            if (new) {
+                entry.portFlowEntryIds[it.portIdx] =
+                    it.msgSetTxDemand(perPort, entry.netFlow)
+            } else {
+                it.msgSetTxDemand(perPort, entry.netFlow, entry.portFlowEntryIds[it.portIdx])
+            }
         }
-        if (entry.rx approx DataRate.zero) _flows.remove(updt.netFlow)
+        if (entry.rx approx DataRate.zero) _flows.remove(updt.netF)
     }
 
+    /**
+     * TODO
+     */
     context(Node) override suspend fun reapplyRouting() {
-        TODO("Not yet implemented")
+        val entriesFlow = _flows.values.asFlow()
+        // Reset current port outgoing data-rates.
+        entriesFlow.collect { entry ->
+            entry.txPorts.forEach { p ->
+                p.msgSetTxDemand(DataRate.zero, netF = entry.netFlow, entryId = entry.portFlowEntryIds[p.portIdx])
+            }
+        }
+
+        // Select new outgoing ports for each flow entry.
+        entriesFlow.collect { entry ->
+            this@Node.routingPolicy.selectPorts(entry)
+        }
     }
 
+    /**
+     * TODO
+     */
     override suspend fun reset(f: NetFlow) {
         val entry = _flows[f]!!
         entry.rx = DataRate.zero
         entry.txPorts.forEach {
             entry.portFlowEntryIds[it.portIdx] =
-                it.setTxDemand(DataRate.zero, entry.netFlow)
+                it.msgSetTxDemand(DataRate.zero, entry.netFlow)
         }
         _flows.remove(f)
     }
@@ -55,7 +80,7 @@ internal class FlowTableV1 private constructor(
         entry.tracker = this
         entry.resizeIfNeeded()
         entry.node = this@Node
-        entry.netFlow = updt.netFlow
+        entry.netFlow = updt.netF
         this@Node.routingPolicy.selectPorts(entry)
         return entry
     }

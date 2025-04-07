@@ -6,11 +6,11 @@ import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.utils.Launchable
-import org.opendc.simulator.network.utils.flyweight.internals.IFW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.notifiable.ReqMsg
@@ -59,6 +59,8 @@ internal interface Node : WithSpecs<Node>, IInvalidatable, Msgable<Node>, Launch
 
     val flowTable: FlowTable
 
+    suspend fun sendRxUpdt(deltaRate: DataRate, netF: INetFlow)
+
     suspend fun connectTo(other: Node, linkBw: DataRate = this.portSpeed min other.portSpeed)
 
     suspend fun disconnectFrom(other: Node)
@@ -68,7 +70,7 @@ internal interface Node : WithSpecs<Node>, IInvalidatable, Msgable<Node>, Launch
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     interface RxUpdate: Msg<Node, RxUpdate> {
-        var netFlow: NetFlow
+        var netF: INetFlow
         var deltaRate: DataRate
 
         companion object : FWId<RxUpdate>

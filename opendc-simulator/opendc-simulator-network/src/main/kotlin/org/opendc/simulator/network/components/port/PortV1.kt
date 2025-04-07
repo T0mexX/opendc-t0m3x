@@ -4,13 +4,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.selects.select
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.link.ReceiveLink
 import org.opendc.simulator.network.components.link.SendLink
 import org.opendc.simulator.network.components.link.SimplexLink
 import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -23,7 +24,6 @@ import org.opendc.simulator.network.utils.IntSz
 import org.opendc.simulator.network.utils.datastructures.IntArrayQueue
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.internals.FWPool
-import org.opendc.simulator.network.utils.flyweight.internals.IFW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
@@ -45,17 +45,17 @@ internal class PortV1 private constructor(
     override var rxLink: ReceiveLink? = null
     override lateinit var fairnessPolicy: FairnessPolicy
 
-    override suspend fun startProcessing() {
+    override suspend fun msgProcess() {
         TODO("Not yet implemented")
     }
 
-    override suspend fun setTxDemand(txDemand: DataRate, netFlow: NetFlow, entryId: IntId?): IntId {
-        val notif = setDemandDisp.acquire()
-        notif.newDemand = txDemand
+    override suspend fun msgSetTxDemand(txDemand: DataRate, netF: INetFlow, entryId: IntId?): IntId {
+        val msg = setDemandDisp.acquire()
+        msg.newDemand = txDemand
         val id = entryId ?: newEntry()
-        notif.entryId = id
-        notif.netFlow = netFlow
-        _notificationChl.send(notif)
+        msg.entryId = id
+        msg.netF = netF
+        msg.sendTo(this)
         return id
     }
 
@@ -70,7 +70,10 @@ internal class PortV1 private constructor(
 
     context(NetSimScope) override fun netLaunch(): Job = this@NetSimScope.scopeLaunch {
         while (isActive) {
-            _notificationChl.receive().handle()
+            select {
+                _priorityMsgChl.onReceive { it.handle() }
+                _msgChl.onReceive { it.handle() }
+            }
         }
     }
 
@@ -78,11 +81,11 @@ internal class PortV1 private constructor(
     // Notifiable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    override val msgChl: SendChannel<Msg<Port, *>> get() = _notificationChl
-    private var _notificationChl = InvalidatorChl<Msg<Port, *>>(this)
+    override val msgChl: SendChannel<Msg<Port, *>> get() = _msgChl
+    private var _msgChl = InvalidatorChl<Msg<Port, *>>(this)
 
-    override val priorityMsgChl: SendChannel<Msg<Port, *>> get() = _priorityNotificationChl
-    private val _priorityNotificationChl = InvalidatorChl<Msg<Port, *>>(this)
+    override val priorityMsgChl: SendChannel<Msg<Port, *>> get() = _priorityMsgChl
+    private val _priorityMsgChl = InvalidatorChl<Msg<Port, *>>(this)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Stateful
@@ -104,16 +107,18 @@ internal class PortV1 private constructor(
     }
 
     private fun newEntry(): Idx =
-        freeIdxs.poll()
-            ?: grow1()
+        let {
+            freeIdxs.poll() ?: grow1()
+        }.also { idx -> entries[idx].used = true }
 
     private fun grow1(): Idx {
-        entries.add(PortFlowEntry().also { it.used = true })
+        entries.add(PortFlowEntry())
         return entries.size - 1
     }
 
     private fun rmEntry(idx: Idx) {
         freeIdxs.add(idx)
+        entries[idx].used = false
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,8 +140,8 @@ internal class PortV1 private constructor(
         // Notifications Dispensers
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        override val startProcessingDisp: FWDispenser<Port.StartProcessing> get() = _startProcessingDisp
-        private lateinit var _startProcessingDisp: FWDispenser<Port.StartProcessing>
+        override val startProcessingDisp: FWDispenser<Port.Process> get() = _startProcessingDisp
+        private lateinit var _startProcessingDisp: FWDispenser<Port.Process>
 
         override val setDemandDisp: FWDispenser<Port.SetDemand> get() = _setDemandDisp
         private lateinit var _setDemandDisp: FWDispenser<Port.SetDemand>
@@ -150,9 +155,9 @@ internal class PortV1 private constructor(
         context(NetSimScope)
         override suspend fun initDispensers() {
             _startProcessingDisp =
-                poolAggr.getOrAdd(Port.StartProcessing as FWId<Port.StartProcessing>) { pool, idx ->
+                poolAggr.getOrAdd(Port.Process as FWId<Port.Process>) { pool, idx ->
                     val stab = barrier.stabilizer()
-                    object : Port.StartProcessing, IInvalidatable, MsgImpl<Port, Port.StartProcessing>() {
+                    object : Port.Process, IInvalidatable, MsgImpl<Port, Port.Process>() {
                         override val pool = pool
                         override val poolIdx: Idx = idx
                         override val stabilizer: NetSimStabilizer = stab
@@ -161,7 +166,7 @@ internal class PortV1 private constructor(
                             val p = this@Port as PortV1
 
                             // If port disconnected no processing needed.
-                            if (p._state.value == Port.DISCONNECTED) return dispose()
+                            if (p._state.value == Port.DISCONNECTED) return handled()
 
                             p._state.emit(Port.PROCESSING)
                             p.owner.fairnessPolicy.applyPolicy(p.entries, reductionsToBeExecuted = false)
@@ -187,13 +192,14 @@ internal class PortV1 private constructor(
                     override val stabilizer: NetSimStabilizer = stab
                     override var newDemand: DataRate = DataRate.zero
                     override var entryId: IntId = -1
-                    override lateinit var netFlow: NetFlow
+                    override lateinit var netF: INetFlow
 
                     context(Port) override suspend fun handle() {
                         val p = this@Port as PortV1
                         if (newDemand.isZero()) return p.rmEntry(entryId)
                         val entry = p.entries[entryId]
                         val oldDemand = entry.demand
+                        entry.netF = netF
                         entry.demand = newDemand
                         if (newDemand < oldDemand && entry.tput > newDemand) {
                             p.txLink!!.releaseBw(oldDemand - newDemand)
@@ -254,7 +260,7 @@ internal class PortV1 private constructor(
 
                             p.entries.forEach {
                                 val msg = nodeVersion.rxUpdateDisp.acquire()
-                                msg.netFlow = it.netFlow
+                                msg.netF = it.netF
                                 msg.deltaRate = -it.tput
                                 p.txLink!!.send(msg)
                             }

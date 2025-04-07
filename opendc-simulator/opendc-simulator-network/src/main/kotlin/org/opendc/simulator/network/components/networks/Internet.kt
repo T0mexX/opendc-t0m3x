@@ -7,6 +7,7 @@ import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.Specs
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
@@ -25,11 +26,11 @@ internal class Internet(
     override var fairnessPolicy: FairnessPolicy = FirstComeFirstServed
     override var routingPolicy: RoutingPolicy = ECMP
 
-    override suspend fun startFlow(netFlow: NetFlow) {
+    override suspend fun startFlow(netF: INetFlow) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun stopFlow(netFlow: NetFlow) {
+    override suspend fun stopFlow(netF: INetFlow) {
         TODO("Not yet implemented")
     }
 

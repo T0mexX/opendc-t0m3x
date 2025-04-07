@@ -5,7 +5,7 @@ public value class FlowId(public val value: Long) {
     internal operator fun inc(): FlowId = FlowId(this.value + 1)
     internal operator fun compareTo(other: FlowId): Int = this.value.compareTo(other.value)
 
-
+    override fun toString(): String = value.toString()
 
     internal companion object {
         val INVALID = FlowId(-1)

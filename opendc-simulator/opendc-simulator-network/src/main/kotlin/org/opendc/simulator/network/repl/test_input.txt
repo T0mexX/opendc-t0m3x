@@ -1,4 +1,7 @@
 n mk -n 1 -b 1Gbps -p 4 host
 n mk -n 2 -b 1Gbps -p 3 host
 l mk -n 1 -n 2 -b 1Gbps
+f mk -s 1 -d 2 -b 10Mbps
+n snapshot 1
+f info
 q

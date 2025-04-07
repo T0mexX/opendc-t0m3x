@@ -6,6 +6,7 @@ import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
 import org.opendc.simulator.network.components.node.host.HostNode
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -22,19 +23,19 @@ internal abstract class NetworkV0 : Network {
     override val nodesById: Map<NodeId, Node> get() = _nodesById
     protected abstract val _nodesById: MutableMap<NodeId, Node>
 
-    override val flowsById: Map<FlowId, NetFlow> get() = _flows
-    protected val _flows: MutableMap<FlowId, NetFlow> = mutableMapOf()
+    override val flowsById: Map<FlowId, INetFlow> get() = _flows
+    protected val _flows: MutableMap<FlowId, INetFlow> = mutableMapOf()
 
     override operator fun get(nId: NodeId): Node? = this.nodesById[nId]
 
     context(NetSimScope)
-    override suspend fun startFlow(f: NetFlow) {
+    override suspend fun startFlow(f: INetFlow) {
         sendNodesById[f.senderId]!!.startFlow(f)
         _flows += f.id to f
     }
 
     context(NetSimScope)
-    override suspend fun stopFlow(f: NetFlow) {
+    override suspend fun stopFlow(f: INetFlow) {
         sendNodesById[f.senderId]!!.stopFlow(f)
         _flows -= f.id
     }

@@ -17,7 +17,7 @@ internal sealed interface NetFlowVersion {
         destId: NodeId,
         id: FlowId? = null,
         demand: DataRate = DataRate.zero,
-    ): NetFlow
+    ): INetFlow
 
 
     val setDemandDisp: FWDispenser<INetFlow.SetDemand>

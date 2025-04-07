@@ -4,6 +4,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Idx
@@ -22,7 +23,7 @@ internal class NodeFlowEntry private constructor(
     var portFlowEntryIds: IntArray,
 ): IFW<NodeFlowEntry>, Trackable<NodeFlowEntry> {
     lateinit var node: Node
-    lateinit var netFlow: NetFlow
+    lateinit var netFlow: INetFlow
     override lateinit var tracker: Tracker<NodeFlowEntry>
     var rx: DataRate = DataRate.zero
         set(value) {

@@ -11,7 +11,7 @@ internal sealed interface PortVersion {
     context(NetSimScope)
     suspend operator fun invoke(owner: Node, portIdx: Idx): Port
 
-    val startProcessingDisp: FWDispenser<Port.StartProcessing>
+    val startProcessingDisp: FWDispenser<Port.Process>
     val setDemandDisp: FWDispenser<Port.SetDemand>
     val connectDisp: FWDispenser<Port.Connect>
     val disconnectDisp: FWDispenser<Port.Disconnect>

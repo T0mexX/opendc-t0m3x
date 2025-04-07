@@ -2,8 +2,12 @@ package org.opendc.simulator.network.components.node
 
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -13,6 +17,7 @@ import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.internalstructs.RoutingVect
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.shareRoutingVect
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
@@ -33,15 +38,22 @@ internal abstract class NodeV1 protected constructor(
     override val routingTable: RoutingTable = RoutingTable(id)
     override var job: Job? = null
 
+    override suspend fun sendRxUpdt(deltaRate: DataRate, netF: INetFlow) {
+        val msg = rxUpdateDisp.acquire().reset()
+        msg.deltaRate = deltaRate
+        msg.netF = netF
+        msg.sendTo(this)
+    }
+
     override suspend fun connectTo(other: Node, linkBw: DataRate) {
-        val msg = connectDisp.acquire().reset() as Node.Connect
+        val msg = connectDisp.acquire().reset()
         msg.other = other
         msg.linkBw = linkBw
         msg.sendTo(this, dispose = false).awaitHandling().dispose()
     }
 
     override suspend fun disconnectFrom(other: Node) {
-        val notif = disconnectDisp.acquire().reset() as Node.Disconnect
+        val notif = disconnectDisp.acquire().reset()
         notif.other = other
         _notificationChl.send(notif)
     }
@@ -56,10 +68,22 @@ internal abstract class NodeV1 protected constructor(
         }.first { it }
     }
 
+    /**
+     * TODO
+     * this awaits for process to finish
+     */
     context(NetSimScope)
-    private suspend fun portProcess() {
-        ports.forEach {
-            it.msgChl.send(portVersion.startProcessingDisp.acquire())
+    protected suspend fun portProcess() {
+        coroutineScope {
+            ports.asFlow().onEach { p ->
+                portVersion
+                    .startProcessingDisp
+                    .acquire()
+                    .reset()
+                    .sendToPrioritized(p, dispose = false)
+                    .awaitHandling()
+                    .dispose()
+            }.launchIn(this)
         }
     }
 
@@ -124,12 +148,20 @@ internal abstract class NodeV1 protected constructor(
                     object : Node.RxUpdate, MsgImpl<Node, Node.RxUpdate>() {
                         override val pool = pool
                         override val poolIdx = idx
-                        override lateinit var netFlow: NetFlow
+                        override lateinit var netF: INetFlow
                         override var deltaRate: DataRate = DataRate.zero
 
                         context(Node)
                         override suspend fun handle() {
-                            flowTable.sendToPorts(this)
+                            val n = this@Node as NodeV1
+                            if (netF.destId == n.id) {
+                                val msg = netFlowVersion.increaseTputDisp.acquire().reset()
+                                msg.amount = deltaRate
+                                msg.sendTo(netF)
+                            } else {
+                                flowTable.sendToPorts(this)
+                            }
+                            n.portProcess()
                             handled()
                         }
                     }
@@ -174,7 +206,8 @@ internal abstract class NodeV1 protected constructor(
                             shareRoutingVect(except = listOf(other))
 
                             // Reapply routing after routing table update.
-                            n.priorityMsgChl.send(reapplyRoutingDisp.acquire())
+                            reapplyRoutingDisp.acquire().reset().handle()
+//                            reapplyRoutingDisp.acquire().sendToPrioritized(n, dispose = false).awaitHandling().dispose()
 
                             handled()
                         }
@@ -232,10 +265,23 @@ internal abstract class NodeV1 protected constructor(
 
                             n.flowTable.reapplyRouting()
 
-                            n.ports.forEach {
-                                // TODO: change
-                                it.priorityMsgChl.send(portVersion.startProcessingDisp.acquire())
-                            }
+                            // Make ports reapply fairness policy
+                            n.portProcess()
+//                            coroutineScope {
+//                                n.ports.asFlow().onEach { p ->
+//                                    portVersion
+//                                        .startProcessingDisp
+//                                        .acquire()
+//                                        .reset()
+//                                        .sendToPrioritized(p, dispose = false)
+//                                        .awaitHandling()
+//                                        .dispose()
+//                                }.launchIn(this)
+//                            }
+//                            n.ports.map {
+//                                portVersion.startProcessingDisp.acquire().sendToPrioritized(it, dispose = false)
+////                                it.priorityMsgChl.send(portVersion.startProcessingDisp.acquire())
+//                            }.map { it.awaitHandling().dispose() }
 
                             handled()
                         }

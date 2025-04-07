@@ -12,6 +12,7 @@ import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.energy.EnMonitor
 import org.opendc.simulator.network.energy.EnergyConsumer
 import org.opendc.simulator.network.energy.emodels.HostNodeDfltEnModel
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
@@ -43,18 +44,19 @@ internal class HostNode private constructor(
         )
 
     context(NetSimScope)
-    override suspend fun startFlow(netFlow: NetFlow) {
+    override suspend fun startFlow(netF: INetFlow) {
         // TODO: maybe check that flow does not exist
-        val notif = nodeVersion.rxUpdateDisp.acquire()
-        notif.deltaRate = netFlow.demand
-        notif.netFlow = netFlow
-        flowTable.sendToPorts(notif)
-        notif.dispose()
+        val msg = nodeVersion.rxUpdateDisp.acquire()
+        msg.deltaRate = netF.demand
+        msg.netF = netF
+        flowTable.sendToPorts(msg)
+        portProcess()
+        msg.dispose()
     }
 
     context(NetSimScope)
-    override suspend fun stopFlow(netFlow: NetFlow) {
-        flowTable.reset(netFlow)
+    override suspend fun stopFlow(netF: INetFlow) {
+        flowTable.reset(netF)
     }
 
     override val enMonitor: EnMonitor<HostNode> = EnMonitor(this)

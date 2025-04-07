@@ -8,6 +8,8 @@ public value class NodeId(public val value: Long) {
     internal operator fun inc(): NodeId = NodeId(this.value + 1)
     internal operator fun compareTo(other: NodeId): Int = this.value.compareTo(other.value)
 
+    override fun toString(): String = value.toString()
+
     public companion object {
         public val INVALID: NodeId = NodeId(-1)
     }

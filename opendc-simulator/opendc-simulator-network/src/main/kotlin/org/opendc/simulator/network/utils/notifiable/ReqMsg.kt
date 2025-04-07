@@ -8,6 +8,4 @@ internal interface ReqMsg<T: Msgable<T>, A, Self: ReqMsg<T, A, Self>> : Msg<T, S
      * TODO
      */
     suspend fun awaitResponse(): A
-
-    override suspend fun sendTo(to: T, dispose: Boolean): Self
 }

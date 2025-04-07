@@ -5,6 +5,7 @@ import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.specs.WithSpecs
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -18,17 +19,17 @@ internal interface Network : WithSpecs<Network> {
 
     val nodesById: Map<NodeId, Node>
 
-    val flowsById: Map<FlowId, NetFlow>
+    val flowsById: Map<FlowId, INetFlow>
 
     val internet: Internet
 
     operator fun get(nId: NodeId): Node?
 
     context(NetSimScope)
-    suspend fun startFlow(f: NetFlow)
+    suspend fun startFlow(f: INetFlow)
 
     context(NetSimScope)
-    suspend fun stopFlow(f: NetFlow)
+    suspend fun stopFlow(f: INetFlow)
 
     context(NetSimScope)
     suspend fun fmtNodes(mode: NetSimStabilityMode = config.stabilityMode): String

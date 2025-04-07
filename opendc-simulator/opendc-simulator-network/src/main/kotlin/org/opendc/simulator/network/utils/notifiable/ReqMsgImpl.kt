@@ -20,6 +20,9 @@ internal abstract class ReqMsgImpl<T: Msgable<T>, A, Self: ReqMsg<T, A, Self>> :
             it != null
         }!!
 
+    /**
+     * TODO
+     */
     final override suspend fun reset(): Self {
         state.emit(Msg.State.UNTRACKED)
         resp.emit(null)
