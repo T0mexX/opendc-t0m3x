@@ -12,10 +12,10 @@ import org.opendc.simulator.network.utils.tracker.Tracker
 import org.opendc.simulator.network.utils.tracker.TrackerMode
 
 internal interface FlowTable : Tracker<NodeFlowEntry> {
-    context(Node)
+    context(Node<*>)
     suspend fun rxUpdt(updt: Node.RxUpdate)
 
-    context(Node)
+    context(Node<*>)
     suspend fun reapplyRouting()
 
     suspend fun reset(f: NetFlow)

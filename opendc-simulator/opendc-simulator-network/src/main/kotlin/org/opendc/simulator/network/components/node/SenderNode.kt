@@ -6,7 +6,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 /**
  * TODO
  */
-internal abstract class SenderNode(id: NodeId): NodeImpl(id) {
+internal abstract class SenderNode<Self: SenderNode<Self>>(id: NodeId): NodeImpl<Self>(id) {
     /**
      * TODO
      */

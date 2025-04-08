@@ -38,7 +38,7 @@ internal class NetFlowImpl private constructor(
     // INetFlow
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    override lateinit var senderNode: SenderNode
+    override lateinit var senderNode: SenderNode<*>
     override var throughput: DataRate = DataRate.zero
         private set
     override var demand: DataRate = demand

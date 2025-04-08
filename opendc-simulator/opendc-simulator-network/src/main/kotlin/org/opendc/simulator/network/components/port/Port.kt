@@ -18,7 +18,7 @@ import org.opendc.simulator.network.utils.statefull.State
 import org.opendc.simulator.network.utils.statefull.Stateful
 
 internal interface Port: Msgable<Port>, Stateful<Port>, IInvalidatable, Launchable {
-    val owner: Node
+    val owner: Node<*>
     val speed: DataRate
     val portIdx: Idx
     var rxLink: ReceiveLink?

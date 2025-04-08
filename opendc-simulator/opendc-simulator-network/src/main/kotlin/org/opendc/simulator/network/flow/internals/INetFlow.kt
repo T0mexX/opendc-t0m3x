@@ -10,7 +10,7 @@ import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.Msgable
 
 internal interface INetFlow : NetFlow, Msgable<INetFlow>, Launchable, IInvalidatable {
-    var senderNode: SenderNode
+    var senderNode: SenderNode<*>
 
     suspend fun setThroughput(newThroughput: DataRate)
 

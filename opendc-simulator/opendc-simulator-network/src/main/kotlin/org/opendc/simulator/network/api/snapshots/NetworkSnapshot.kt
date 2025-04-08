@@ -32,8 +32,8 @@ import org.opendc.simulator.network.api.NetEnRecorder
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
-import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
-import org.opendc.simulator.network.components.node.host.HostNode
+import org.opendc.simulator.network.components.node.CoreSwitch
+import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Flag

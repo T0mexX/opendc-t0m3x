@@ -46,7 +46,7 @@ internal class FlowMkCmd : REPLCmd("mk") {
     private val senderId: Long by option(
         help = "The node id of the sender",
         names = arrayOf("-s", "--senderid"),
-    ).long().required().check("sender invalid") { net.getNodesById<SenderNode>().contains(NodeId(it)) }
+    ).long().required().check("sender invalid") { net.getNodesById<SenderNode<*>>().contains(NodeId(it)) }
 
     private val destId: Long by option(
         help = "The node id of the receiver",

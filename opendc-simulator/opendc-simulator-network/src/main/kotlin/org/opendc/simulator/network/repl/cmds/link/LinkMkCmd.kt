@@ -53,8 +53,8 @@ internal class LinkMkCmd : REPLCmd("mk") {
         runBlocking(scope.ctx) {
             scope.barrier.awaitStability()
             val nodes: List<NodeId> = nodeIds.toList().map { NodeId(it) }
-            val node1: Node? = net.nodesById[nodes[0]]
-            val node2: Node? = net.nodesById[nodes[1]]
+            val node1: Node<*>? = net.nodesById[nodes[0]]
+            val node2: Node<*>? = net.nodesById[nodes[1]]
 
             if (node1 == null || node2 == null) {
                 issueMessage("Unable to create link")

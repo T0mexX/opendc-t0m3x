@@ -26,15 +26,12 @@ import org.opendc.common.logger.logger
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.TimeDelta
-import org.opendc.simulator.network.components.networks.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.energy.EnMonitor
-import org.opendc.simulator.network.energy.EnergyConsumer
+import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.utils.`observable-old`.ChangeHndlr
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
-import kotlin.coroutines.coroutineContext
 
 /**
  * Records the network's power draw and energy consumption.
@@ -52,18 +49,18 @@ public class NetEnRecorder internal constructor(network: Network) {
     public var totalConsumption: Energy = Energy.zero
         private set
 
-    private val consumersById: MutableMap<NodeId, EnergyConsumer<*>> =
-        network.nodesById.values.filterIsInstance<EnergyConsumer<*>>().associateBy { it.id }.toMutableMap()
+//    private val consumersById: MutableMap<NodeId, EnConsumer<*>> =
+//        network.nodesById.values.filterIsInstance<EnConsumer<*>>().associateBy { it.id }.toMutableMap()
 
-    private val powerUseChangeHndlr =
-        ChangeHndlr<EnMonitor<*>, Power> { _, oldValue, newValue ->
-            currPwrUsage += newValue - oldValue
-        }
+//    private val powerUseChangeHndlr =
+//        ChangeHndlr<EnMonitor<*>, Power> { _, oldValue, newValue ->
+//            currPwrUsage += newValue - oldValue
+//        }
 
     init {
         // Sets up listeners on the energy consuming nodes.
-        consumersById.values.forEach { it.enMonitor.onPwrUseChange(powerUseChangeHndlr) }
-        consumersById.values.forEach { it.enMonitor.update() }
+//        consumersById.values.forEach { it.enMonitor.onPwrUseChange(powerUseChangeHndlr) }
+//        consumersById.values.forEach { it.enMonitor.update() }
 
         // Sets up callback for whenever a node is added to the network.
 //        (network as? CustomNetwork)?.onNodeAdded { _, node ->
@@ -116,8 +113,8 @@ public class NetEnRecorder internal constructor(network: Network) {
             // Update total energy consumption.
             totalConsumption += currPwrUsage * deltaTime
 
-            // Advance time of each node's energy monitor.
-            consumersById.values.forEach { it.enMonitor.advanceBy(deltaTime, checkStability) }
+//            // Advance time of each node's energy monitor.
+//            consumersById.values.forEach { it.enMonitor.advanceBy(deltaTime, checkStability) }
 
             // Update average power usage.
             avrgPwrUsage = (

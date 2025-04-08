@@ -4,7 +4,8 @@ import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
+import org.opendc.simulator.network.components.node.CoreSwitch
+import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.specs.CustomNetworkSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -13,17 +14,17 @@ import org.opendc.simulator.network.utils.NonSerializable
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal class CustomNetwork private constructor(
-    nodes: Collection<Node>,
+    nodes: Collection<Node<*>>,
     override val internet: Internet,
 ): NetworkImpl() {
 
-    override val _nodesById: MutableMap<NodeId, Node> = nodes.associateBy { it.id }.toMutableMap()
-    override val _sendNodesById: MutableMap<NodeId, SenderNode> =
-        getNodesById<SenderNode>().toMutableMap()
+    override val _nodesById: MutableMap<NodeId, Node<*>> = nodes.associateBy { it.id }.toMutableMap()
+    override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
+        getNodesById<SenderNode<*>>().toMutableMap()
 
     // TODO: do not crash when error for REPL
     context(NetSimScope)
-    suspend operator fun plus(node: Node) {
+    suspend operator fun plus(node: Node<*>) {
         require(node.id != internet.id)
         require(node.id !in nodesById)
 
@@ -37,7 +38,7 @@ internal class CustomNetwork private constructor(
     suspend fun minus(nodeId: NodeId) {
         require(nodeId in nodesById)
 
-        val n: Node = _nodesById.remove(nodeId)!!
+        val n: Node<*> = _nodesById.remove(nodeId)!!
         (n as? SenderNode)?.let { _sendNodesById -= it.id }
         n.job?.cancel()
     }
@@ -57,12 +58,12 @@ internal class CustomNetwork private constructor(
         }
 
         links.forEach { (id1, id2) ->
-            val node1: Node =
+            val node1: Node<*> =
                 nodesById[id1] ?: let {
                     warnOfUnsetLink(id1, id2)
                     return@forEach
                 }
-            val node2: Node =
+            val node2: Node<*> =
                 nodesById[id2] ?: let {
                     warnOfUnsetLink(id1, id2)
                     return@forEach
@@ -99,7 +100,7 @@ internal class CustomNetwork private constructor(
 
     companion object {
         context(NetSimScope)
-        suspend operator fun invoke(nodes: Collection<Node> = emptyList()): CustomNetwork =
+        suspend operator fun invoke(nodes: Collection<Node<*>> = emptyList()): CustomNetwork =
             CustomNetwork(
                 nodes = nodes,
                 internet = Internet(),

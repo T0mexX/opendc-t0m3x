@@ -4,8 +4,9 @@ import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.components.node.host.HostNode
-import org.opendc.simulator.network.components.node.switchh.Switch
+import org.opendc.simulator.network.components.node.HostNode
+import org.opendc.simulator.network.components.node.Internet
+import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.specs.CoreSwitchSpecs
 import org.opendc.simulator.network.components.specs.FatTreeSpecs
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
@@ -22,14 +23,14 @@ internal class FatTree private constructor(
     private val aggrSpecs: SwitchSpecs,
     private val torSpecs: SwitchSpecs,
     private val hostNodeSpecs: HostNodeSpecs,
-    nodesById: Map<NodeId, Node>,
+    nodesById: Map<NodeId, Node<*>>,
     override val internet: Internet,
 ): NetworkImpl() {
-    override val _nodesById: MutableMap<NodeId, Node> =
+    override val _nodesById: MutableMap<NodeId, Node<*>> =
         nodesById.toMutableMap()
 
-    override val _sendNodesById: MutableMap<NodeId, SenderNode> =
-        getNodesById<SenderNode>().toMutableMap()
+    override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
+        getNodesById<SenderNode<*>>().toMutableMap()
 
     override fun toSpecs(): Specs<FatTree> =
         FatTreeSpecs(

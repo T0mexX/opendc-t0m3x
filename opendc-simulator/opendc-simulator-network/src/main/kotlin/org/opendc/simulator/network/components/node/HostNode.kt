@@ -1,18 +1,11 @@
-package org.opendc.simulator.network.components.node.host
+package org.opendc.simulator.network.components.node
 
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.specs.Specs
-import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.NodeImpl
-import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
 import org.opendc.simulator.network.energy.EnModel
-import org.opendc.simulator.network.energy.EnMonitor
-import org.opendc.simulator.network.energy.EnergyConsumer
-import org.opendc.simulator.network.energy.emodels.HostNodeDfltEnModel
-import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -27,9 +20,14 @@ internal class HostNode private constructor(
     override val nPorts: Int,
     override var fairnessPolicy: FairnessPolicy,
     override var routingPolicy: RoutingPolicy,
+    override var enModel: EnModel<HostNode>,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-) : SenderNode(id), EnergyConsumer<HostNode> {
+) : SenderNode<HostNode>(id), SerializableNode {
+
+    fun bo() {
+        enModel.computeCurrConsumpt(this)
+    }
 
     override lateinit var ports: List<Port>
 
@@ -42,10 +40,6 @@ internal class HostNode private constructor(
             portSelectionPolicy = routingPolicy,
         )
 
-    override val enMonitor: EnMonitor<HostNode> = EnMonitor(this)
-
-    override fun getDfltEnModel(): EnModel<HostNode> = HostNodeDfltEnModel
-
     companion object {
         context(NetSimScope)
         suspend operator fun invoke(
@@ -54,6 +48,7 @@ internal class HostNode private constructor(
             nPorts: Int? = null,
             fairnessPolicy: FairnessPolicy? = null,
             portSelectionPolicy: RoutingPolicy? = null,
+            enModel: EnModel<HostNode>? = null,
         ): HostNode {
             val nodeConfig = devConfig.nodeConfig
             val hostConfig = nodeConfig.hostNodeConfig
@@ -67,10 +62,13 @@ internal class HostNode private constructor(
                     ?: nodeConfig.defaultNPorts!!,
                 fairnessPolicy = fairnessPolicy
                     ?: hostConfig.defaultFairnessPolicy
-                    ?: nodeConfig.defaultFairnessPolicy!!,
+                    ?: nodeConfig.defaultFairnessPolicy,
                 routingPolicy = portSelectionPolicy
                     ?: hostConfig.defaultRoutingPolicy
-                    ?: nodeConfig.defaultRoutingPolicy!!,
+                    ?: nodeConfig.defaultRoutingPolicy,
+                enModel = enModel
+                    ?:hostConfig.defaultEnModel
+                    ?:nodeConfig.defaultEnModel,
                 flowTable = nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer()
             ).also { h ->

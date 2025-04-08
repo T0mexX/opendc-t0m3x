@@ -27,9 +27,9 @@ import org.opendc.simulator.network.utils.notifiable.ReqMsgImpl
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
-internal abstract class NodeImpl protected constructor(
+internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     final override val id: NodeId,
-) : Node {
+) : Node<Self> {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Node
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,14 +44,14 @@ internal abstract class NodeImpl protected constructor(
         msg.sendTo(this)
     }
 
-    override suspend fun connectTo(other: Node, linkBw: DataRate) {
+    override suspend fun connectTo(other: Node<*>, linkBw: DataRate) {
         val msg = connectDisp.acquire().reset()
         msg.other = other
         msg.linkBw = linkBw
         msg.sendTo(this, dispose = false).awaitHandling().dispose()
     }
 
-    override suspend fun disconnectFrom(other: Node) {
+    override suspend fun disconnectFrom(other: Node<*>) {
         val notif = disconnectDisp.acquire().reset()
         notif.other = other
         _notificationChl.send(notif)
@@ -133,13 +133,13 @@ internal abstract class NodeImpl protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    override val msgChl: SendChannel<Msg<Node, *>> get() = _notificationChl
+    override val msgChl: SendChannel<Msg<Node<*>, *>> get() = _notificationChl
     @Suppress("LeakingThis")
-    private val _notificationChl: InvalidatorChl<Msg<Node, *>> = InvalidatorChl(receiver = this)
+    private val _notificationChl: InvalidatorChl<Msg<Node<*>, *>> = InvalidatorChl(receiver = this)
 
-    override val priorityMsgChl: SendChannel<Msg<Node, *>> get() = _priorityNotificationChl
+    override val priorityMsgChl: SendChannel<Msg<Node<*>, *>> get() = _priorityNotificationChl
     @Suppress("LeakingThis")
-    private val _priorityNotificationChl: InvalidatorChl<Msg<Node, *>> = InvalidatorChl(receiver = this)
+    private val _priorityNotificationChl: InvalidatorChl<Msg<Node<*>, *>> = InvalidatorChl(receiver = this)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NodeVersion
@@ -172,13 +172,13 @@ internal abstract class NodeImpl protected constructor(
         context(NetSimScope) override suspend fun initDispensers() {
             _rxUpdateDisp =
                 poolAggr.getOrAdd(Node.RxUpdate as FWId<Node.RxUpdate>) { pool, idx ->
-                    object : Node.RxUpdate, MsgImpl<Node, Node.RxUpdate>() {
+                    object : Node.RxUpdate, MsgImpl<Node<*>, Node.RxUpdate>() {
                         override val pool = pool
                         override val poolIdx = idx
                         override lateinit var netF: INetFlow
                         override var deltaRate: DataRate = DataRate.zero
 
-                        context(Node)
+                        context(Node<*>)
                         override suspend fun handle() {
                             val n = this@Node as NodeImpl
                             flowTable.rxUpdt(this)
@@ -193,13 +193,13 @@ internal abstract class NodeImpl protected constructor(
 
             _connectDisp =
                 poolAggr.getOrAdd(Node.Connect as FWId<Node.Connect>) { pool, idx ->
-                    object : Node.Connect, MsgImpl<Node, Node.Connect>() {
+                    object : Node.Connect, MsgImpl<Node<*>, Node.Connect>() {
                         override val pool = pool
                         override val poolIdx = idx
-                        override lateinit var other: Node
+                        override lateinit var other: Node<*>
                         override var linkBw = DataRate.zero
 
-                        context(Node)
+                        context(Node<*>)
                         override suspend fun handle() {
                             val n = this@Node as NodeImpl
                             val otherN = other as NodeImpl
@@ -243,13 +243,13 @@ internal abstract class NodeImpl protected constructor(
                 poolAggr.getOrAdd(Node.Disconnect as FWId<Node.Disconnect>) { pool, idx ->
                     val portDisconnectDisp = portVersion.disconnectDisp
                     val nodeReapplyRoutingDisp = reapplyRoutingDisp
-                    object : Node.Disconnect, MsgImpl<Node, Node.Disconnect>() {
+                    object : Node.Disconnect, MsgImpl<Node<*>, Node.Disconnect>() {
                         override val pool = pool
                         override val poolIdx = idx
-                        override lateinit var other: Node
+                        override lateinit var other: Node<*>
                         override var notifyOther = false
 
-                        context(Node)
+                        context(Node<*>)
                         override suspend fun handle() {
                             val n = this@Node as NodeImpl
                             val otherN = other as NodeImpl
@@ -278,11 +278,11 @@ internal abstract class NodeImpl protected constructor(
 
             _reapplyRoutingDisp =
                 poolAggr.getOrAdd(Node.ReapplyRouting as FWId<Node.ReapplyRouting>) { pool, idx ->
-                    object : Node.ReapplyRouting, MsgImpl<Node, Node.ReapplyRouting>() {
+                    object : Node.ReapplyRouting, MsgImpl<Node<*>, Node.ReapplyRouting>() {
                         override val pool = pool
                         override val poolIdx = idx
 
-                        context(Node)
+                        context(Node<*>)
                         override suspend fun handle() {
                             val n = this@Node as NodeImpl
 
@@ -314,21 +314,21 @@ internal abstract class NodeImpl protected constructor(
 
 
             _acceptConnectioDisp = poolAggr.getOrAdd(Node.AcceptConnection as FWId<Node.AcceptConnection>) { pool, idx ->
-                object : Node.AcceptConnection, ReqMsgImpl<Node, Port, Node.AcceptConnection>() {
+                object : Node.AcceptConnection, ReqMsgImpl<Node<*>, Port, Node.AcceptConnection>() {
                     override val pool = pool
                     override val poolIdx = idx
                     override lateinit var toBeAccepted: Port
                     override var linkBw: DataRate = DataRate.zero
 
-                    context(Node)
+                    context(Node<*>)
                     override suspend fun handle() {
-                        val n = this@Node as NodeImpl
+                        val n = this@Node as NodeImpl<*>
 
                         n.portProcessAwait()
                         n.awaitPorts()
 
                         val freePort: Port = n.getFreePort()
-                        val msg = portVersion.connectDisp.acquire().reset() as Port.Connect
+                        val msg = portVersion.connectDisp.acquire().reset()
                         msg.other = toBeAccepted
                         msg.linkBw = linkBw
                         msg.sendTo(freePort, dispose = false).awaitHandling().dispose()

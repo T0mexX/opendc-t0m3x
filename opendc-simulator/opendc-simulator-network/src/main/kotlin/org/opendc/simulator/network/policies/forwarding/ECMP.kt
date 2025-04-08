@@ -9,7 +9,7 @@ import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlow
 @Serializable
 @SerialName("ecmp")
 internal data object ECMP : RoutingPolicy {
-    context(Node)
+    context(Node<*>)
     override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
         val f = nodeFlowEntry.netFlow
         nodeFlowEntry.txPorts.clear()

@@ -47,8 +47,8 @@ internal class LinkRmCmd : REPLCmd("rm") {
     override fun run(): Unit =
         runBlocking {
             scope.barrier.awaitStability()
-            val node1: Node? = net[NodeId(nodeIds.toList()[0])]
-            val node2: Node? = net[NodeId(nodeIds.toList()[1])]
+            val node1: Node<*>? = net[NodeId(nodeIds.toList()[0])]
+            val node2: Node<*>? = net[NodeId(nodeIds.toList()[1])]
 
             if (node1 == null || node2 == null) {
                 issueMessage("Unable to remove link")

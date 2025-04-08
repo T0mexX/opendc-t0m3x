@@ -27,7 +27,7 @@ import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.CustomNetwork
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.host.HostNode
+import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 private const val CMD_STR: String = "host"

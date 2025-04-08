@@ -31,7 +31,7 @@ import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.statefull.State
 
 internal class PortV1 private constructor(
-    override val owner: Node,
+    override val owner: Node<*>,
     override val portIdx: Idx,
     initialCapacity: IntSz,
     override val stabilizer: NetSimStabilizer
@@ -128,7 +128,7 @@ internal class PortV1 private constructor(
     companion object : PortVersion {
 
         context(NetSimScope)
-        override suspend operator fun invoke(owner: Node, portIdx: Idx) =
+        override suspend operator fun invoke(owner: Node<*>, portIdx: Idx) =
             PortV1(
                 owner = owner,
                 portIdx = portIdx,

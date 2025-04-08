@@ -9,7 +9,7 @@ import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 @Serializable
 internal sealed interface PortVersion {
     context(NetSimScope)
-    suspend operator fun invoke(owner: Node, portIdx: Idx): Port
+    suspend operator fun invoke(owner: Node<*>, portIdx: Idx): Port
 
     val startProcessingDisp: FWDispenser<Port.Process>
     val setDemandDisp: FWDispenser<Port.SetDemand>

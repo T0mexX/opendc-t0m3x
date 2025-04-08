@@ -26,7 +26,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
-import org.opendc.simulator.network.components.node.switchh.Switch
+import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.energy.EnModel
 import kotlin.math.log
@@ -38,7 +38,7 @@ import kotlin.math.pow
  *
  * Only derived by 1000Mbps 48 ports PRONTO 3240 switches.
  */
-internal object SwitchDfltEnModel : EnModel<Switch> {
+internal data object SwitchDfltEnModel : EnModel<Switch> {
     private val CHASSIS_PWR: Power = Power.ofWatts(67.7)
     private val IDLE_PORT_PWR_10Mbps: Power = Power.ofWatts(3.0 / 48)
     private val IDLE_PORT_PWR_100Mbps: Power = Power.ofWatts(12.5 / 48)

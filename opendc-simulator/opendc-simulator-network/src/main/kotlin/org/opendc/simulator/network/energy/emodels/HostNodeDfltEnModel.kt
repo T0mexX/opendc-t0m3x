@@ -26,7 +26,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
-import org.opendc.simulator.network.components.node.host.HostNode
+import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.energy.EnModel
 import kotlin.math.pow

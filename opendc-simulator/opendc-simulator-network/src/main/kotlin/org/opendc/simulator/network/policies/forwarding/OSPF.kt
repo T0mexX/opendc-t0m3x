@@ -9,7 +9,7 @@ import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlow
 @Serializable
 @SerialName("ospf")
 internal data object OSPF: RoutingPolicy {
-    context(Node)
+    context(Node<*>)
     override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
         val f = nodeFlowEntry.netFlow
         this@Node.routingTable.getPossiblePathsTo(f.destId)

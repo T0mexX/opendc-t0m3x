@@ -1,17 +1,12 @@
-package org.opendc.simulator.network.components.node.switchh
+package org.opendc.simulator.network.components.node
 
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.NodeImpl
-import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.energy.EnModel
-import org.opendc.simulator.network.energy.EnMonitor
-import org.opendc.simulator.network.energy.EnergyConsumer
-import org.opendc.simulator.network.energy.emodels.SwitchDfltEnModel
+import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -23,9 +18,10 @@ internal open class Switch protected constructor(
     override val nPorts: Int,
     override var fairnessPolicy: FairnessPolicy,
     override var routingPolicy: RoutingPolicy,
+    override val enModel: EnModel<Switch>,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-): NodeImpl(id), EnergyConsumer<Switch> {
+): NodeImpl<Switch>(id), EnConsumer<Switch>, SerializableNode {
 
     override lateinit var  ports: List<Port>
 
@@ -38,11 +34,6 @@ internal open class Switch protected constructor(
             portSelectionPolicy = routingPolicy,
         )
 
-    @Suppress("LeakingThis")
-    override val enMonitor: EnMonitor<Switch> = EnMonitor(this)
-
-    override fun getDfltEnModel(): EnModel<Switch> = SwitchDfltEnModel
-
     companion object {
         context(NetSimScope)
         internal suspend operator fun invoke(
@@ -51,6 +42,7 @@ internal open class Switch protected constructor(
             nPorts: Int? = null,
             fairnessPolicy: FairnessPolicy? = null,
             portSelectionPolicy: RoutingPolicy? = null,
+            enModel: EnModel<Switch>? = null,
         ): Switch {
             val nodeConfig = devConfig.nodeConfig
             val switchConfig = nodeConfig.switchConfig
@@ -64,10 +56,13 @@ internal open class Switch protected constructor(
                     ?: nodeConfig.defaultNPorts!!,
                 fairnessPolicy = fairnessPolicy
                     ?: switchConfig.defaultFairnessPolicy
-                    ?: nodeConfig.defaultFairnessPolicy!!,
+                    ?: nodeConfig.defaultFairnessPolicy,
                 routingPolicy = portSelectionPolicy
                     ?: switchConfig.defaultRoutingPolicy
-                    ?: nodeConfig.defaultRoutingPolicy!!,
+                    ?: nodeConfig.defaultRoutingPolicy,
+                enModel = enModel
+                    ?:switchConfig.defaultEnModel
+                    ?:nodeConfig.defaultEnModel,
                 flowTable = nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer()
             ).also { s ->

@@ -22,7 +22,7 @@ internal class NodeFlowEntry private constructor(
     val txPorts: MutableSet<Port>,
     var portFlowEntryIds: IntArray,
 ): IFW<NodeFlowEntry>, Trackable<NodeFlowEntry> {
-    lateinit var node: Node
+    lateinit var node: Node<*>
     lateinit var netFlow: INetFlow
     override lateinit var tracker: Tracker<NodeFlowEntry>
     var rx: DataRate = DataRate.zero
@@ -30,7 +30,7 @@ internal class NodeFlowEntry private constructor(
             tracker.handleFieldChange(propId = RxProp) { field = value }
         }
 
-    context(Node)
+    context(Node<*>)
     fun resizeIfNeeded() {
         if (this@Node.nPorts < portFlowEntryIds.size) {
             portFlowEntryIds = portFlowEntryIds.copyOf(this@Node.nPorts)

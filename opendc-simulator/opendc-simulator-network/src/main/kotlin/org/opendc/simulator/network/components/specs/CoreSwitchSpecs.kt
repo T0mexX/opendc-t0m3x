@@ -3,9 +3,9 @@ package org.opendc.simulator.network.components.specs
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.networks.Internet
+import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
+import org.opendc.simulator.network.components.node.CoreSwitch
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.simscope.NetSimScope

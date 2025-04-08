@@ -6,6 +6,7 @@ import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
@@ -20,7 +21,7 @@ import org.opendc.simulator.network.utils.notifiable.Msgable
 /**
  * Interface representing a node in a [Network2].
  */
-internal interface Node : WithSpecs<Node>, IInvalidatable, Msgable<Node>, Launchable {
+internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvalidatable, Msgable<Node<*>>, Launchable, EnConsumer<Self> {
     /**
      * ID of the node. Uniquely identifies the node in the [Network22].
      */
@@ -60,41 +61,41 @@ internal interface Node : WithSpecs<Node>, IInvalidatable, Msgable<Node>, Launch
 
     suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow)
 
-    suspend fun connectTo(other: Node, linkBw: DataRate = this.portSpeed min other.portSpeed)
+    suspend fun connectTo(other: Node<*>, linkBw: DataRate = this.portSpeed min other.portSpeed)
 
-    suspend fun disconnectFrom(other: Node)
+    suspend fun disconnectFrom(other: Node<*>)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Notifications
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    interface RxUpdate: Msg<Node, RxUpdate> {
+    interface RxUpdate: Msg<Node<*>, RxUpdate> {
         var netF: INetFlow
         var deltaRate: DataRate
 
         companion object : FWId<RxUpdate>
     }
 
-    interface Connect: Msg<Node, Connect> {
-        var other: Node
+    interface Connect: Msg<Node<*>, Connect> {
+        var other: Node<*>
         var linkBw: DataRate
 
         companion object : FWId<Connect>
     }
 
-    interface Disconnect: Msg<Node, Disconnect> {
-        var other: Node
+    interface Disconnect: Msg<Node<*>, Disconnect> {
+        var other: Node<*>
         var notifyOther: Boolean
 
         companion object : FWId<Disconnect>
     }
 
-    interface ReapplyRouting: Msg<Node, ReapplyRouting> {
+    interface ReapplyRouting: Msg<Node<*>, ReapplyRouting> {
 
         companion object : FWId<ReapplyRouting>
     }
 
-    interface AcceptConnection: ReqMsg<Node, Port, AcceptConnection> {
+    interface AcceptConnection: ReqMsg<Node<*>, Port, AcceptConnection> {
         var toBeAccepted: Port
         var linkBw: DataRate
 

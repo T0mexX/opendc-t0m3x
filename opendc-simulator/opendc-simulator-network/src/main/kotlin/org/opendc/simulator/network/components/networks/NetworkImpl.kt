@@ -4,8 +4,8 @@ import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.components.node.coreswitch.CoreSwitch
-import org.opendc.simulator.network.components.node.host.HostNode
+import org.opendc.simulator.network.components.node.CoreSwitch
+import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -16,16 +16,16 @@ import org.opendc.simulator.network.utils.NonSerializable
 @Serializable(NonSerializable::class)
 internal abstract class NetworkImpl : Network {
 
-    override val sendNodesById: Map<NodeId, SenderNode> get() = _sendNodesById
-    protected abstract val _sendNodesById: MutableMap<NodeId, SenderNode>
+    override val sendNodesById: Map<NodeId, SenderNode<*>> get() = _sendNodesById
+    protected abstract val _sendNodesById: MutableMap<NodeId, SenderNode<*>>
 
-    override val nodesById: Map<NodeId, Node> get() = _nodesById
-    protected abstract val _nodesById: MutableMap<NodeId, Node>
+    override val nodesById: Map<NodeId, Node<*>> get() = _nodesById
+    protected abstract val _nodesById: MutableMap<NodeId, Node<*>>
 
     override val flowsById: Map<FlowId, INetFlow> get() = _flows
     protected val _flows: MutableMap<FlowId, INetFlow> = mutableMapOf()
 
-    override operator fun get(nId: NodeId): Node? = this.nodesById[nId]
+    override operator fun get(nId: NodeId): Node<*>? = this.nodesById[nId]
 
     context(NetSimScope)
     override suspend fun startFlow(f: INetFlow) {
@@ -79,7 +79,7 @@ internal abstract class NetworkImpl : Network {
         }
 
     companion object {
-        internal inline fun <reified T : Node> NetworkImpl.getNodesById(): Map<NodeId, T> {
+        internal inline fun <reified T : Node<*>> NetworkImpl.getNodesById(): Map<NodeId, T> {
             return this.nodesById.values.filterIsInstance<T>().associateBy { it.id }
         }
 

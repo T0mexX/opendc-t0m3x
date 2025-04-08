@@ -48,23 +48,24 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
     @OptIn(ExperimentalSerializationApi::class)
     override fun run(): Unit =
         runBlocking {
+
+            val networkSpecs = try {
+                Json { ignoreUnknownKeys = true }
+                    .decodeFromStream<Specs<Network>>(targetFile.inputStream())
+            } catch (e: Exception) {
+                echo("Unable to import network topology. Cause: \n${e.message}", err = true)
+                return@runBlocking
+            }
+
             scope.cancel()
             env.scope = NetSimScope()
             with(scope) {
-                try {
-                    val newNet: Network =
-                        Json { ignoreUnknownKeys = true }
-                            .decodeFromStream<Specs<Network>>(targetFile.inputStream())
-                            .build()
-                    env.network = newNet
+                val newNet: Network = networkSpecs.build()
+                env.network = newNet
 //                    env.energyRecorder = NetEnRecorder(newNet)
-                    env.tmSrc = REPLTmSrc(Instant.now())
+                env.tmSrc = REPLTmSrc(Instant.now())
 
-                    echo("Network imported successfully")
-                    // TODO: display network info
-                } catch (e: Exception) {
-                    echo(e.message ?: "unable to import")
-                }
+                echo("Network imported successfully")
             }
         }
 }

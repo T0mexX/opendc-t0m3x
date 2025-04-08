@@ -132,9 +132,9 @@ import org.opendc.simulator.network.components.node.Node
  * and sharing its updated routing vector if needed.
  * @return its own routing vector.
  */
-internal suspend fun Node.exchangeRoutVect(
+internal suspend fun Node<*>.exchangeRoutVect(
     routVect: RoutingVect,
-    vectOwner: Node,
+    vectOwner: Node<*>,
 ): RoutingVect {
     routingTable.mergeRoutingVector(routVect, vectOwner)
 
@@ -156,8 +156,8 @@ internal suspend fun Node.exchangeRoutVect(
  * @param[exchange]     determines if ***this*** should receive and merge other's vectors as well.
  * If so, the process continues until one iteration of the function is completed without that ***this*** routing vector changes.
  */
-internal tailrec suspend fun Node.shareRoutingVect(
-    except: Collection<Node> = listOf(),
+internal tailrec suspend fun Node<*>.shareRoutingVect(
+    except: Collection<Node<*>> = listOf(),
     exchange: Boolean = false,
 ) {
 //    TODO()

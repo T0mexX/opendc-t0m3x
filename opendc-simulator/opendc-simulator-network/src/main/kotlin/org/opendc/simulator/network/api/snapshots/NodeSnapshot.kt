@@ -28,12 +28,11 @@ import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
-import org.opendc.simulator.network.api.snapshots.Snapshot.Companion.roundedPercentageOf
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
-import org.opendc.simulator.network.energy.EnergyConsumer
+import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
@@ -62,7 +61,7 @@ import java.util.concurrent.ConcurrentHashMap
  *
  */
 public class NodeSnapshot internal constructor(
-    internal val node: Node,
+    internal val node: Node<*>,
     public val instant: Instant,
     public val numIncomingFlows: Int,
     public val numOutgoingFlows: Int,
@@ -295,7 +294,7 @@ public class NodeSnapshot internal constructor(
 //        }
 
         context(NetSimScope)
-        internal suspend fun Node.snapshot(
+        internal suspend fun Node<*>.snapshot(
             instant: Instant,
             withStableNetwork: Network? = null,
             noCache: Boolean = true,
@@ -341,9 +340,9 @@ public class NodeSnapshot internal constructor(
                 },
                 currAvrgFlowTputPerc = out.averageOfUnitOrNull { it.tput() roundedPercentageOf it.rx },
                 currNodeTputPercAllFlows = out.sumOfUnit { it.tput() } roundedPercentageOf out.sumOfUnit { it.rx },
-                currPwrUse = (this as? EnergyConsumer<*>)?.enMonitor?.currPwrUsage ?: Power.zero,
-                avrgPwrUseOverTime = (this as? EnergyConsumer<*>)?.enMonitor?.avrgPwrUsage ?: Power.zero,
-                totEnConsumed = (this as? EnergyConsumer<*>)?.enMonitor?.totEnConsumpt ?: Energy.zero,
+                currPwrUse = computePwrDraw(),
+                avrgPwrUseOverTime = Power.zero, // TODO: change
+                totEnConsumed = Energy.zero, // TODO: change
                 currNodeTputAllFlows = totNodeTput,
                 currNodePortUsageAllPorts = totNodeTput roundedPercentageOf ports.sumOfUnit { it.speed },
             ).also { cache[id] = it }

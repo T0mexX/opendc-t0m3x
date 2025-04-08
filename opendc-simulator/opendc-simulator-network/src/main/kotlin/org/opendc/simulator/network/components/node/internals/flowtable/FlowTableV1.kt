@@ -22,7 +22,7 @@ internal class FlowTableV1 private constructor(
     /**
      * TODO
      */
-    context(Node)
+    context(Node<*>)
     override suspend fun rxUpdt(updt: Node.RxUpdate) {
         var new: Boolean = false
         val entry = _flows.getOrPut(updt.netF) {
@@ -51,7 +51,7 @@ internal class FlowTableV1 private constructor(
     /**
      * TODO
      */
-    context(Node) override suspend fun reapplyRouting() {
+    context(Node<*>) override suspend fun reapplyRouting() {
         val entriesFlow = _flows.values.asFlow()
         // Reset current port outgoing data-rates.
         entriesFlow.collect { entry ->
@@ -79,7 +79,7 @@ internal class FlowTableV1 private constructor(
         _flows.remove(f)
     }
 
-    context(Node)
+    context(Node<*>)
     private suspend fun newEntry(updt: Node.RxUpdate): NodeFlowEntry {
         val entry = nodeFlowEntryDispenser.acquire()
         entry.tracker = this

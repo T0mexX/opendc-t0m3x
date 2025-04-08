@@ -12,7 +12,7 @@ import org.opendc.simulator.network.utils.notifiable.MsgImpl
 /**
  * TODO
  */
-internal interface SendLink: SendChannel<Msg<Node, *>> {
+internal interface SendLink: SendChannel<Msg<Node<*>, *>> {
     /**
      * TODO
      */
@@ -21,7 +21,7 @@ internal interface SendLink: SendChannel<Msg<Node, *>> {
     /**
      * TODO
      */
-    override suspend fun send(element: Msg<Node, *>)
+    override suspend fun send(element: Msg<Node<*>, *>)
 
     /**
      * TODO

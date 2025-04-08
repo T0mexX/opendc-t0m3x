@@ -1,16 +1,15 @@
 package org.opendc.simulator.network.components.networks
 
 import kotlinx.serialization.Serializable
+import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
-import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.NonSerializable
 
 /**
@@ -22,12 +21,12 @@ internal interface Network : WithSpecs<Network> {
     /**
      * TODO
      */
-    val sendNodesById: Map<NodeId, SenderNode>
+    val sendNodesById: Map<NodeId, SenderNode<*>>
 
     /**
      * TODO
      */
-    val nodesById: Map<NodeId, Node>
+    val nodesById: Map<NodeId, Node<*>>
 
     /**
      * TODO
@@ -42,7 +41,7 @@ internal interface Network : WithSpecs<Network> {
     /**
      * TODO
      */
-    operator fun get(nId: NodeId): Node?
+    operator fun get(nId: NodeId): Node<*>?
 
     /**
      * TODO
@@ -72,7 +71,7 @@ internal interface Network : WithSpecs<Network> {
         /**
          * TODO
          */
-        internal inline fun <reified T : Node> Network.getNodesById(): Map<NodeId, T> {
+        internal inline fun <reified T : Node<*>> Network.getNodesById(): Map<NodeId, T> {
             return this.nodesById.values.filterIsInstance<T>().associateBy { it.id }
         }
     }

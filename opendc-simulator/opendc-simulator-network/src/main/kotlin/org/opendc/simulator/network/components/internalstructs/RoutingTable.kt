@@ -125,7 +125,7 @@ internal class RoutingTable(private val ownerId: NodeId) {
      */
     suspend fun mergeRoutingVector(
         routingVector: Map<NodeId, Int>,
-        vectOwner: Node,
+        vectOwner: Node<*>,
     ) {
         val routVectBefore = rwLock.withRLock { getVect() }
         rwLock.withWLock {
@@ -157,7 +157,7 @@ internal class RoutingTable(private val ownerId: NodeId) {
     /**
      * Removes all possible paths whose next hop is [node].
      */
-    suspend fun removeNextHop(node: Node) =
+    suspend fun removeNextHop(node: Node<*>) =
         rwLock.withWLock {
             table.forEach { (_, possPaths) ->
                 possPaths.remove(node.id)
@@ -193,11 +193,11 @@ internal class RoutingTable(private val ownerId: NodeId) {
     data class PossiblePath(
         val destinationId: NodeId,
         val numOfHops: Int,
-        val nextHop: Node,
+        val nextHop: Node<*>,
     ) : Comparable<PossiblePath> {
         override fun compareTo(other: PossiblePath): Int = this.numOfHops compareTo other.numOfHops
 
-        context(Node)
+        context(Node<*>)
         fun associatedPort(): Port = ports.find { it.txLink?.receiverPort?.owner == this@PossiblePath.nextHop }!!
     }
 }

@@ -17,7 +17,7 @@ import org.opendc.simulator.network.utils.notifiable.MsgImpl
 internal class SimplexLink(
     override val receiverPort: Port,
     override val maxBw: DataRate,
-): SendLink, ReceiveLink, SendChannel<Msg<Node, *>> by receiverPort.owner.msgChl {
+): SendLink, ReceiveLink, SendChannel<Msg<Node<*>, *>> by receiverPort.owner.msgChl {
     private var usedBw: DataRate = DataRate.zero
     private val mtx = Mutex()
     override val availableBw: DataRate get() = maxBw - usedBw

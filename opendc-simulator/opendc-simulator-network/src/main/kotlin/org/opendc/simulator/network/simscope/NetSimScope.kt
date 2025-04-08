@@ -17,7 +17,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 internal class NetSimScope(
-    override val coroutineContext: CoroutineContext = EmptyCoroutineContext,
+    override var coroutineContext: CoroutineContext = EmptyCoroutineContext,
 ) : CoroutineScope {
 
     val ctx: CoroutineContext = coroutineContext
@@ -50,8 +50,8 @@ internal class NetSimScope(
                 )
             }
             ctx[NetSimIdDispenser] ?: let { ctx += NetSimIdDispenser() }
-
         }
+        coroutineContext = ctx
         config = ctx[NetSimConfig]!!
         barrier = ctx[NetSimBarrier]!!
         devConfig = config.netSimDevConfig

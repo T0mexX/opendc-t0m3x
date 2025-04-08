@@ -18,6 +18,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.components.networks.CustomNetwork
+import org.opendc.simulator.network.components.node.SerializableNode
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
@@ -25,15 +26,15 @@ import org.opendc.simulator.network.simscope.NetSimScope
  * From ***this*** the corresponding custom network can be built.
  */
 @kotlinx.serialization.Serializable
-@SerialName("custom-network-specs")
+@SerialName("custom-specs")
 internal data class CustomNetworkSpecs(
-    val nodesSpecs: List<Specs<Node>>,
+    val nodesSpecs: List<Specs<SerializableNode>> = emptyList(),
     @Serializable(with = LinkListSerializer::class)
-    val links: List<Pair<NodeId, NodeId>>,
+    val links: List<Pair<NodeId, NodeId>> = emptyList(),
 ) : Specs<CustomNetwork> {
     context(NetSimScope)
     override suspend fun build(): CustomNetwork {
-        val nodes: List<Node> = nodesSpecs.map { it.build() }
+        val nodes: List<Node<*>> = nodesSpecs.map { it.build().asNode() }
         val distinctNodes = nodes.distinctBy { it.id }
         if (nodes.size != distinctNodes.size) {
             log.warn("Some nodesById with already existing ids got filtered out.")

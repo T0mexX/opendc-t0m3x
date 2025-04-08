@@ -9,7 +9,7 @@ import org.opendc.simulator.network.flow.publics.NetFlow
 
 @Serializable
 internal sealed interface RoutingPolicy {
-    context(Node)
+    context(Node<*>)
     suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry)
 
     /**

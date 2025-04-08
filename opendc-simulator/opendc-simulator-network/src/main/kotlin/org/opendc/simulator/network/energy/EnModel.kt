@@ -22,12 +22,15 @@
 
 package org.opendc.simulator.network.energy
 
+import kotlinx.serialization.Serializable
 import org.opendc.common.units.Power
 
 /**
  * Represents the energy model for a specific component of type `T`.
+ *
+ * [EnModel] of [Node] can compute energy of all nodes according to a generic pattern.
  */
-internal fun interface EnModel<T : EnergyConsumer<T>> {
+internal fun interface EnModel<in T : EnConsumer<@UnsafeVariance T>> {
     /**
      * Computes the current energy consumption of ***this***.
      * @param[e]   energy consumer network component whose energy consumption is to be computed.
