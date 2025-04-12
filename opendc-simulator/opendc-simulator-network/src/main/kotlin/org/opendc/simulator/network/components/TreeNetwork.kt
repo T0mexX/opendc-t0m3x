@@ -38,7 +38,7 @@ internal class TreeNetwork(
         log.info("building tree with n=$n")
 
         // Build core layer.
-        coreSwitches = buildList { repeat(n) { add(coreSpecs.buildCoreSwitchFromSpecs()) } }
+        coreSwitches = buildList { repeat(1) { add(coreSpecs.buildCoreSwitchFromSpecs()) } }
         internet = Internet().connectedTo(coreSwitches)
 
         // Build aggregation layer.

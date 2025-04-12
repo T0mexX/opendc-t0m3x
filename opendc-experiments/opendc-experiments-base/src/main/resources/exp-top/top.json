@@ -1,10 +1,10 @@
 {
-    "networkSpecPath": "resources/exp-top/fat-tree.json",
+    "networkSpecPath": "resources/exp-top/tree.json",
     "clusters":
     [{
         "name": "C01",
         "hosts" : [{
-            "count": 8,
+            "count": 50,
             "cpu": {
                 "coreCount": 8,
                 "coreSpeed": "3.2 Ghz"

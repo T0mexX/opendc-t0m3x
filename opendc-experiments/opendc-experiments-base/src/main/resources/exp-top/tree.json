@@ -1,7 +1,7 @@
 {
     "type": "tree-specs",
     "switchSpecs": {
-        "numOfPorts": 5,
+        "numOfPorts": 7,
         "portSpeed": "1Gbps",
         "fairnessPolicy": { "type": "max-min" },
         "portSelectionPolicy": { "type": "static-ecmp" }

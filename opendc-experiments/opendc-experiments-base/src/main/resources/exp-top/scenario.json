@@ -7,7 +7,7 @@
         "pathToFile": "resources/exp-top/top.json"
     }],
     "workloads": [{
-        "pathToFile": "resources/exp-top/bitbrains128/",
+        "pathToFile": "resources/exp-top/bitbrains250x10/",
         "type": "ComputeWorkload"
     }],
     "allocationPolicies": [{
