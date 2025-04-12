@@ -28,7 +28,7 @@ import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
-import org.opendc.simulator.network.api.NetEnRecorder
+import org.opendc.simulator.network.api.NetSimEnRecorder
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
@@ -215,7 +215,7 @@ public class NetworkSnapshot private constructor(
         internal suspend fun Network.snapshot(
             noCache: Boolean = false,
             instant: Instant,
-            enRecorder: NetEnRecorder,
+            enRecorder: NetSimEnRecorder? = null,
         ): NetworkSnapshot {
             if (noCache.not()) {
                 lastSnapshot?.let {
@@ -242,9 +242,9 @@ public class NetworkSnapshot private constructor(
                 totTputPerc = if (activeFlows.isEmpty()) null else totThroughput roundedPercentageOf totDemand,
                 avrgTputPerc = activeFlows.averageOfUnitOrNull { it.throughput roundedPercentageOf it.demand },
                 worstTputPerc = activeFlows.minOfOrNull { it.throughput roundedPercentageOf it.demand },
-                currPwrUse = enRecorder.currPwrUsage,
-                avrgPwrUseOverTime = enRecorder.avrgPwrUsage,
-                totEnConsumed = enRecorder.totalConsumption,
+                currPwrUse = enRecorder?.currPwrUsage ?: Power.zero,
+                avrgPwrUseOverTime = enRecorder?.avrgPwrUsage ?: Power.zero,
+                totEnConsumed = enRecorder?.totalConsumption ?: Energy.zero,
             ).also { lastSnapshot = it }
         }
     }

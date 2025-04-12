@@ -35,7 +35,7 @@ internal class HostNode private constructor(
         HostNodeSpecs(
             id = id,
             portSpeed = portSpeed,
-            numOfPorts = nPorts,
+            nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
             portSelectionPolicy = routingPolicy,
         )

@@ -16,8 +16,8 @@ internal data class CoreSwitchSpecs(
     val id: NodeId? = null,
     val portSpeed: DataRate? = null,
     val nPorts: Int? = null,
-    val fairnessPolicy: FairnessPolicy?,
-    val portSelectionPolicy: RoutingPolicy?,
+    val fairnessPolicy: FairnessPolicy? = null,
+    val portSelectionPolicy: RoutingPolicy? = null,
 ): Specs<CoreSwitch> {
     context(NetSimScope)
     override suspend fun build(): CoreSwitch =

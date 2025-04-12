@@ -25,12 +25,10 @@ package org.opendc.simulator.network.repl.cmds
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.opendc.simulator.network.api.NetEnRecorder
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.repl.REPLTmSrc
@@ -57,9 +55,12 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
                 return@runBlocking
             }
 
+            // Create a new simulation scope.
             scope.cancel()
             env.scope = NetSimScope()
-            with(scope) {
+
+            // Set up imported network in the new simulation scope.
+            with(env.scope) {
                 val newNet: Network = networkSpecs.build()
                 env.network = newNet
 //                    env.energyRecorder = NetEnRecorder(newNet)

@@ -10,13 +10,13 @@ import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 
 @Serializable
-@SerialName("witch-specs")
+@SerialName("switch-specs")
 internal data class SwitchSpecs(
     val id: NodeId? = null,
     val portSpeed: DataRate? = null,
     val nPorts: Int? = null,
-    val fairnessPolicy: FairnessPolicy?,
-    val portSelectionPolicy: RoutingPolicy?,
+    val fairnessPolicy: FairnessPolicy? = null,
+    val portSelectionPolicy: RoutingPolicy? = null,
 ): Specs<Switch> {
     context(NetSimScope)
     override suspend fun build(): Switch =

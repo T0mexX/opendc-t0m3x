@@ -95,7 +95,9 @@ internal class FatTree private constructor(
                 aggrSpecs = aggrSpecs,
                 torSpecs = torSpecs,
                 hostNodeSpecs = hostNodeSpecs,
-            )
+            ).also {
+
+            }
         }
 
         context(NetSimScope)

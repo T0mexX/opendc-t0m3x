@@ -55,7 +55,9 @@ internal class NodeMkHostCmd : REPLCmd(name = CMD_STR) {
                         nPorts = nPorts,
                     )
 
+
                 (net as? CustomNetwork)?.plus(newHost)
+                    ?.also { barrier.awaitStability() }
                     ?.let { echo("| Added node $newHost") }
                     ?: issueMessage("Unable to add node.")
             }

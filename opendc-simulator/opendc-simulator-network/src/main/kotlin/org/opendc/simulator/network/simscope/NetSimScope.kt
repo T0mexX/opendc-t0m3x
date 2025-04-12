@@ -2,17 +2,19 @@ package org.opendc.simulator.network.simscope
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.logger.logger
+import org.opendc.simulator.network.api.NetSimEnRecorder
+import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
-import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
-import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -26,7 +28,11 @@ internal class NetSimScope(
     val devConfig: NetSimDevConfig
     val poolAggr: NetSimPoolAggregator
     val idDispenser: NetSimIdDispenser
+    val enRecorder: NetSimEnRecorder
+    val tmSrc: NetSimTmSrc<*>
     val logger by logger()
+    val net: Network get() = _net
+    private lateinit var _net: Network
 
     val portVersion: PortVersion
     val nodeVersion: NodeVersion
@@ -50,6 +56,8 @@ internal class NetSimScope(
                 )
             }
             ctx[NetSimIdDispenser] ?: let { ctx += NetSimIdDispenser() }
+            ctx[NetSimTmSrc] ?: let { ctx += NetSimTmSrc.Internal() }
+            ctx[NetSimEnRecorder] ?: { ctx += NetSimEnRecorder(ctx[NetSimTmSrc]!!) }
         }
         coroutineContext = ctx
         config = ctx[NetSimConfig]!!
@@ -57,6 +65,8 @@ internal class NetSimScope(
         devConfig = config.netSimDevConfig
         poolAggr = ctx[NetSimPoolAggregator]!!
         idDispenser = ctx[NetSimIdDispenser]!!
+        tmSrc = ctx[NetSimTmSrc]!!
+        enRecorder = ctx[NetSimEnRecorder]!!
 
         portVersion = devConfig.portConfig.version
         nodeVersion = devConfig.nodeConfig.version
@@ -68,6 +78,16 @@ internal class NetSimScope(
         portVersion.initDispensers()
         nodeVersion.initDispensers()
         netFlowVersion.initDispensers()
+    }
+
+    /**
+     * TODO
+     */
+    internal fun registerNetworkInScope(net: Network) {
+        require(::_net.isInitialized) {
+            "A network was already registered for this scope"
+        }
+        _net = net
     }
 
 
@@ -94,9 +114,14 @@ internal class NetSimScope(
         }
 
         internal fun NetSimScope.scopeLaunch(
-            ctx: CoroutineContext = EmptyCoroutineContext,
             block: suspend NetSimScope.() -> Unit
         ): Job = launch(ctx) {
+            block()
+        }
+
+        internal fun <T> NetSimScope.scopeAsync(
+            block: suspend NetSimScope.() -> T
+        ): Deferred<T> = async(ctx) {
             block()
         }
     }

@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.networks
 
+import kotlinx.coroutines.Job
 import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
@@ -10,6 +11,7 @@ import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.NonSerializable
 
 /**
@@ -17,7 +19,7 @@ import org.opendc.simulator.network.utils.NonSerializable
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-internal interface Network : WithSpecs<Network> {
+internal interface Network : WithSpecs<Network>, Launchable {
     /**
      * TODO
      */
@@ -47,6 +49,14 @@ internal interface Network : WithSpecs<Network> {
      * TODO
      */
     context(NetSimScope)
+    suspend fun launchNodes() {
+        nodesById.values.forEach { it.netLaunch() }
+    }
+
+    /**
+     * TODO
+     */
+    context(NetSimScope)
     suspend fun startFlow(f: INetFlow)
 
     /**
@@ -71,8 +81,8 @@ internal interface Network : WithSpecs<Network> {
         /**
          * TODO
          */
-        internal inline fun <reified T : Node<*>> Network.getNodesById(): Map<NodeId, T> {
-            return this.nodesById.values.filterIsInstance<T>().associateBy { it.id }
+        internal inline fun <reified T> Network.getNodesById(): Map<NodeId, T> {
+            return this.nodesById.values.filterIsInstance<T>().associateBy { (it as Node<*>).id }
         }
     }
 }

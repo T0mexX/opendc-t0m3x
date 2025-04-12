@@ -14,16 +14,16 @@ import org.opendc.simulator.network.simscope.NetSimScope
 internal data class HostNodeSpecs(
     val id: NodeId? = null,
     val portSpeed: DataRate? = null,
-    val numOfPorts: Int? = null,
-    val fairnessPolicy: FairnessPolicy?,
-    val portSelectionPolicy: RoutingPolicy?,
+    val nPorts: Int? = null,
+    val fairnessPolicy: FairnessPolicy? = null,
+    val portSelectionPolicy: RoutingPolicy? = null,
 ) : Specs<HostNode> {
     context(NetSimScope)
     override suspend fun build(): HostNode =
         HostNode(
             id = id,
             portSpeed = portSpeed,
-            nPorts = numOfPorts,
+            nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
             portSelectionPolicy = portSelectionPolicy,
         )

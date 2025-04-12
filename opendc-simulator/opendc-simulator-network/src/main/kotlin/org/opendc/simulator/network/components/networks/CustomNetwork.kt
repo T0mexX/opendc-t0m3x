@@ -104,8 +104,11 @@ internal class CustomNetwork private constructor(
             CustomNetwork(
                 nodes = nodes,
                 internet = Internet(),
-            ).also {
-                it.internet.netLaunch()
+            ).also { net ->
+                nodes.forEach { n -> n.netLaunch() }
+                net.internet.netLaunch()
+                net.getNodesById<CoreSwitch>().values.forEach { cs -> cs.connectTo(net.internet) }
+                registerNetworkInScope(net)
             }
     }
 }

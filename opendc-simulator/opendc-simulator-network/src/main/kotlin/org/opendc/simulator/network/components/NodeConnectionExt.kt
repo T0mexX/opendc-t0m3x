@@ -69,7 +69,7 @@ import org.opendc.simulator.network.components.node.Node
 //        val freePort: Port =
 //            getFreePort()
 //                ?: let {
-//                    log.error("Unable to accept connection, maximum number of connected nodesById reached ($numOfPorts).")
+//                    log.error("Unable to accept connection, maximum number of connected nodesById reached ($umOfPorts).")
 //                    return@whileUpdtProcessingLocked null
 //                }
 //
