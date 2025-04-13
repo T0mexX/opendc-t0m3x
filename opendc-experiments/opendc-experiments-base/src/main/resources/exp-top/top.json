@@ -1,5 +1,5 @@
 {
-    "networkSpecPath": "resources/exp-top/tree.json",
+    "networkSpecsPath": "resources/exp-top/tree.json",
     "clusters":
     [{
         "name": "C01",

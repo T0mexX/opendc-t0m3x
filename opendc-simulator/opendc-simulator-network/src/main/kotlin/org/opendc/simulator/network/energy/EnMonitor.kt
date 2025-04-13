@@ -73,7 +73,9 @@ internal class EnMonitor<T : EnergyConsumer<T>>(
      * Ideally called by [monitored] whenever its state changes.
      */
     fun update() {
+        val old = currPwrUsage
         currPwrUsage = enModel.computeCurrConsumpt(monitored)
+        obs.forEach { it.handleChange(this, old, currPwrUsage) }
     }
 
     suspend fun advanceBy(deltaTime: Time) =

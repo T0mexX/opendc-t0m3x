@@ -47,7 +47,8 @@ internal class ScenarioCommand : CliktCommand(name = "scenario") {
      */
     private val scenarioPath by option("--scenario-path", help = "path to scenario file")
         .file(canBeDir = false, canBeFile = true)
-        .defaultLazy { File("resources/scenario.json") }
+        .defaultLazy { File("resources/exp-top/scenario.json") }
+
 
     /**
      * The number of threads to use for parallelism.

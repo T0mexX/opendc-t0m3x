@@ -1,10 +1,33 @@
 [{
-    "name": "unnamed-simulation-6105",
+    "name": "unnamed-simulation-7789",
     "computeExportConfig": {
         "hostExportColumns": [
-            "network_throughput_Mbps",
+            "timestamp",
             "timestamp_absolute",
-            "timestamp"
+            "host_id",
+            "host_name",
+            "cpu_count",
+            "mem_capacity",
+            "guests_terminated",
+            "guests_running",
+            "guests_error",
+            "guests_invalid",
+            "cpu_limit",
+            "cpu_usage",
+            "cpu_demand",
+            "cpu_utilization",
+            "cpu_time_active",
+            "cpu_time_idle",
+            "cpu_time_steal",
+            "cpu_time_lost",
+            "power_draw",
+            "energy_usage",
+            "carbon_intensity",
+            "carbon_emission",
+            "uptime",
+            "downtime",
+            "boot_time",
+            "boot_time_absolute"
         ],
         "taskExportColumns": [
             "timestamp",
@@ -68,10 +91,10 @@
         ]
     },
     "topology": {
-        "pathToFile": "resources/env/single.json"
+        "pathToFile": "resources/exp-top/top.json"
     },
     "workload": {
-        "pathToFile": "resources/bitbrains-small",
+        "pathToFile": "resources/exp-top/bitbrains250x10/",
         "type": "ComputeWorkload"
     }
 }]
