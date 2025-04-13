@@ -38,17 +38,18 @@ internal object HostNodeDfltEnModel: EnModel<HostNode> {
         Power.ofWatts(  2.23949 * currPortSpeed.toMbps().pow(0.74435) / 1e3  )
 
     override fun computeCurrConsumpt(e: HostNode): Power {
-        val activePorts: Collection<Port> = e.getActivePorts()
-        val idlePwr: Power = activePorts.sumOfUnit { port ->
-            passivePwrFromMaxPortSpeed(port.currSpeed)
-        }
-//        check(idlePwr > Power.ZERO) {"${idlePwr.toWatts()}, "}
-        val activePwr: Power = activePorts.sumOfUnit { port ->
-            val currPortRate: DataRate = port.currSpeed * port.util
-            activePwrFromCurrRate(currPortRate)
-        }
+//        val activePorts: Collection<Port> = e.getActivePorts()
+//        val idlePwr: Power = activePorts.sumOfUnit { port ->
+//            passivePwrFromMaxPortSpeed(port.currSpeed)
+//        }
+//
+////        check(idlePwr > Power.ZERO) {"${idlePwr.toWatts()}, "}
+//        val activePwr: Power = activePorts.sumOfUnit { port ->
+//            val currPortRate: DataRate = port.currSpeed * port.util
+//            activePwrFromCurrRate(currPortRate)
+//        }
 
-        return idlePwr + activePwr
+        return Power.ZERO
     }
 
     /**

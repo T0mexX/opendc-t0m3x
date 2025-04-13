@@ -1,12 +1,25 @@
 {
     "cSpell.words": [
+        "facecolor",
         "figsize",
         "ftree",
-        "mbps",
-        "OSPF",
+        "lightgreen",
+        "linestyle",
+        "markeredgecolor",
+        "markerfacecolor",
+        "markersize",
+        "Mbps",
+        "meanprops",
+        "medianprops",
         "rcdf",
+        "showmeans",
         "TPUT",
-        "yaxis",
-        "yscale"
+        "xdata",
+        "xlabel",
+        "ydata",
+        "ylabel",
+        "yscale",
+        "yticks",
+        "zorder"
     ]
 }

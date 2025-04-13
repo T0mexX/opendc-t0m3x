@@ -48,6 +48,8 @@ internal class EnMonitor<T : EnergyConsumer<T>>(
      * The current energy consumption of the [monitored] network component.
      */
     var currPwrUsage: Power by Delegates.observable(Power.ZERO) { _, oldValue, newValue ->
+        check(oldValue.value.isNaN().not()) {"old"}
+        check (newValue.value.isNaN().not()) { "new" }
         obs.forEach { it.handleChange(this, oldValue, newValue) }
     }
         private set
@@ -73,9 +75,8 @@ internal class EnMonitor<T : EnergyConsumer<T>>(
      * Ideally called by [monitored] whenever its state changes.
      */
     fun update() {
-        val old = currPwrUsage
-        currPwrUsage = enModel.computeCurrConsumpt(monitored)
-        obs.forEach { it.handleChange(this, old, currPwrUsage) }
+        currPwrUsage = enModel.computeCurrConsumpt(monitored).also { check(it.value.isNaN().not()) { println(monitored.javaClass.simpleName) } }
+
     }
 
     suspend fun advanceBy(deltaTime: Time) =

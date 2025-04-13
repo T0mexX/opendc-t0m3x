@@ -55,11 +55,13 @@ public class NetEnRecorder internal constructor(network: Network) {
 
     private val powerUseOnChangeHandler =
         OnChangeHandler<EnMonitor<*>, Power> { _, oldValue, newValue ->
+            check(oldValue.value.isNaN().not() && newValue.value.isNaN().not())
             currPwrUsage += newValue - oldValue
         }
 
     init {
         // Sets up listeners on the energy consuming nodes.
+        println(consumersById.size)
         consumersById.values.forEach { it.enMonitor.onPwrUseChange(powerUseOnChangeHandler) }
         consumersById.values.forEach { it.enMonitor.update() }
 
