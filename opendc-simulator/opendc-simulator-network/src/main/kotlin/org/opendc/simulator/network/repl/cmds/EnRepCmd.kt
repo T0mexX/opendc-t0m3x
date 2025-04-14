@@ -1,0 +1,48 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package org.opendc.simulator.network.repl.cmds
+
+import kotlinx.coroutines.runBlocking
+import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+
+private const val CMD_STR: String = "energy-report"
+
+internal class EnRepCmd : REPLCmd(name = CMD_STR) {
+    override fun aliases(): Map<String, List<String>> =
+        mapOf(
+            "en-rep" to listOf(CMD_STR),
+            "energy-rep" to listOf(CMD_STR),
+            "en-report" to listOf(CMD_STR),
+            "er" to listOf(CMD_STR),
+        ) + super.aliases()
+
+    override fun run(): Unit =
+        runBlocking(scope.ctx) {
+            with(scope) {
+                barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+                    sync(forceUpdt = true)
+                    echo(enRecorder.fmt())
+                }
+            }
+        }
+}

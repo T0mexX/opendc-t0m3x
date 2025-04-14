@@ -1,22 +1,18 @@
 package org.opendc.simulator.network.api
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.fold
-import kotlinx.coroutines.flow.onEach
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Power
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
 import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeAsync
-import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
 import org.opendc.simulator.network.simscope.NetSimTmSrc
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
@@ -34,18 +30,21 @@ internal class NetSimEnRecorder(
 
     /**
      * TODO
+     * > If suspending getters and setters are ever included in kotlin, replace this with suspending getter.
      */
     context(NetSimScope)
     suspend fun getAvrgPwrDraw(): Power = barrier.whileStable { sync().avrgPwrDraw }
 
     /**
      * TODO
+     * > If suspending getters and setters are ever included in kotlin, replace this with suspending getter.
      */
     context(NetSimScope)
     suspend fun getTotEnCons(): Energy = barrier.whileStable { sync().totEnCons }
 
     /**
      * TODO
+     * > If suspending getters and setters are ever included in kotlin, replace this with suspending getter.
      */
     context(NetSimScope)
     suspend fun getCurrPwrDraw(): Power = barrier.whileStable { sync().currPwrDraw }
@@ -54,8 +53,8 @@ internal class NetSimEnRecorder(
      * TODO
      */
     context(NetSimScope)
-    override suspend fun sync(): NetSimEnRecorder {
-        if (isSync()) return this
+    override suspend fun sync(forceUpdt: Boolean): NetSimEnRecorder {
+        if (isSync() && forceUpdt.not()) return this
 
         val sinceSync = tmSrc.tmstamp timeDelta lastSync
         check(sinceSync >= TimeDelta.zero)
@@ -68,17 +67,20 @@ internal class NetSimEnRecorder(
 
         barrier.whileStable {
             currPwrDraw = compCurrPwrDraw()
-            net.nodesById.values.asFlow()
 
             // Update total energy consumption.
             totEnCons += currPwrDraw * sinceSync
 
             // Update average power usage.
             avrgPwrDraw = (
-                (avrgPwrDraw * startToSync) +
-                    currPwrDraw * sinceSync
-                ) / sinceStart
+                    ((avrgPwrDraw * startToSync) +
+                        currPwrDraw * sinceSync
+                    ) / sinceStart
+                ).takeIf { it.value.isNaN().not() } ?: Power.zero
+
+            lastSync = tmSrc.tmstamp
         }
+
 
         return this
     }

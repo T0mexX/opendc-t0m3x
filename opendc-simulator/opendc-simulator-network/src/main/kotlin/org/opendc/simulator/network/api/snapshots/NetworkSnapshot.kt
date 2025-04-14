@@ -212,16 +212,9 @@ public class NetworkSnapshot private constructor(
          * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
          */
         context(NetSimScope)
-        internal suspend fun Network.snapshot(
-            noCache: Boolean = false,
-            instant: Instant,
-            enRecorder: NetSimEnRecorder? = null,
-        ): NetworkSnapshot {
-            if (noCache.not()) {
-                lastSnapshot?.let {
-                    if (it.instant == instant) return it
-                }
-            }
+        internal suspend fun Network.snapshot(): NetworkSnapshot {
+            check(this@NetSimScope.net === this)
+
             // TODO: STABILITY
 
             val flows: Collection<NetFlow> = this.flowsById.values
@@ -232,7 +225,7 @@ public class NetworkSnapshot private constructor(
             barrier.awaitStability()
 
             return NetworkSnapshot(
-                instant = instant,
+                instant = tmSrc.instant(),
                 numNodes = nodesById.size,
                 numHostNodes = getNodesById<HostNode>().size,
                 claimedHostNodes = getNodesById<HostNode>().size,
@@ -242,9 +235,9 @@ public class NetworkSnapshot private constructor(
                 totTputPerc = if (activeFlows.isEmpty()) null else totThroughput roundedPercentageOf totDemand,
                 avrgTputPerc = activeFlows.averageOfUnitOrNull { it.throughput roundedPercentageOf it.demand },
                 worstTputPerc = activeFlows.minOfOrNull { it.throughput roundedPercentageOf it.demand },
-                currPwrUse = enRecorder?.currPwrUsage ?: Power.zero,
-                avrgPwrUseOverTime = enRecorder?.avrgPwrUsage ?: Power.zero,
-                totEnConsumed = enRecorder?.totalConsumption ?: Energy.zero,
+                currPwrUse = enRecorder.getCurrPwrDraw(),
+                avrgPwrUseOverTime = enRecorder.getAvrgPwrDraw(),
+                totEnConsumed = enRecorder.getTotEnCons(),
             ).also { lastSnapshot = it }
         }
     }

@@ -37,7 +37,6 @@ internal abstract class REPLNoOpCmd(val name: String) : NoOpCliktCommand(name = 
     protected val env by requireObject<REPLEnv>()
     protected val net: Network by lazy { env.network }
 //    protected val enRec: NetEnRecorder by lazy { env.energyRecorder }
-    protected val tmSrc: REPLTmSrc by lazy { env.tmSrc }
     protected val scope: NetSimScope by lazy { env.scope }
 
     override fun aliases(): Map<String, List<String>> =

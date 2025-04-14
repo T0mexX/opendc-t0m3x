@@ -29,6 +29,7 @@ import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
+import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 
 private const val CMD_STR: String = "snapshot"
 
@@ -45,10 +46,12 @@ internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
     override fun run(): Unit =
         runBlocking(scope.ctx) {
             with(scope) {
-                barrier.awaitStability()
-                net.nodesById[NodeId(id)]?.let {
-                    echo(it.snapshot(instant = tmSrc.currentInstant).fmt())
-                } ?: issueMessage("Unable to display snapshot")
+                barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+                    sync(forceUpdt = true)
+                    net.nodesById[NodeId(id)]?.let {
+                        echo(it.snapshot().fmt())
+                    } ?: issueMessage("Unable to display snapshot")
+                }
             }
         }
 }

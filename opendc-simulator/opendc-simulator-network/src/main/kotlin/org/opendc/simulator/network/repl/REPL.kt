@@ -31,6 +31,8 @@ import com.github.ajalt.clikt.core.subcommands
 import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.components.networks.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.repl.cmds.AdvTimeCmd
+import org.opendc.simulator.network.repl.cmds.EnRepCmd
 import org.opendc.simulator.network.repl.cmds.ExportCmd
 import org.opendc.simulator.network.repl.cmds.ImportCmd
 import org.opendc.simulator.network.repl.cmds.QuitCmd
@@ -67,7 +69,7 @@ public suspend fun main() {
             network = network,
             scope = scope,
 //                    energyRecorder = energyRecorder,
-            tmSrc = REPLTmSrc(Instant.now()),
+//            tmSrc = REPLTmSrc(Instant.now()),
         )
 
     while (true) {
@@ -81,14 +83,15 @@ public suspend fun main() {
                     NodeMkCmd().subcommands(NodeMkHostCmd(), NodeMkSwitchCmd(), NodeMkCoreSwitchCmd()),
                     NodeSnapCmd(),
                 ),
-//                AdvTimeCmd(),
+                AdvTimeCmd(),
                 FlowCmd().subcommands(
+
                     FlowMkCmd(),
                     FlowInfoCmd(),
                     FlowRmCmd(),
                     FlowUpdtCmd(),
                 ),
-//                EnRepCmd(),
+                EnRepCmd(),
                 ExportCmd(),
                 NetCmd().subcommands(
                     NetSnapCmd(),

@@ -64,7 +64,6 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
                 val newNet: Network = networkSpecs.build()
                 env.network = newNet
 //                    env.energyRecorder = NetEnRecorder(newNet)
-                env.tmSrc = REPLTmSrc(Instant.now())
 
                 echo("Network imported successfully")
             }

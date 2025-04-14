@@ -14,9 +14,10 @@ internal interface Synchronizable<Self: Synchronizable<Self>> {
 
     /**
      * TODO
+     * If no force update and last sync in same virtual timestamp then no update performed.
      */
     context(NetSimScope)
-    suspend fun sync(): Self
+    suspend fun sync(forceUpdt: Boolean = false): Self
 
     /**
      * TODO

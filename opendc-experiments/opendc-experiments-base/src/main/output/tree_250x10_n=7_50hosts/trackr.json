@@ -1,0 +1,100 @@
+[{
+    "name": "unnamed-simulation-0bf5",
+    "computeExportConfig": {
+        "hostExportColumns": [
+            "timestamp",
+            "timestamp_absolute",
+            "host_id",
+            "host_name",
+            "cpu_count",
+            "mem_capacity",
+            "guests_terminated",
+            "guests_running",
+            "guests_error",
+            "guests_invalid",
+            "cpu_limit",
+            "cpu_usage",
+            "cpu_demand",
+            "cpu_utilization",
+            "cpu_time_active",
+            "cpu_time_idle",
+            "cpu_time_steal",
+            "cpu_time_lost",
+            "power_draw",
+            "energy_usage",
+            "carbon_intensity",
+            "carbon_emission",
+            "uptime",
+            "downtime",
+            "boot_time",
+            "boot_time_absolute"
+        ],
+        "taskExportColumns": [
+            "timestamp",
+            "timestamp_absolute",
+            "task_id",
+            "host_id",
+            "task_name",
+            "cpu_count",
+            "mem_capacity",
+            "cpu_limit",
+            "cpu_time_active",
+            "cpu_time_idle",
+            "cpu_time_steal",
+            "cpu_time_lost",
+            "uptime",
+            "downtime",
+            "provision_time",
+            "boot_time",
+            "boot_time_absolute"
+        ],
+        "serviceExportColumns": [
+            "timestamp",
+            "timestamp_absolute",
+            "hosts_up",
+            "tasks_pending",
+            "tasks_active",
+            "attempts_success",
+            "attempts_failure",
+            "attempts_error"
+        ]
+    },
+    "networkExportConfig": {
+        "networkExportColumns": [
+            "timestamp_absolute",
+            "flows",
+            "nodes",
+            "host_nodes",
+            "active_host_nodes",
+            "avg_throughput_ratio",
+            "tot_tput_ratio",
+            "tot_tput_mbps",
+            "worst_tput_ratio",
+            "power_draw_watt",
+            "energy_consumed_joule"
+        ],
+        "nodeExportColumns": [
+            "timestamp_absolute",
+            "node_id",
+            "node_name",
+            "incoming_flows",
+            "outgoing_flows",
+            "flows_being_generated",
+            "flows_being_consumed",
+            "min_flow_throughput_ratio",
+            "max_flow_throughput_ratio",
+            "avg_flow_throughput_ratio",
+            "node_throughput_mbps",
+            "node_throughput_ratio",
+            "power_draw_watts",
+            "energy_consumed_joule"
+        ]
+    },
+    "topology": {
+        "pathToFile": "resources/exp-top/top.json"
+    },
+    "workload": {
+        "pathToFile": "resources/exp-top/bitbrains250x10/",
+        "type": "ComputeWorkload"
+    }
+}]

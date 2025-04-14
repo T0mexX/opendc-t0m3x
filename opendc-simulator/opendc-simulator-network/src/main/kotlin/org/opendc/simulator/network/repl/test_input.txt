@@ -1,7 +1,13 @@
 import resources/ignored/custom-to-be-del.json
 f mk -s 1 -d 5 -b 50Mbps
 f info
-net snap
+er
+adv 5m
+er
+f mk -s 5 -d 1 -b 1Gbps
+er
+adv 5m
+er
 q
 
 n mk -n 1 -b 1Gbps -p 4 host

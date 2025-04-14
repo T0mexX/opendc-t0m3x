@@ -19,7 +19,7 @@ import org.opendc.simulator.network.utils.NonSerializable
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-internal interface Network : WithSpecs<Network>, Launchable {
+internal interface Network : WithSpecs<Network> {
     /**
      * TODO
      */

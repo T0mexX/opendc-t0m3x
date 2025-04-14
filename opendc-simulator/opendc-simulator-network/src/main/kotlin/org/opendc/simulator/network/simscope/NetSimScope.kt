@@ -15,6 +15,7 @@ import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
+import org.opendc.simulator.network.utils.sync.Synchronizable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -57,7 +58,7 @@ internal class NetSimScope(
             }
             ctx[NetSimIdDispenser] ?: let { ctx += NetSimIdDispenser() }
             ctx[NetSimTmSrc] ?: let { ctx += NetSimTmSrc.Internal() }
-            ctx[NetSimEnRecorder] ?: { ctx += NetSimEnRecorder(ctx[NetSimTmSrc]!!) }
+            ctx[NetSimEnRecorder] ?: let { ctx += NetSimEnRecorder(ctx[NetSimTmSrc]!!) }
         }
         coroutineContext = ctx
         config = ctx[NetSimConfig]!!
@@ -84,10 +85,17 @@ internal class NetSimScope(
      * TODO
      */
     internal fun registerNetworkInScope(net: Network) {
-        require(::_net.isInitialized) {
+        require(::_net.isInitialized.not()) {
             "A network was already registered for this scope"
         }
         _net = net
+    }
+
+    /**
+     * TODO
+     */
+    internal suspend fun sync(forceUpdt: Boolean = false) {
+        enRecorder.sync(forceUpdt)
     }
 
 
