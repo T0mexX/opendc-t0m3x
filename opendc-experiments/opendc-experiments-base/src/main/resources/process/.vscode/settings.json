@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "facecolor",
+        "FCFS",
         "figsize",
         "ftree",
         "lightgreen",
@@ -18,6 +19,7 @@
         "xlabel",
         "ydata",
         "ylabel",
+        "ylim",
         "yscale",
         "yticks",
         "zorder"
