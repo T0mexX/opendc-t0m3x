@@ -1,5 +1,0 @@
-{
-    "networkSpecsPath": "resources/example-topologies/net-spec.json",
-    "wlPath": "resources/example-traces/bb_net_wl128.parquet",
-    "virtualMapping": true
-}

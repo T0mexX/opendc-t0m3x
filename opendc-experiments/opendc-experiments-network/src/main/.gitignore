@@ -1,4 +1,2 @@
-output
-test
-resources/test
-notebooks
+output/ignored
+resources/ignored

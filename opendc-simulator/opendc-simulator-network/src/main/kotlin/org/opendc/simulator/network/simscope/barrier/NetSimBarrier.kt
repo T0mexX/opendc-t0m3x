@@ -244,7 +244,9 @@ internal class NetSimBarrier internal constructor(
                 if (shouldBeStable) throw NetSimStabilityException()
 
                 // Wait until no `NetStabilityMode.ENFORCE` protected block is being executed.
-                deter.first { !it }
+                if (deter.value) {
+                    deter.first { !it }
+                }
 
                 if (shouldBeStable) {
                     error(

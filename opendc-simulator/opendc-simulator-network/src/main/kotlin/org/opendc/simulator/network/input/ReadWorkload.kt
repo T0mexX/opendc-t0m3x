@@ -26,14 +26,14 @@ import org.apache.parquet.schema.LogicalTypeAnnotation
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64
 import org.apache.parquet.schema.Types
-import org.opendc.simulator.network.api.workload.SimNetWorkload
+import org.opendc.simulator.network.api.workload.NetWorkload
 import org.opendc.simulator.network.input.ImprintsToWlConverter.Companion.toWl
 import org.opendc.trace.util.parquet.LocalParquetReader
 import java.io.File
 
-public fun readNetworkWl(path: String): SimNetWorkload = readNetworkWl(File(path))
+public fun readNetworkWl(path: String): NetWorkload = readNetworkWl(File(path))
 
-public fun readNetworkWl(file: File): SimNetWorkload =
+public fun readNetworkWl(file: File): NetWorkload =
     try {
         val reader = LocalParquetReader(file = file, readSupport = ImprintReadSupp())
         val imprints: List<NetEventImprint> =

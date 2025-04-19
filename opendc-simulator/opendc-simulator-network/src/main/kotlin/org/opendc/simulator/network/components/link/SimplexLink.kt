@@ -39,9 +39,10 @@ internal class SimplexLink(
     }
 
     override suspend fun releaseBw(bw: DataRate, netF: INetFlow) = mtx.withLock {
-        require(bw < usedBw)
-        usedBw -= bw
-        receiverPort.owner.msgAsyncRxUpdt(-bw, netF)
+        require(bw approxSmallerOrEq  usedBw && bw > DataRate.zero) {"$bw $usedBw"}
+
+        usedBw = (usedBw - bw).roundToIfWithinEpsilon(DataRate.zero)
+//        receiverPort.owner.msgAsyncRxUpdt(-bw, netF)
     }
 
     override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {

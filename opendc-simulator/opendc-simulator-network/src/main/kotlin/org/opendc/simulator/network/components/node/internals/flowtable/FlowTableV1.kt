@@ -24,28 +24,33 @@ internal class FlowTableV1 private constructor(
      */
     context(Node<*>)
     override suspend fun rxUpdt(updt: Node.RxUpdate) {
-        var new: Boolean = false
+        assert(updt.deltaRate.approx(DataRate.zero).not())
+
+        var new = false
         val entry = _flows.getOrPut(updt.netF) {
+            assert(updt.deltaRate > DataRate.zero) { updt.deltaRate }
             new = true
             newEntry(updt)
         }
-        entry.rx += updt.deltaRate
+        entry.rx = (entry.rx + updt.deltaRate).roundToIfWithinEpsilon(DataRate.zero)
         entry.node = this@Node
         if (updt.netF.destId == this@Node.id) {
             updt.netF.setThroughput(entry.rx)
             return
         }
 
+        assert(entry.rx >= DataRate.zero) { entry.rx.value }
+
         val perPort = entry.rx / entry.txPorts.size
         entry.txPorts.forEach {
             if (new) {
                 entry.portFlowEntryIds[it.portIdx] =
-                    it.msgSetTxDemand(perPort, entry.netFlow)
+                    it.msgSetTxDemand(perPort, entry.netFlow) ?: -1
             } else {
                 it.msgSetTxDemand(perPort, entry.netFlow, entry.portFlowEntryIds[it.portIdx])
             }
         }
-        if (entry.rx approx DataRate.zero) _flows.remove(updt.netF)
+        if (entry.rx approx DataRate.zero) rmEntry(entry)
     }
 
     /**
@@ -74,9 +79,9 @@ internal class FlowTableV1 private constructor(
         entry.rx = DataRate.zero
         entry.txPorts.forEach {
             entry.portFlowEntryIds[it.portIdx] =
-                it.msgSetTxDemand(DataRate.zero, entry.netFlow)
+                it.msgSetTxDemand(DataRate.zero, entry.netFlow) ?: -1
         }
-        _flows.remove(f)
+        rmEntry(entry)
     }
 
     context(Node<*>)
@@ -84,10 +89,15 @@ internal class FlowTableV1 private constructor(
         val entry = nodeFlowEntryDispenser.acquire()
         entry.tracker = this
         entry.resizeIfNeeded()
+        entry.rx = DataRate.zero
         entry.node = this@Node
         entry.netFlow = updt.netF
         this@Node.routingPolicy.selectPorts(entry)
         return entry
+    }
+
+    private suspend fun rmEntry(entry: NodeFlowEntry) {
+        _flows.remove(entry.netFlow)!!.dispose()
     }
 
     companion object: FlowTableVersion {

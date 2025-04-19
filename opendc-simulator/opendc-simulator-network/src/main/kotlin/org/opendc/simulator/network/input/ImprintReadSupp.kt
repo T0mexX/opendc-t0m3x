@@ -30,7 +30,7 @@ import org.apache.parquet.schema.MessageType
 import org.apache.parquet.schema.Type
 import org.apache.parquet.schema.Types
 import org.opendc.common.logger.infoNewLine
-import org.opendc.simulator.network.api.workload.SimNetWorkload
+import org.opendc.simulator.network.api.workload.NetWorkload
 
 internal class ImprintReadSupp : ReadSupport<NetEventImprint>() {
     private lateinit var readingSchema: MessageType
@@ -58,7 +58,7 @@ internal class ImprintReadSupp : ReadSupport<NetEventImprint>() {
 
         readingSchema = msgBuilder.named("net_wl_reading_schema")
 
-        SimNetWorkload.LOG.infoNewLine(
+        NetWorkload.LOG.infoNewLine(
             "| === network workload reading schema ===\n$readingSchema"
                 .trimEnd()
                 .replace(

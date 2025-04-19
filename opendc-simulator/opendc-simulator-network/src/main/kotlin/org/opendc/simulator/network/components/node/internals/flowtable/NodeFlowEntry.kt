@@ -27,12 +27,14 @@ internal class NodeFlowEntry private constructor(
     override lateinit var tracker: Tracker<NodeFlowEntry>
     var rx: DataRate = DataRate.zero
         set(value) {
+            assert(value >= DataRate.zero)
+
             tracker.handleFieldChange(propId = RxProp) { field = value }
         }
 
     context(Node<*>)
     fun resizeIfNeeded() {
-        if (this@Node.nPorts < portFlowEntryIds.size) {
+        if (this@Node.nPorts > portFlowEntryIds.size) {
             portFlowEntryIds = portFlowEntryIds.copyOf(this@Node.nPorts)
         }
     }
@@ -40,6 +42,8 @@ internal class NodeFlowEntry private constructor(
     fun tput(): DataRate =
         txPorts.sumOfUnit { p ->
             p.getTxTput(portFlowEntryIds[p.portIdx])
+        }.also {
+            assert(it >= DataRate.zero)
         }
 
     companion object : FWId<NodeFlowEntry> {

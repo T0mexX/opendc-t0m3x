@@ -26,10 +26,11 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.opendc.simulator.network.api.NetworkScenario
+import org.opendc.simulator.network.api.NetSimExp
 import java.io.File
 
 /**
@@ -44,13 +45,17 @@ internal class NetScenarioCmd : CliktCommand(name = "scenario") {
     /**
      * The path to the environment directory.
      */
-    private val scenarioPath by option("--scenario-path", help = "path to scenario file")
+    private val expPath by option("--scenario-path", help = "path to scenario file")
         .file(canBeDir = false, canBeFile = true)
-        .defaultLazy { File("resources/example-scenarios/net-scenario.json") }
+        .defaultLazy { File("resources/example-exp/net-exp.json") }
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
-        val scenario: NetworkScenario = Json.decodeFromStream(scenarioPath.inputStream())
-        scenario.run()
+        val exp: NetSimExp = Json.decodeFromStream(expPath.inputStream())
+
+        runBlocking {
+            val runner = exp.runner()
+            runner.run()
+        }
     }
 }

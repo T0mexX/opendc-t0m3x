@@ -1,6 +1,5 @@
 package org.opendc.simulator.network.utils.notifiable
 
-import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
@@ -82,11 +81,13 @@ internal abstract class MsgImpl<T, Self: Msg<T, Self>> : Msg<T, Self>
      * TODO
      */
     protected suspend fun handled() {
-        require(this !is ReqMsg<*, *, *>)
+        assert(this !is ReqMsg<*, *, *>)
 
         // If the sender tracks msg state, then communicate that msg
         // was handled (msg is going to be disposed by the sender)
-        if (state.first() == Msg.State.PENDING) state.emit(Msg.State.HANDLED)
+        if (state.value == Msg.State.PENDING) {
+            state.emit(Msg.State.HANDLED)
+        }
         // Else, after msg is handled, it can safely be disposed of.
         else dispose()
     }

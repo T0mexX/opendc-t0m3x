@@ -49,14 +49,14 @@ internal class PortV1 private constructor(
         TODO("Not yet implemented")
     }
 
-    override suspend fun msgSetTxDemand(txDemand: DataRate, netF: INetFlow, entryId: IntId?): IntId {
+    override suspend fun msgSetTxDemand(txDemand: DataRate, netF: INetFlow, entryId: IntId?): IntId? {
+        require(txDemand >= DataRate.zero)
         val msg = setDemandDisp.acquire().reset()
         msg.newDemand = txDemand
-        val id = entryId ?: newEntry()
-        msg.entryId = id
+        msg.entryId = entryId
         msg.netF = netF
-        msg.sendTo(this)
-        return id
+        msg.sendTo(this, dispose = false).awaitHandling()
+        return msg.entryId.also { msg.dispose() }
     }
 
     override fun getTxTput(entryId: IntId): DataRate {
@@ -169,7 +169,7 @@ internal class PortV1 private constructor(
                             if (p._state.value == Port.DISCONNECTED) return handled()
 
                             p._state.emit(Port.PROCESSING)
-                            p.owner.fairnessPolicy.applyPolicy(p.entries, reductionsToBeExecuted = false)
+                            p.owner.fairnessPolicy.applyPolicy(p.entries)
                             if (p.freeIdxs.getSize() == p.entries.size) {
                                 p._state.emit(Port.IDLE)
                             } else {
@@ -191,16 +191,25 @@ internal class PortV1 private constructor(
                     override val poolIdx: Idx = idx
                     override val stabilizer: NetSimStabilizer = stab
                     override var newDemand: DataRate = DataRate.zero
-                    override var entryId: IntId = -1
+                    override var entryId: IntId? = null
                     override lateinit var netF: INetFlow
 
                     context(Port) override suspend fun handle() {
                         val p = this@Port as PortV1
-                        if (newDemand.isZero()) return p.rmEntry(entryId)
-                        val entry = p.entries[entryId]
+
+                        // If new demand is 0 then ignore. If it was an entry remove.
+                        if (newDemand approx DataRate.zero) {
+                            entryId?.let { p.rmEntry(it) }
+                            return handled()
+                        }
+
+                        entryId = entryId ?: p.newEntry()
+                        val entry = p.entries[entryId!!]
                         val oldDemand = entry.demand
                         entry.netF = netF
                         entry.demand = newDemand
+                        // TODO remove
+                        assert(newDemand >= DataRate.zero) { newDemand.value }
                         if (newDemand < oldDemand && entry.tput > newDemand) {
                             p.txLink!!.releaseBw(entry.tput - newDemand, netF)
                             entry.tput = newDemand

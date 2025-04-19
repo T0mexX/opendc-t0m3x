@@ -25,7 +25,7 @@ package org.opendc.simulator.network.input
 import org.opendc.simulator.network.api.workload.NetworkEvent
 import org.opendc.simulator.network.api.workload.NetworkEvent.FlowStart
 import org.opendc.simulator.network.api.workload.NetworkEvent.FlowStop
-import org.opendc.simulator.network.api.workload.SimNetWorkload
+import org.opendc.simulator.network.api.workload.NetWorkload
 import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.flow.publics.FlowId
@@ -45,9 +45,9 @@ internal class ImprintsToWlConverter private constructor(
     private val converted: MutableList<NetworkEvent> = ArrayList(imprints.size)
 
     /**
-     * Converts [imprints] to a [SimNetWorkload].
+     * Converts [imprints] to a [NetWorkload].
      */
-    private fun convert(): SimNetWorkload {
+    private fun convert(): NetWorkload {
         imprints.forEach { it.convert() }
         val events = converted.sorted()
 
@@ -58,7 +58,7 @@ internal class ImprintsToWlConverter private constructor(
 //                }
 //            }
 
-        return SimNetWorkload(networkEvents = events)
+        return NetWorkload(networkEvents = events)
     }
 
     /**
@@ -84,7 +84,7 @@ internal class ImprintsToWlConverter private constructor(
             flowStart.addFlowRateChange()
 
             duration?.let {
-                SimNetWorkload.LOG.warn(
+                NetWorkload.LOG.warn(
                     "duration of flow specified on flow update instead of start, flow end schedule at update.deadline + duration",
                 )
                 flowStart.addFlowStop().also { encounteredFEndsByNodesInvolved[nodesInvolved] = it }
@@ -167,7 +167,7 @@ internal class ImprintsToWlConverter private constructor(
                     from = transmitterId,
                     to = destId,
                     demand = netTx,
-                    flowId = fId,
+                    id = fId,
                 )
             } ?: FlowStart(
                 deadline = deadline,
@@ -193,6 +193,6 @@ internal class ImprintsToWlConverter private constructor(
         ).also { converted += it }
 
     companion object {
-        fun Collection<NetEventImprint>.toWl(): SimNetWorkload = ImprintsToWlConverter(this).convert()
+        fun Collection<NetEventImprint>.toWl(): NetWorkload = ImprintsToWlConverter(this).convert()
     }
 }

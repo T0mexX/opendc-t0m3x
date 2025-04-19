@@ -22,14 +22,16 @@
 
 package org.opendc.simulator.network.api.workload
 
-import kotlinx.coroutines.runBlocking
 import org.opendc.common.logger.logger
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
+import org.opendc.simulator.network.api.NetSimWlRunner
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
+import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
  * Represents a single network event occurring at [deadline].
@@ -37,7 +39,7 @@ import org.opendc.simulator.network.flow.publics.NetFlow
  * @see[FlowStop]
  * @see[FlowUpdateDemand]
  */
-public abstract class NetworkEvent : Comparable<NetworkEvent> {
+public sealed class NetworkEvent : Comparable<NetworkEvent> {
     private companion object {
         private val log by logger()
     }
@@ -51,27 +53,23 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
      * Often network events flow ids are not yet determined when they are created,
      * each event can retrieve its target flow from the event (of the same flow) that occurred before.
      */
-    internal val targetFlow: NetFlow get() = targetFlowGetter()
+    internal val targetFlow: INetFlow get() = targetFlowGetter()
 
     /**
      * Retrieves the target [NetFlow] from a [NetworkEvent] (of the same flow) that occurred earlier,
      * thus it must have its target flow determined.
      */
-    protected open var targetFlowGetter: () -> NetFlow = {
+    internal open var targetFlowGetter: () -> INetFlow = {
         throw RuntimeException(
             "target flow for network event $this is not defined yet",
         )
     }
 
     /**
-     * The [NodeId]s involved in this [NetworkEvent].
+     * Executes *this* event on [this] controller.
      */
-    internal open fun involvedIds(): Set<NodeId> = setOf()
-
-//    /**
-//     * Executes *this* event on [this] controller.
-//     */
-//    protected abstract suspend fun NetworkController.exec()
+    context(NetSimWlRunner)
+    protected abstract suspend fun exec()
 
 //    /**
 //     * Executes *this* event on this controller if the deadline is not passed.
@@ -90,6 +88,20 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
 //        exec()
 //    }
 
+    context(NetSimWlRunner)
+    internal suspend fun execIfNotPassed() {
+        val msSinceLastUpdate: TimeDelta = deadline.timeDelta(netScope.tmSrc.tmstamp)
+        if (msSinceLastUpdate < TimeDelta.zero) {
+            return log.error(
+                "unable to execute network event, " +
+                    "deadline is passed (deadline=${deadline.toInstant()}, " +
+                    "currentInstant=${netScope.tmSrc.instant()})",
+            )
+        }
+
+        exec()
+    }
+
     override fun compareTo(other: NetworkEvent): Int = this.deadline.compareTo(other.deadline)
 
     /**
@@ -98,34 +110,37 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
     internal data class FlowUpdateDemand(
         override val deadline: Timestamp,
         val newDemand: DataRate,
-        override var targetFlowGetter: () -> NetFlow,
+        override var targetFlowGetter: () -> INetFlow,
     ) : NetworkEvent() {
-//        override suspend fun NetworkController.exec() {
-//            val flow = targetFlow
-//            flow.setDemand(newDemand)
-//        }
+        context(NetSimWlRunner)
+        override suspend fun exec() = with(netScope) {
+            val flow = targetFlow
+            flow.setDemand(newDemand)
+        }
     }
 
     /**
      * [NetworkEvent] that starts a new flow from the [Node] with id [from]
-     * to the [Node] with id [to] with initial demand [demand] and flow id [flowId].
+     * to the [Node] with id [to] with initial demand [demand] and flow id [id].
      */
     internal data class FlowStart(
         override val deadline: Timestamp,
         val from: NodeId,
         val to: NodeId,
         val demand: DataRate,
-        val flowId: FlowId = TODO(),
+        val id: FlowId? = null,
     ) : NetworkEvent() {
-//        override suspend fun NetworkController.exec() {
-//            this.startFlow(
-//                transmitterId = from,
-//                destinationId = to,
-//                demand = demand,
-//            ) ?. let { targetFlowGetter = { it } }
-//        }
-
-        override fun involvedIds(): Set<NodeId> = setOf(from, to)
+        context(NetSimWlRunner)
+        override suspend fun exec() = with(netScope) {
+            val newFlow: INetFlow = devConfig.netFlowConfig.version(
+                senderId = from,
+                destId = to,
+                demand = demand,
+                id = id,
+            )
+            targetFlowGetter = { newFlow }
+            net.startFlow(newFlow)
+        }
     }
 
     /**
@@ -133,12 +148,11 @@ public abstract class NetworkEvent : Comparable<NetworkEvent> {
      */
     internal data class FlowStop(
         override val deadline: Timestamp,
-        override var targetFlowGetter: () -> NetFlow,
+        override var targetFlowGetter: () -> INetFlow,
     ) : NetworkEvent() {
-//        override suspend fun NetworkController.exec() {
-//            this.stopFlow(
-//                flowId = targetFlow.id,
-//            )
-//        }
+        context(NetSimWlRunner)
+        override suspend fun exec() = with(netScope) {
+            net.stopFlow(targetFlowGetter())
+        }
     }
 }

@@ -38,6 +38,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     override var job: Job? = null
 
     override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {
+        require(deltaRate.approx(DataRate.zero).not())
+
         val msg = rxUpdateDisp.acquire().reset()
         msg.deltaRate = deltaRate
         msg.netF = netF
@@ -54,7 +56,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     override suspend fun disconnectFrom(other: Node<*>) {
         val notif = disconnectDisp.acquire().reset()
         notif.other = other
-        _notificationChl.send(notif)
+        notif.sendTo(this)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,7 +123,14 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     context(NetSimScope) override fun netLaunch(): Job {
         job = this@NetSimScope.scopeLaunch {
             ports.forEach { it.netLaunch() }
+
             while (isActive) {
+                while (true) {
+//                _notificationChl.receive().handle()
+                    _notificationChl.tryReceiveValidate().getOrNull()?.handle()
+                        ?: break
+                }
+                portProcessAwait()
                 _notificationChl.receive().handle()
             }
         }
@@ -180,10 +189,12 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 
                         context(Node<*>)
                         override suspend fun handle() {
+                            assert(deltaRate.approx(DataRate.zero).not())
+
                             val n = this@Node as NodeImpl
                             flowTable.rxUpdt(this)
-                            // TODO: change
-                            n.portProcessAwait()
+//                             TODO: change
+//                            n.portProcessAwait()
                             handled()
                         }
                     }

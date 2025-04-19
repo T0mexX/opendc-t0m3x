@@ -4,6 +4,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.port.PortFlowEntry
@@ -11,22 +13,25 @@ import org.opendc.simulator.network.components.port.PortFlowEntry
 /**
  * TODO
  */
+@Serializable
+@SerialName("fcfs")
 internal data object FirstComeFirstServed : FairnessPolicy {
     context(Port)
-    override suspend fun applyPolicy(entryList: List<PortFlowEntry>, reductionsToBeExecuted: Boolean) {
+    override suspend fun applyPolicy(entryList: List<PortFlowEntry>) {
         val p = this@Port
         val l = p.txLink!!
-        if (reductionsToBeExecuted) processDemandReductions(entryList)
+
+        processDemandReductions(entryList)
 
         coroutineScope {
             entryList.asFlow().onEach {
                 if (it.used.not()) return@onEach
-                val increaseBy = (it.demand - it.tput)
-                check(increaseBy >= DataRate.zero)
+                val increaseBy = it.demand - it.tput
+                assert(increaseBy >= DataRate.zero) { increaseBy.value }
                 if(increaseBy approx DataRate.zero) return@onEach
                 val claimedBw = l.claimBw(increaseBy)
                 if (claimedBw approx DataRate.zero) return@onEach
-                it.tput += claimedBw
+                it.tput = (it.tput + claimedBw).roundToIfWithinEpsilon(it.demand)
                 l.msgAsyncRxUpdt(deltaRate = claimedBw, it.netF)
             }.launchIn(this)
         }

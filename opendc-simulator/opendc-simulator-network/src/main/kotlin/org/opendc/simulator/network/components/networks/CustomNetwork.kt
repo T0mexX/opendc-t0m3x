@@ -51,7 +51,7 @@ internal class CustomNetwork private constructor(
     context(NetSimScope)
     suspend fun connectFromLinkList(links: List<Pair<NodeId, NodeId>>) {
         fun warnOfUnsetLink(id1: NodeId, id2: NodeId, ) {
-            this@NetSimScope.logger.warn(
+            this@NetSimScope.log.warn(
                 "SimplexLink from (NodeId2=$id1) <-> (NodeId2=$id2) could not be established, " +
                     "one of the nodesById does not exist or it's connecting to itself.",
             )
@@ -108,7 +108,7 @@ internal class CustomNetwork private constructor(
                 nodes.forEach { n -> n.netLaunch() }
                 net.internet.netLaunch()
                 net.getNodesById<CoreSwitch>().values.forEach { cs -> cs.connectTo(net.internet) }
-                registerNetworkInScope(net)
+                registerNetwork(net)
             }
     }
 }

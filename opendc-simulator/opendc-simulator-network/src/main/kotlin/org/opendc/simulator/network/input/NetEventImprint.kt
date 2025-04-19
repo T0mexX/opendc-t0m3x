@@ -25,7 +25,7 @@ package org.opendc.simulator.network.input
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.api.workload.SimNetWorkload
+import org.opendc.simulator.network.api.workload.NetWorkload
 import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.flow.publics.FlowId
@@ -33,7 +33,7 @@ import kotlin.properties.Delegates
 
 /**
  * Contains all the information needed to create a network event **except** knowledge about previous events.
- * Traces are first converted to event imprints and then to [SimNetWorkload] after they have been ordered by timestamp,
+ * Traces are first converted to event imprints and then to [NetWorkload] after they have been ordered by timestamp,
  * since dataframe offer no guarantee on the order of fragments.
  */
 internal data class NetEventImprint(

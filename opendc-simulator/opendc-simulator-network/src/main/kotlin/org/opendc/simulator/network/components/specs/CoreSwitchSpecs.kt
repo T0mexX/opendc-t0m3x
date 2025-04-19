@@ -38,11 +38,19 @@ internal data class CoreSwitchSpecs(
             portSelectionPolicy = portSelectionPolicy,
         )
 
+    /**
+     * TODO
+     */
     context(NetSimScope)
     suspend fun buildAsCore(internet: Internet): CoreSwitch =
         this.copy(
-            nPorts = nPorts
+            nPorts = (
+                nPorts
                 ?: devConfig.nodeConfig.coreSwitchConfig.defaultNPorts
                 ?: devConfig.nodeConfig.defaultNPorts!!
-        ).build().also { it.connectTo(internet) }
+                ) + 1
+        ).build().also {
+            it.netLaunch()
+            it.connectTo(internet)
+        }
 }

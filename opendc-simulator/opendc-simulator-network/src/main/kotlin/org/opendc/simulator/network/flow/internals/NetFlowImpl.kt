@@ -47,19 +47,19 @@ internal class NetFlowImpl private constructor(
     override suspend fun setDemand(demand: DataRate) {
         val msg = setDemandDisp.acquire().reset()
         msg.newDemand = demand
-        msgChl.send(msg)
+        msg.sendTo(this)
     }
 
     override suspend fun setThroughput(newThroughput: DataRate) {
-        val notif = setTputDisp.acquire().reset()
-        notif.newThroughput = newThroughput
-        msgChl.send(notif)
+        val msg = setTputDisp.acquire().reset()
+        msg.newThroughput = newThroughput
+        msg.sendTo(this)
     }
 
     override suspend fun msgAsyncIncreaseTputBy(amount: DataRate) {
-        val notif = increaseTputDisp.acquire().reset()
-        notif.amount = amount
-        msgChl.send(notif)
+        val msg = increaseTputDisp.acquire().reset()
+        msg.amount = amount
+        msg.sendTo(this)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,6 +147,10 @@ internal class NetFlowImpl private constructor(
                     context(NetFlow)
                     override suspend fun handle() {
                         val f = this@NetFlow as NetFlowImpl
+
+                        // If the requested demand is the same no changes made.
+                        if (newDemand approx f.demand) return handled()
+
                         val old: DataRate = f.demand
                         f.demand = newDemand
                         val deltaDemand = newDemand - old
@@ -158,7 +162,7 @@ internal class NetFlowImpl private constructor(
 //                        f._eventFlow.emit(evnt)
                         f.senderNode.msgAsyncRxUpdt(deltaDemand, f)
 
-                        dispose()
+                        handled()
                     }
                 }
             }.dispenser()
@@ -212,12 +216,12 @@ internal class NetFlowImpl private constructor(
                             val f = this@NetFlow as NetFlowImpl
                             val old: DataRate = throughput
                             f.throughput = newThroughput
-                            val evnt = _throughputChangedDisp.acquire()
-                            evnt.old = old
-                            evnt.new = throughput
-                            evnt.netFlow = f
-                            f._eventFlow.emit(evnt)
-                            dispose()
+//                            val evnt = _throughputChangedDisp.acquire()
+//                            evnt.old = old
+//                            evnt.new = throughput
+//                            evnt.netFlow = f
+//                            f._eventFlow.emit(evnt)
+                            handled()
                         }
                     }
                 }.dispenser()
@@ -237,12 +241,12 @@ internal class NetFlowImpl private constructor(
                             val f = this@NetFlow as NetFlowImpl
                             val old: DataRate = throughput
                             f.throughput += amount
-                            val evnt = _throughputChangedDisp.acquire()
-                            evnt.netFlow = f
-                            evnt.old = old
-                            evnt.new = throughput
-                            f._eventFlow.emit(evnt)
-                            dispose()
+//                            val evnt = _throughputChangedDisp.acquire()
+//                            evnt.netFlow = f
+//                            evnt.old = old
+//                            evnt.new = throughput
+//                            f._eventFlow.emit(evnt)
+                            handled()
                         }
                     }
                 }.dispenser()

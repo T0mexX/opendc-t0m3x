@@ -48,7 +48,7 @@ internal class FatTree private constructor(
             torSpecs: SwitchSpecs,
             hostNodeSpecs: HostNodeSpecs,
         ): FatTree {
-            val internet = Internet()
+            val internet = Internet().also { it.netLaunch() }
 
             /**
              * Parameter that determines the topology which is defined as
@@ -59,12 +59,17 @@ internal class FatTree private constructor(
             val k: Int = listOf(coreSpecs, aggrSpecs, torSpecs).minOf { it.build().nPorts } / 2 * 2
             require(k % 2 == 0 && k > 2) { "Fat tree can only be built with even-port-number (>2) switches" }
 
-            this@NetSimScope.logger.info("building fat-tree with k=$k")
+            this@NetSimScope.log.info("building fat-tree with k=$k")
             val pods = buildList { repeat(k) { add(getPod(aggrSpecs, torSpecs, hostNodeSpecs)) } }
 
             val coreSwitchesChunked =
                 buildList {
-                    repeat(k * k / 4) { add(coreSpecs.buildAsCore(internet)) }
+                    repeat(k * k / 4) {
+                        val cr = coreSpecs.build()
+                        add(
+                            coreSpecs.buildAsCore(internet)
+                        )
+                    }
                 }.chunked(k / 2)
 
             pods.forEach { pod ->
@@ -113,12 +118,12 @@ internal class FatTree private constructor(
 
             val hostNodes =
                 buildList {
-                    repeat((k / 2).toDouble().pow(2.0).toInt()) { add(hostNodeSpecs.build()) }
+                    repeat((k / 2).toDouble().pow(2.0).toInt()) { add(hostNodeSpecs.build().also { it.netLaunch() }) }
                 }
 
             val torSwitches =
                 buildList {
-                    repeat(k / 2) { add(torSpecs.build()) }
+                    repeat(k / 2) { add(torSpecs.build().also { it.netLaunch() }) }
                 }
 
             hostNodes.forEachIndexed { index, server ->
@@ -128,7 +133,7 @@ internal class FatTree private constructor(
             val aggrSwitches =
                 torSwitches
                     .map { _ ->
-                        val newSwitch = aggrSpecs.build()
+                        val newSwitch = aggrSpecs.build().also { it.netLaunch() }
                         torSwitches.forEach { newSwitch.connectTo(it) }
                         newSwitch
                     }.toList()

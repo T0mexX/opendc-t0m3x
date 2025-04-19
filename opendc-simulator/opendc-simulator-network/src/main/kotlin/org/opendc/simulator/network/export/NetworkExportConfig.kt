@@ -61,7 +61,7 @@ import java.io.File
 public data class NetworkExportConfig(
     val networkExportColumns: List<ExportColumn<NetworkSnapshot>>,
     val nodeExportColumns: List<ExportColumn<NodeSnapshot>>,
-    val outputFolder: File? = null,
+    val outputFolder: File,
     val exportInterval: TimeDelta? = null,
     val startTime: Timestamp? = null,
 ) {
@@ -92,11 +92,12 @@ public data class NetworkExportConfig(
         /**
          * Config that includes all columns defined in [DfltNetworkExportColumns] and [DfltNodeExportColumns],
          */
-        public val ALL_COLUMNS: NetworkExportConfig by lazy {
+        public fun allColumns(outFolder: File): NetworkExportConfig {
             loadDfltColumns()
-            NetworkExportConfig(
+            return NetworkExportConfig(
                 networkExportColumns = ExportColumn.getAllLoadedColumns(),
                 nodeExportColumns = ExportColumn.getAllLoadedColumns(),
+                outputFolder = outFolder,
             )
         }
 
@@ -143,17 +144,21 @@ public data class NetworkExportConfig(
                 loadDfltColumns()
                 val elem = jsonDec.decodeJsonElement().jsonObject
 
-                val outputFolder: File? =
+                val outputFolder: File =
                     elem["outputFolder"]?.let { pathElem ->
                         File(pathElem.toString().trim('"')).also {
                             check(it.exists().not() || it.isDirectory)
                             it.mkdirs()
                         }
-                    }
+                    } ?: error("output folder does not exist and could not create directory")
 
                 return NetworkExportConfig(
-                    networkExportColumns = elem["networkExportColumns"].toFieldList(),
-                    nodeExportColumns = elem["nodeExportColumns"].toFieldList(),
+                    networkExportColumns = elem["networkExportColumns"].toFieldList<NetworkSnapshot>().takeIf {
+                        it.isNotEmpty()
+                    } ?: ExportColumn.getAllLoadedColumns(),
+                    nodeExportColumns = elem["nodeExportColumns"].toFieldList<NodeSnapshot>().takeIf {
+                        it.isNotEmpty()
+                    } ?: ExportColumn.getAllLoadedColumns(),
                     outputFolder = outputFolder,
                     exportInterval =
                         elem["exportInterval"]?.toString()?.trim('"')?.let {
@@ -181,11 +186,10 @@ public data class NetworkExportConfig(
     }
 }
 
-private val json = Json { ignoreUnknownKeys = true }
 
 private inline fun <reified T : Exportable> JsonElement?.toFieldList(): List<ExportColumn<T>> =
     this?.let {
-        json.decodeFromJsonElement(ColListSerializer(columnSerializer<T>()), it)
+        Json.decodeFromJsonElement(ColListSerializer(columnSerializer<T>()), it)
     }?.ifEmpty {
         NetworkExportConfig.LOG.warn(
             "deserialized list of export columns for exportable ${T::class.simpleName} " +

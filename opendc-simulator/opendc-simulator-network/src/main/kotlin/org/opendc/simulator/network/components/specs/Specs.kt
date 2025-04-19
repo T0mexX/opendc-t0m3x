@@ -43,11 +43,8 @@ public sealed interface Specs<out T : WithSpecs<in @UnsafeVariance T>> {
 
     public companion object {
         @OptIn(ExperimentalSerializationApi::class)
-        public inline fun <reified T : WithSpecs<T>> fromFile(file: File): Specs<T> {
-            val json = Json { ignoreUnknownKeys = true }
-
-            return json.decodeFromStream(file.inputStream())
-        }
+        public inline fun <reified T : WithSpecs<T>> fromFile(file: File): Specs<T> =
+            Json.decodeFromStream(file.inputStream())
 
         public inline fun <reified T : WithSpecs<T>> fromFile(filePath: String): Specs<T> = fromFile(File(filePath))
     }

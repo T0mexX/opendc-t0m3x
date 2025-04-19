@@ -16,6 +16,10 @@ internal class FWPool<out T: FW<T>, out O: FWId<T>>(
     private val nextIdxMtx = Mutex()
     private val subPools: List<Channel<T>> = 0.rangeTo(nSubPools).map { Channel(Channel.UNLIMITED) }
 
+    // TODO remove
+    private var bo = 0
+    private val mtx = Mutex()
+
     private suspend fun nextIdx(): Idx = nextIdxMtx.withLock {
         nextIdx++ % nSubPools
     }
@@ -27,6 +31,13 @@ internal class FWPool<out T: FW<T>, out O: FWId<T>>(
                 .tryReceive()
                 .getOrNull()
                 ?: objConstructor(this, idx)
+                    // TODO: remove
+                    .also {
+                        mtx.withLock {
+                            bo++
+//                            println(it::class.java.interfaces.toList().toString() + " n=$bo")
+                        }
+                    }
         }
     }
 

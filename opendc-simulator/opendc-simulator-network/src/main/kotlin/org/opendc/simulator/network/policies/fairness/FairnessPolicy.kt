@@ -7,7 +7,7 @@ import org.opendc.simulator.network.components.port.PortFlowEntry
 @Serializable
 internal sealed interface FairnessPolicy {
     context(Port)
-    suspend fun applyPolicy(entryList: List<PortFlowEntry>, reductionsToBeExecuted: Boolean)
+    suspend fun applyPolicy(entryList: List<PortFlowEntry>)
 
     context(Port)
     suspend fun processDemandReductions(entryList: List<PortFlowEntry>) {

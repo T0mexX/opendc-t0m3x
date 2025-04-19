@@ -5,17 +5,14 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.logger.logger
-import org.opendc.simulator.network.api.NetSimEnRecorder
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
-import org.opendc.simulator.network.utils.sync.Synchronizable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -23,7 +20,7 @@ internal class NetSimScope(
     override var coroutineContext: CoroutineContext = EmptyCoroutineContext,
 ) : CoroutineScope {
 
-    val ctx: CoroutineContext = coroutineContext
+    var ctx: CoroutineContext = coroutineContext
     val config: NetSimConfig
     val barrier: NetSimBarrier
     val devConfig: NetSimDevConfig
@@ -31,7 +28,7 @@ internal class NetSimScope(
     val idDispenser: NetSimIdDispenser
     val enRecorder: NetSimEnRecorder
     val tmSrc: NetSimTmSrc<*>
-    val logger by logger()
+    val log by logger()
     val net: Network get() = _net
     private lateinit var _net: Network
 
@@ -40,8 +37,7 @@ internal class NetSimScope(
     val netFlowVersion: NetFlowVersion
 
     init {
-        var ctx = coroutineContext
-        DebugProbes.install()
+        ctx = coroutineContext
         runBlocking {
             ctx[Job] ?: let { ctx += Job() }
             ctx[NetSimConfig] ?: let { ctx += NetSimConfig.DEFAULT }
@@ -84,18 +80,26 @@ internal class NetSimScope(
     /**
      * TODO
      */
-    internal fun registerNetworkInScope(net: Network) {
+    internal fun registerNetwork(net: Network) {
         require(::_net.isInitialized.not()) {
             "A network was already registered for this scope"
         }
         _net = net
     }
+//
+//    internal fun registerAutoExporter(exporter: NetSimAutoExporter) {
+//        require(autoExporter == null)
+//
+//        ctx += exporter
+//        coroutineContext += exporter
+//    }
 
     /**
      * TODO
      */
     internal suspend fun sync(forceUpdt: Boolean = false) {
         enRecorder.sync(forceUpdt)
+        // TODO: net.sync
     }
 
 

@@ -34,7 +34,7 @@ internal interface Port: Msgable<Port>, Stateful<Port>, IInvalidatable, Launchab
     /**
      * TODO
      */
-    suspend fun msgSetTxDemand(txDemand: DataRate, netF: INetFlow, entryId: IntId? = null): IntId
+    suspend fun msgSetTxDemand(txDemand: DataRate, netF: INetFlow, entryId: IntId? = null): IntId?
 
     /**
      * Not guaranteed to be stable. TOOD: write better
@@ -44,7 +44,7 @@ internal interface Port: Msgable<Port>, Stateful<Port>, IInvalidatable, Launchab
     interface SetDemand: Msg<Port, SetDemand> {
         var netF: INetFlow
         var newDemand: DataRate
-        var entryId: IntId
+        var entryId: IntId?
 
         companion object : FWId<SetDemand>
     }

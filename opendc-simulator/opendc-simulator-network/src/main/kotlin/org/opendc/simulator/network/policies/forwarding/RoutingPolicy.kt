@@ -6,7 +6,9 @@ import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
 import org.opendc.simulator.network.flow.publics.NetFlow
 
-
+/**
+ * TODO
+ */
 @Serializable
 internal sealed interface RoutingPolicy {
     context(Node<*>)
