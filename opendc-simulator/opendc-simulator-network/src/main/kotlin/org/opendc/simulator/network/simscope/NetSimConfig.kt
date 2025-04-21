@@ -1,12 +1,16 @@
 package org.opendc.simulator.network.simscope
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.serialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.opendc.simulator.network.export.NetworkExportConfig
+import org.opendc.simulator.network.policies.routing.ECMP
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import javax.naming.OperationNotSupportedException
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -22,16 +26,12 @@ import kotlin.coroutines.CoroutineContext
 public data class NetSimConfig internal constructor(
     val stabilityMode: NetSimStabilityMode = NetSimStabilityMode.ASSUMED,
     val netSimExportConfig: NetworkExportConfig? = null,
+    internal val routPolicy: RoutPolicy = ECMP(),
     internal val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
     val wlToNetIdMapping: Boolean = true,
 ): AbstractCoroutineContextElement(Key) {
 
-    public companion object Key : CoroutineContext.Key<NetSimConfig> {
-        public val DEFAULT: NetSimConfig = NetSimConfig(
-            stabilityMode = NetSimStabilityMode.ASSUMED,
-            netSimExportConfig = null
-        )
-    }
+    public companion object Key : CoroutineContext.Key<NetSimConfig>
 
 
     /**
@@ -45,6 +45,7 @@ public data class NetSimConfig internal constructor(
             val netSimExportConfig: NetworkExportConfig? = null,
             val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
             val wlToNetIdMapping: Boolean = true,
+            @Polymorphic val routingPolicy: RoutPolicy = ECMP(),
         )
 
         private val surrogateSerial: KSerializer<NetSimConfigSurrogate> = kotlinx.serialization.serializer()
@@ -58,7 +59,8 @@ public data class NetSimConfig internal constructor(
                 stabilityMode = surrogate.stabilityMode,
                 netSimExportConfig = surrogate.netSimExportConfig,
                 netSimDevConfig = surrogate.netSimDevConfig,
-                wlToNetIdMapping = surrogate.wlToNetIdMapping
+                wlToNetIdMapping = surrogate.wlToNetIdMapping,
+                routPolicy = surrogate.routingPolicy,
             )
         }
 

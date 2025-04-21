@@ -1,10 +1,12 @@
 package org.opendc.simulator.network.components.port
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.link.ReceiveLink
@@ -12,10 +14,8 @@ import org.opendc.simulator.network.components.link.SendLink
 import org.opendc.simulator.network.components.link.SimplexLink
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
-import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 import org.opendc.simulator.network.utils.Idx
@@ -68,7 +68,7 @@ internal class PortV1 private constructor(
     // Launchable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    context(NetSimScope) override fun netLaunch(): Job = this@NetSimScope.scopeLaunch {
+    context(NetSimScope) override fun netLaunch(scope: CoroutineScope): Job = scope.launch {
         while (isActive) {
             select {
                 _priorityMsgChl.onReceive { it.handle() }
@@ -210,10 +210,6 @@ internal class PortV1 private constructor(
                         entry.demand = newDemand
                         // TODO remove
                         assert(newDemand >= DataRate.zero) { newDemand.value }
-                        if (newDemand < oldDemand && entry.tput > newDemand) {
-                            p.txLink!!.releaseBw(entry.tput - newDemand, netF)
-                            entry.tput = newDemand
-                        }
 
                         handled()
                     }

@@ -10,8 +10,9 @@ import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
-import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
-import org.opendc.simulator.network.policies.forwarding.ECMP
+import org.opendc.simulator.network.policies.routing.RoutPolicy
+import org.opendc.simulator.network.policies.routing.ECMP
+import org.opendc.simulator.network.policies.routing.OSPF
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
@@ -23,7 +24,7 @@ internal class Internet(
     override val portSpeed: DataRate = DataRate.max
     override var nPorts: Int = 0
     override var fairnessPolicy: FairnessPolicy = FirstComeFirstServed
-    override var routingPolicy: RoutingPolicy = ECMP
+    override var routPolicy: RoutPolicy = ECMP()
 
     override val ports: List<Port> get() = _ports
     private val _ports: MutableList<Port> = mutableListOf()

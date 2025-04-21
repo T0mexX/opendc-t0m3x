@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.api.snapshots
 
+import kotlinx.coroutines.delay
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Percentage
@@ -35,6 +36,7 @@ import org.opendc.simulator.network.components.node.CoreSwitch
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable
@@ -220,6 +222,13 @@ public class NetworkSnapshot private constructor(
             val activeFlows: Collection<NetFlow> = flows.filterNot { it.demand.isZero() }
             val totDemand: DataRate = flows.sumOfUnit { it.demand }
             val totThroughput: DataRate = flows.sumOfUnit { it.throughput }
+
+            assert(
+                flows.forEach {
+                    check(it.demand approxLargerOrEq it.throughput) { "${it.demand} ${it.throughput} ${it.id}" }
+                }.let { true }
+            )
+            assert(totDemand approxLargerOrEq  totThroughput) {"$totDemand $totThroughput"}
 
             barrier.awaitStability()
 

@@ -11,7 +11,11 @@ import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
+import org.opendc.simulator.network.utils.evntemitter.publics.EvntFlow
 
+/**
+ * TODO
+ */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal abstract class NetworkImpl : Network {
@@ -24,6 +28,11 @@ internal abstract class NetworkImpl : Network {
 
     override val flowsById: Map<FlowId, INetFlow> get() = _flows
     protected val _flows: MutableMap<FlowId, INetFlow> = mutableMapOf()
+
+    override val nodeLs: List<Node<*>> get() = _nodeLs
+    protected abstract val _nodeLs: MutableList<Node<*>>
+
+    override val evntFlow = EvntFlow<Network>()
 
     override operator fun get(nId: NodeId): Node<*>? = this.nodesById[nId]
 

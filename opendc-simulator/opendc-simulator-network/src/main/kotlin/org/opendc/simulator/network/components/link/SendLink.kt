@@ -6,6 +6,7 @@ import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.flow.internals.INetFlow
+import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
@@ -45,7 +46,9 @@ internal interface SendLink: SendChannel<Msg<Node<*>, *>> {
 
     /**
      * TODO
+     * context forces call to be during fairness phase. just more compiler time safe coding
      */
+    context(FairnessPolicy)
     suspend fun releaseBw(bw: DataRate, netF: INetFlow)
 
     /**

@@ -6,7 +6,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 
 @Serializable
@@ -16,7 +16,6 @@ internal data class SwitchSpecs(
     val portSpeed: DataRate? = null,
     val nPorts: Int? = null,
     val fairnessPolicy: FairnessPolicy? = null,
-    val portSelectionPolicy: RoutingPolicy? = null,
 ): Specs<Switch> {
     context(NetSimScope)
     override suspend fun build(): Switch =
@@ -25,7 +24,6 @@ internal data class SwitchSpecs(
             portSpeed = portSpeed,
             nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
-            portSelectionPolicy = portSelectionPolicy,
         )
 
     fun toCoreSwitchSpecs(): CoreSwitchSpecs =
@@ -34,6 +32,5 @@ internal data class SwitchSpecs(
             portSpeed = portSpeed,
             nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
-            portSelectionPolicy = portSelectionPolicy,
         )
 }

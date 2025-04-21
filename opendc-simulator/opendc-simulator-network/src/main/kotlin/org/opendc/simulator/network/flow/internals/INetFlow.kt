@@ -4,6 +4,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.utils.Launchable
+import org.opendc.simulator.network.utils.evntemitter.publics.IEvntEmitter
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.notifiable.Msg

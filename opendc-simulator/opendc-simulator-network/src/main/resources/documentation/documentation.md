@@ -87,7 +87,7 @@ classDiagram
 ```
 
 ### Port Selection Policy
-Current [`PortSelectionPolicies`](../../kotlin/org/opendc/simulator/network/policies/forwarding/PortSelectionPolicy.kt) available:
+Current [`PortSelectionPolicies`](../../kotlin/org/opendc/simulator/network/policies/routing/PortSelectionPolicy.kt) available:
 
 | Policy                            | Performance Impact | Description                                                                             |
 |-----------------------------------|:------------------:|:----------------------------------------------------------------------------------------|

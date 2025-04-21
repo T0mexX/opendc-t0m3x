@@ -22,7 +22,7 @@ internal class FlowTableV1 private constructor(
     /**
      * TODO
      */
-    context(Node<*>)
+    context(NetSimScope, Node<*>)
     override suspend fun rxUpdt(updt: Node.RxUpdate) {
         assert(updt.deltaRate.approx(DataRate.zero).not())
 
@@ -36,6 +36,7 @@ internal class FlowTableV1 private constructor(
         entry.node = this@Node
         if (updt.netF.destId == this@Node.id) {
             updt.netF.setThroughput(entry.rx)
+
             return
         }
 
@@ -56,7 +57,7 @@ internal class FlowTableV1 private constructor(
     /**
      * TODO
      */
-    context(Node<*>) override suspend fun reapplyRouting() {
+    context(NetSimScope, Node<*>) override suspend fun reapplyRouting() {
         val entriesFlow = _flows.values.asFlow()
         // Reset current port outgoing data-rates.
         entriesFlow.collect { entry ->
@@ -67,7 +68,7 @@ internal class FlowTableV1 private constructor(
 
         // Select new outgoing ports for each flow entry.
         entriesFlow.collect { entry ->
-            this@Node.routingPolicy.selectPorts(entry)
+            this@Node.routPolicy.selectPorts(entry)
         }
     }
 
@@ -84,7 +85,7 @@ internal class FlowTableV1 private constructor(
         rmEntry(entry)
     }
 
-    context(Node<*>)
+    context(NetSimScope, Node<*>)
     private suspend fun newEntry(updt: Node.RxUpdate): NodeFlowEntry {
         val entry = nodeFlowEntryDispenser.acquire()
         entry.tracker = this
@@ -92,7 +93,8 @@ internal class FlowTableV1 private constructor(
         entry.rx = DataRate.zero
         entry.node = this@Node
         entry.netFlow = updt.netF
-        this@Node.routingPolicy.selectPorts(entry)
+        entry.txPorts.clear()
+        this@Node.routPolicy.selectPorts(entry)
         return entry
     }
 

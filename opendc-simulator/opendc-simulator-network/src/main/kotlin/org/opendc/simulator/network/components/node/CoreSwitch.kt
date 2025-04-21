@@ -6,7 +6,7 @@ import org.opendc.simulator.network.components.specs.CoreSwitchSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
@@ -15,11 +15,11 @@ internal class CoreSwitch private constructor(
     portSpeed: DataRate,
     nPorts: Int,
     fairnessPolicy: FairnessPolicy,
-    portSelectionPolicy: RoutingPolicy,
+    routPolicy: RoutPolicy,
     enModel: EnModel<Switch>,
     flowTable: FlowTable,
     stabilizer: NetSimStabilizer,
-) : Switch(id, portSpeed, nPorts, fairnessPolicy, portSelectionPolicy, enModel, flowTable, stabilizer), SerializableNode {
+) : Switch(id, portSpeed, nPorts, fairnessPolicy, routPolicy, enModel, flowTable, stabilizer), SerializableNode {
 
     override fun toSpecs(): Specs<CoreSwitch> =
         CoreSwitchSpecs(
@@ -27,7 +27,6 @@ internal class CoreSwitch private constructor(
             portSpeed = portSpeed,
             nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
-            portSelectionPolicy = routingPolicy,
         )
 
 
@@ -38,7 +37,6 @@ internal class CoreSwitch private constructor(
             portSpeed: DataRate? = null,
             nPorts: Int? = null,
             fairnessPolicy: FairnessPolicy? = null,
-            portSelectionPolicy: RoutingPolicy? = null,
             enModel: EnModel<Switch>? = null,
         ): CoreSwitch {
             val nodeConfig = devConfig.nodeConfig
@@ -58,10 +56,7 @@ internal class CoreSwitch private constructor(
                     ?: coreSwitchConfig.defaultFairnessPolicy
                     ?: switchConfig.defaultFairnessPolicy
                     ?: nodeConfig.defaultFairnessPolicy,
-                portSelectionPolicy = portSelectionPolicy
-                    ?: coreSwitchConfig.defaultRoutingPolicy
-                    ?: switchConfig.defaultRoutingPolicy
-                    ?: nodeConfig.defaultRoutingPolicy,
+                routPolicy = this@NetSimScope.config.routPolicy,
                 enModel = enModel
                     ?: coreSwitchConfig.defaultEnModel
                     ?: switchConfig.defaultEnModel

@@ -12,6 +12,7 @@ import org.opendc.simulator.network.components.specs.FatTreeSpecs
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NonSerializable
 import kotlin.math.pow
@@ -19,6 +20,7 @@ import kotlin.math.pow
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal class FatTree private constructor(
+    override val routPolicy: RoutPolicy,
     private val coreSpecs: CoreSwitchSpecs,
     private val aggrSpecs: SwitchSpecs,
     private val torSpecs: SwitchSpecs,
@@ -28,6 +30,7 @@ internal class FatTree private constructor(
 ): NetworkImpl() {
     override val _nodesById: MutableMap<NodeId, Node<*>> =
         nodesById.toMutableMap()
+    override val _nodeLs: MutableList<Node<*>> = ArrayList(_nodesById.values)
 
     override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
         getNodesById<SenderNode<*>>().toMutableMap()
@@ -94,15 +97,14 @@ internal class FatTree private constructor(
                 }.toMutableMap()
 
             return FatTree(
+                routPolicy = this@NetSimScope.config.routPolicy,
                 nodesById = nodesById,
                 internet = internet,
                 coreSpecs = coreSpecs,
                 aggrSpecs = aggrSpecs,
                 torSpecs = torSpecs,
                 hostNodeSpecs = hostNodeSpecs,
-            ).also {
-
-            }
+            ).also { this@NetSimScope.config.routPolicy.setUp() }
         }
 
         context(NetSimScope)

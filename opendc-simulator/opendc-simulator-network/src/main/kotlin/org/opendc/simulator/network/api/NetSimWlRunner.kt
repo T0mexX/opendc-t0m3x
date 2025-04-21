@@ -17,6 +17,7 @@ import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.export.NetSimExporter
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimTmSrc
+import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import kotlin.system.measureTimeMillis
 
 /**

@@ -1,6 +1,7 @@
 package org.opendc.simulator.network.simscope
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapMerge
@@ -11,7 +12,6 @@ import org.opendc.common.units.Power
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.energy.EnConsumer
-import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeAsync
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.simulator.network.utils.sync.Synchronizable
@@ -90,7 +90,7 @@ internal class NetSimEnRecorder(
      */
     context(NetSimScope)
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun compCurrPwrDraw(): Power = scopeAsync {
+    private suspend fun compCurrPwrDraw(): Power = this@NetSimScope.async {
         barrier.whileStable {
             net.nodesById.values.asFlow().filterIsInstance<EnConsumer<*>>().flatMapMerge {
                 flow { emit(it.computePwrDraw()) }

@@ -32,6 +32,7 @@ internal data object FirstComeFirstServed : FairnessPolicy {
                 val claimedBw = l.claimBw(increaseBy)
                 if (claimedBw approx DataRate.zero) return@onEach
                 it.tput = (it.tput + claimedBw).roundToIfWithinEpsilon(it.demand)
+                assert(it.tput <= it.demand)
                 l.msgAsyncRxUpdt(deltaRate = claimedBw, it.netF)
             }.launchIn(this)
         }

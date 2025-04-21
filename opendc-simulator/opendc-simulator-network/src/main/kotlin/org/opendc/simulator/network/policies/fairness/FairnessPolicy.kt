@@ -14,6 +14,7 @@ internal sealed interface FairnessPolicy {
         entryList.forEach { entry ->
             if (entry.demand < entry.tput) {
                 this@Port.txLink!!.releaseBw(entry.tput - entry.demand, entry.netF)
+                entry.tput = entry.demand
             }
         }
     }

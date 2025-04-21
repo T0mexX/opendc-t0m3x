@@ -44,31 +44,6 @@ internal abstract class NetSimStabilizer internal constructor(
     ///// Logic concerning executing a block while the network invalidated.
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//    /**
-//     * Executes [block] while the [Network] is invalidated.
-//     *
-//     * If a [NetSimStabilizer] exists in the current
-//     * [CoroutineContext], its invalidation alone is enough.
-//     * This optimization improves performance when the
-//     * context's stabilizer is already invalidated.
-//     *
-//     * @param block To be executed while the [Network] is invalidated.
-//     */
-//    context(CoroutineContext)
-//    suspend fun <T> whileNetInvalidated(block: () -> T): T {
-//        // If a `NetSimStabilizer` in current context.
-//        return this@CoroutineContext[NetSimStabilizer]?.let {
-//            // If the `NetSimStabilizer` is the current one, then
-//            // execute while `this` is invalidated.
-//            if (it === this@NetSimStabilizer) whileInvalidated(block)
-//            // Else execute while the one provided in context is invalidated.
-//            // This may improve performance if the provided one is already invalidated.
-//            else it.whileNetInvalidated(block)
-//        // If no `NetSimStabilizer` is provided in context, then
-//        // execute while `this` is invalidated.
-//        } ?: whileInvalidated(block)
-//    }
-
     /**
      * Executes block while `this` [NetSimStabilizer] is invalidated,
      * which implies the [Network] is also invalidated.

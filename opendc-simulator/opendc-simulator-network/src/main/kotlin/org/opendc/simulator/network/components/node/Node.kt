@@ -9,7 +9,7 @@ import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
@@ -44,7 +44,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     /**
      * Policy that determines to which [Port]s the flowsById are forwarded to.
      */
-    var routingPolicy: RoutingPolicy
+    var routPolicy: RoutPolicy
 
     /**
      * Policy that determines how the flowsById data are handled in case of maximum bw reached.

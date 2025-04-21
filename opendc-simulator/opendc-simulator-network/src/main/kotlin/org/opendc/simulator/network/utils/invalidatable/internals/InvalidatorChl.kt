@@ -9,13 +9,15 @@ import kotlinx.coroutines.sync.withLock
 
 /**
  * TODO
+ * @property receiver If defined, it is considered the only component that receives from this channel as an [Invalidatable] component,
+ * and invalidation logic is run to ensure network stability consistency.
  */
 internal open class InvalidatorChl<T> private constructor(
     private val delegatedChl: Channel<T>,
-    private val receiver: Invalidatable
+    private val receiver: Invalidatable? = null
 ): Channel<T> by delegatedChl {
 
-    constructor(receiver: Invalidatable) :
+    constructor(receiver: Invalidatable? = null) :
         this(delegatedChl = Channel<T>(Channel.UNLIMITED), receiver = receiver)
 
     /**
@@ -46,22 +48,15 @@ internal open class InvalidatorChl<T> private constructor(
     )
     override fun tryReceive(): ChannelResult<T> = throw UnsupportedOperationException()
 
-    suspend fun bo() {
-        select<Unit> {
-            delegatedChl.onReceive {
-
-            }
-
-        }
-    }
-
     /**
      * This override also works when [onReceive] is used, since [onReceive]
      * is called only once when the method will succeed.
      */
     override suspend fun receive(): T {
-        pendingMtx.withLock {
-            if (--pending == 0) receiver.validate()
+        receiver?.let { receiver ->
+            pendingMtx.withLock {
+                if (--pending == 0) receiver.validate()
+            }
         }
 
         return delegatedChl.receive().also {
@@ -70,8 +65,10 @@ internal open class InvalidatorChl<T> private constructor(
     }
 
     override suspend fun send(element: T) {
-        pendingMtx.withLock {
-            if (++pending == 1) receiver.invalidate()
+        receiver?.let { receiver ->
+            pendingMtx.withLock {
+                if (++pending == 1) receiver.invalidate()
+            }
         }
 
         delegatedChl.send(element)

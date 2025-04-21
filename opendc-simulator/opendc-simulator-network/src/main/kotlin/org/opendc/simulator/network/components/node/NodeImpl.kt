@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.node
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.coroutineScope
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
@@ -19,7 +21,6 @@ import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.shareRoutingVect
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
-import org.opendc.simulator.network.simscope.NetSimScope.Companion.scopeLaunch
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
@@ -38,7 +39,12 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     override var job: Job? = null
 
     override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {
-        require(deltaRate.approx(DataRate.zero).not())
+        assert(deltaRate.approx(DataRate.zero).not())
+
+        //TODO: remove
+        if (netF.id.value == 33L && this == netF.senderNode) {
+            println("msgAsyncRxUpdt(${deltaRate})")
+        }
 
         val msg = rxUpdateDisp.acquire().reset()
         msg.deltaRate = deltaRate
@@ -120,8 +126,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     // Launchable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    context(NetSimScope) override fun netLaunch(): Job {
-        job = this@NetSimScope.scopeLaunch {
+    context(NetSimScope) override fun netLaunch(scope: CoroutineScope): Job {
+        job = scope.launch {
             ports.forEach { it.netLaunch() }
 
             while (isActive) {
@@ -134,6 +140,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                 _notificationChl.receive().handle()
             }
         }
+        assert(this.stabilizer.isValidated.not())
+
         return job!!
     }
 

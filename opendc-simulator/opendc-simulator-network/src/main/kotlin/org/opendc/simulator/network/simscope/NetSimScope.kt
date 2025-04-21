@@ -2,9 +2,7 @@ package org.opendc.simulator.network.simscope
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.logger.logger
@@ -20,7 +18,8 @@ internal class NetSimScope(
     override var coroutineContext: CoroutineContext = EmptyCoroutineContext,
 ) : CoroutineScope {
 
-    var ctx: CoroutineContext = coroutineContext
+    val ctx: CoroutineContext get() = coroutineContext
+
     val config: NetSimConfig
     val barrier: NetSimBarrier
     val devConfig: NetSimDevConfig
@@ -37,33 +36,33 @@ internal class NetSimScope(
     val netFlowVersion: NetFlowVersion
 
     init {
-        ctx = coroutineContext
+        var tmpCtx = coroutineContext
         runBlocking {
-            ctx[Job] ?: let { ctx += Job() }
-            ctx[NetSimConfig] ?: let { ctx += NetSimConfig.DEFAULT }
-            ctx[NetSimBarrier] ?: let {
-                ctx +=  NetSimBarrier(ctx[NetSimConfig]!!)
+            tmpCtx[Job] ?: let { tmpCtx += Job() }
+            tmpCtx[NetSimConfig] ?: let { tmpCtx += NetSimConfig() }
+            tmpCtx[NetSimBarrier] ?: let {
+                tmpCtx +=  NetSimBarrier(tmpCtx[NetSimConfig]!!)
             }
-            ctx[NetSimPoolAggregator] ?: let {
-                ctx += NetSimPoolAggregator(
-                    ctx[NetSimConfig]!!
+            tmpCtx[NetSimPoolAggregator] ?: let {
+                tmpCtx += NetSimPoolAggregator(
+                    tmpCtx[NetSimConfig]!!
                         .netSimDevConfig
                         .flyWeightConfig
                         .nSubPools
                 )
             }
-            ctx[NetSimIdDispenser] ?: let { ctx += NetSimIdDispenser() }
-            ctx[NetSimTmSrc] ?: let { ctx += NetSimTmSrc.Internal() }
-            ctx[NetSimEnRecorder] ?: let { ctx += NetSimEnRecorder(ctx[NetSimTmSrc]!!) }
+            tmpCtx[NetSimIdDispenser] ?: let { tmpCtx += NetSimIdDispenser() }
+            tmpCtx[NetSimTmSrc] ?: let { tmpCtx += NetSimTmSrc.Internal() }
+            tmpCtx[NetSimEnRecorder] ?: let { tmpCtx += NetSimEnRecorder(tmpCtx[NetSimTmSrc]!!) }
         }
-        coroutineContext = ctx
-        config = ctx[NetSimConfig]!!
-        barrier = ctx[NetSimBarrier]!!
+        coroutineContext = tmpCtx
+        config = tmpCtx[NetSimConfig]!!
+        barrier = tmpCtx[NetSimBarrier]!!
         devConfig = config.netSimDevConfig
-        poolAggr = ctx[NetSimPoolAggregator]!!
-        idDispenser = ctx[NetSimIdDispenser]!!
-        tmSrc = ctx[NetSimTmSrc]!!
-        enRecorder = ctx[NetSimEnRecorder]!!
+        poolAggr = tmpCtx[NetSimPoolAggregator]!!
+        idDispenser = tmpCtx[NetSimIdDispenser]!!
+        tmSrc = tmpCtx[NetSimTmSrc]!!
+        enRecorder = tmpCtx[NetSimEnRecorder]!!
 
         portVersion = devConfig.portConfig.version
         nodeVersion = devConfig.nodeConfig.version
@@ -123,18 +122,6 @@ internal class NetSimScope(
 //            val coroutine = object : Abstrac    StandaloneCoroutine(newContext, active = true)
 //            coroutine.start(start, coroutine, block)
 //            return coroutine
-        }
-
-        internal fun NetSimScope.scopeLaunch(
-            block: suspend NetSimScope.() -> Unit
-        ): Job = launch(ctx) {
-            block()
-        }
-
-        internal fun <T> NetSimScope.scopeAsync(
-            block: suspend NetSimScope.() -> T
-        ): Deferred<T> = async(ctx) {
-            block()
         }
     }
 }

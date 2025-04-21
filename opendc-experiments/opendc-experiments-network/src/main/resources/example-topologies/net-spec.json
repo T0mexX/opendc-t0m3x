@@ -3,8 +3,7 @@
     "switchSpecs": {
         "nPorts": 6,
         "portSpeed": "1Gbps",
-        "fairnessPolicy": { "type": "fcfs" },
-        "portSelectionPolicy": { "type": "ospf" }
+        "fairnessPolicy": { "type": "fcfs" }
     },
     "hostNodeSpecs": {
         "nPorts": 1,

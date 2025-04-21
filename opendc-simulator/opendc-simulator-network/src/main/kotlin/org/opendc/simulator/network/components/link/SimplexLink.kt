@@ -8,6 +8,7 @@ import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.flow.internals.INetFlow
+import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
@@ -38,11 +39,16 @@ internal class SimplexLink(
         }
     }
 
+    /**
+     * TODO
+     * context to force method to be invoked in fariness policy phase.
+     */
+    context(FairnessPolicy)
     override suspend fun releaseBw(bw: DataRate, netF: INetFlow) = mtx.withLock {
         require(bw approxSmallerOrEq  usedBw && bw > DataRate.zero) {"$bw $usedBw"}
 
         usedBw = (usedBw - bw).roundToIfWithinEpsilon(DataRate.zero)
-//        receiverPort.owner.msgAsyncRxUpdt(-bw, netF)
+        receiverPort.owner.msgAsyncRxUpdt(-bw, netF)
     }
 
     override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {

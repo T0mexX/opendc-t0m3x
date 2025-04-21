@@ -31,6 +31,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.simulator.network.api.NetSimExp
+import org.opendc.simulator.network.utils.NETWORK_SERIALIZERS_MODULE
 import java.io.File
 
 /**
@@ -51,7 +52,8 @@ internal class NetScenarioCmd : CliktCommand(name = "scenario") {
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
-        val exp: NetSimExp = Json.decodeFromStream(expPath.inputStream())
+        val exp: NetSimExp = Json { serializersModule = NETWORK_SERIALIZERS_MODULE }
+            .decodeFromStream(expPath.inputStream())
 
         runBlocking {
             val runner = exp.runner()

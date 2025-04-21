@@ -11,8 +11,8 @@ import org.opendc.simulator.network.components.port.PortConfig
 import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
-import org.opendc.simulator.network.policies.forwarding.ECMP
-import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
+import org.opendc.simulator.network.policies.routing.ECMP
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 
 @Serializable
 internal data class NodeConfig(
@@ -25,7 +25,6 @@ internal data class NodeConfig(
     val defaultNPorts: Int? = null,
     val defaultPortSpeed: DataRate? = null,
     val defaultFairnessPolicy: FairnessPolicy = FirstComeFirstServed,
-    val defaultRoutingPolicy: RoutingPolicy = ECMP,
 ) {
     val defaultEnModel: EnModel<Node<*>> get() =
         throw IllegalStateException("No default generic node energy model")

@@ -8,7 +8,7 @@ import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
@@ -17,7 +17,7 @@ internal open class Switch protected constructor(
     override val portSpeed: DataRate,
     override val nPorts: Int,
     override var fairnessPolicy: FairnessPolicy,
-    override var routingPolicy: RoutingPolicy,
+    override var routPolicy: RoutPolicy,
     override val enModel: EnModel<Switch>,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
@@ -31,7 +31,6 @@ internal open class Switch protected constructor(
             portSpeed = portSpeed,
             nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
-            portSelectionPolicy = routingPolicy,
         )
 
     companion object {
@@ -41,7 +40,6 @@ internal open class Switch protected constructor(
             portSpeed: DataRate? = null,
             nPorts: Int? = null,
             fairnessPolicy: FairnessPolicy? = null,
-            portSelectionPolicy: RoutingPolicy? = null,
             enModel: EnModel<Switch>? = null,
         ): Switch {
             val nodeConfig = devConfig.nodeConfig
@@ -57,9 +55,7 @@ internal open class Switch protected constructor(
                 fairnessPolicy = fairnessPolicy
                     ?: switchConfig.defaultFairnessPolicy
                     ?: nodeConfig.defaultFairnessPolicy,
-                routingPolicy = portSelectionPolicy
-                    ?: switchConfig.defaultRoutingPolicy
-                    ?: nodeConfig.defaultRoutingPolicy,
+                routPolicy = this@NetSimScope.config.routPolicy,
                 enModel = enModel
                     ?:switchConfig.defaultEnModel
                     ?:nodeConfig.defaultEnModel,

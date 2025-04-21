@@ -8,23 +8,28 @@ import org.opendc.simulator.network.components.node.CoreSwitch
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.specs.CustomNetworkSpecs
 import org.opendc.simulator.network.components.specs.Specs
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NonSerializable
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal class CustomNetwork private constructor(
+    override val routPolicy: RoutPolicy,
     nodes: Collection<Node<*>>,
     override val internet: Internet,
 ): NetworkImpl() {
 
     override val _nodesById: MutableMap<NodeId, Node<*>> = nodes.associateBy { it.id }.toMutableMap()
+    override val _nodeLs: MutableList<Node<*>> = ArrayList(_nodesById.values)
+
+
     override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
         getNodesById<SenderNode<*>>().toMutableMap()
 
     // TODO: do not crash when error for REPL
     context(NetSimScope)
-    suspend operator fun plus(node: Node<*>) {
+    suspend operator fun plus(node: Node<*>) = barrier.whileStable {
         require(node.id != internet.id)
         require(node.id !in nodesById)
 
@@ -35,7 +40,7 @@ internal class CustomNetwork private constructor(
     }
 
     context(NetSimScope)
-    suspend fun minus(nodeId: NodeId) {
+    suspend fun minus(nodeId: NodeId) = barrier.whileStable {
         require(nodeId in nodesById)
 
         val n: Node<*> = _nodesById.remove(nodeId)!!
@@ -102,6 +107,7 @@ internal class CustomNetwork private constructor(
         context(NetSimScope)
         suspend operator fun invoke(nodes: Collection<Node<*>> = emptyList()): CustomNetwork =
             CustomNetwork(
+                routPolicy = this@NetSimScope.config.routPolicy,
                 nodes = nodes,
                 internet = Internet(),
             ).also { net ->
@@ -109,6 +115,6 @@ internal class CustomNetwork private constructor(
                 net.internet.netLaunch()
                 net.getNodesById<CoreSwitch>().values.forEach { cs -> cs.connectTo(net.internet) }
                 registerNetwork(net)
-            }
+            }.also { this@NetSimScope.config.routPolicy.setUp() }
     }
 }

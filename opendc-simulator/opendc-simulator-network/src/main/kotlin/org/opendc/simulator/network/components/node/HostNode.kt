@@ -7,7 +7,7 @@ import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
 import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.forwarding.RoutingPolicy
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
@@ -19,7 +19,7 @@ internal class HostNode private constructor(
     override val portSpeed: DataRate,
     override val nPorts: Int,
     override var fairnessPolicy: FairnessPolicy,
-    override var routingPolicy: RoutingPolicy,
+    override var routPolicy: RoutPolicy,
     override var enModel: EnModel<HostNode>,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
@@ -37,7 +37,6 @@ internal class HostNode private constructor(
             portSpeed = portSpeed,
             nPorts = nPorts,
             fairnessPolicy = fairnessPolicy,
-            portSelectionPolicy = routingPolicy,
         )
 
     companion object {
@@ -47,7 +46,6 @@ internal class HostNode private constructor(
             portSpeed: DataRate? = null,
             nPorts: Int? = null,
             fairnessPolicy: FairnessPolicy? = null,
-            portSelectionPolicy: RoutingPolicy? = null,
             enModel: EnModel<HostNode>? = null,
         ): HostNode {
             val nodeConfig = devConfig.nodeConfig
@@ -63,9 +61,7 @@ internal class HostNode private constructor(
                 fairnessPolicy = fairnessPolicy
                     ?: hostConfig.defaultFairnessPolicy
                     ?: nodeConfig.defaultFairnessPolicy,
-                routingPolicy = portSelectionPolicy
-                    ?: hostConfig.defaultRoutingPolicy
-                    ?: nodeConfig.defaultRoutingPolicy,
+                routPolicy = this@NetSimScope.config.routPolicy,
                 enModel = enModel
                     ?:hostConfig.defaultEnModel
                     ?:nodeConfig.defaultEnModel,
