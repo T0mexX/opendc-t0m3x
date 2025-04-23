@@ -2,6 +2,7 @@ package org.opendc.simulator.network.policies.routing
 
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 
 /**
@@ -12,16 +13,16 @@ import org.opendc.simulator.network.flow.publics.NetFlow
  * to forward flow [f) to, according to this [RoutPath].
  */
 internal data class RoutPath(
-    private val f: NetFlow,
-    private val nextHops: Map<Node<*>, Set<Port>>
-) : Map<Node<*>, Set<Port>> by nextHops {
+    val f: INetFlow,
+    private val nextHops: MutableMap<Node<*>, MutableSet<Port>>
+) : MutableMap<Node<*>, MutableSet<Port>> by nextHops {
     companion object {
-        suspend operator fun invoke(f: NetFlow, block: suspend MutableMap<Node<*>, Set<Port>>.() -> Unit): RoutPath =
+        suspend operator fun invoke(f: INetFlow, block: suspend MutableMap<Node<*>, MutableSet<Port>>.() -> Unit): RoutPath =
             RoutPath(
                 f,
                 buildMap {
                     block()
-                }
+                }.toMutableMap()
             )
     }
 }

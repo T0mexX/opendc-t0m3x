@@ -10,6 +10,7 @@ import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import kotlin.coroutines.CoroutineContext
@@ -28,6 +29,7 @@ internal class NetSimScope(
     val idDispenser: NetSimIdDispenser
     val enRecorder: NetSimEnRecorder
     val tmSrc: NetSimTmSrc<*>
+    val routPolicy: RoutPolicy
     val log by logger()
     val net: Network get() = _net
     private lateinit var _net: Network
@@ -55,6 +57,7 @@ internal class NetSimScope(
             tmpCtx[NetSimIdDispenser] ?: let { tmpCtx += NetSimIdDispenser() }
             tmpCtx[NetSimTmSrc] ?: let { tmpCtx += NetSimTmSrc.Internal() }
             tmpCtx[NetSimEnRecorder] ?: let { tmpCtx += NetSimEnRecorder(tmpCtx[NetSimTmSrc]!!) }
+            tmpCtx[RoutPolicy] ?: let { tmpCtx += tmpCtx[NetSimConfig]!!.routPolicy }
         }
         coroutineContext = tmpCtx
         config = tmpCtx[NetSimConfig]!!
@@ -64,6 +67,7 @@ internal class NetSimScope(
         idDispenser = tmpCtx[NetSimIdDispenser]!!
         tmSrc = tmpCtx[NetSimTmSrc]!!
         enRecorder = tmpCtx[NetSimEnRecorder]!!
+        routPolicy = tmpCtx[RoutPolicy]!!
 
         portVersion = devConfig.portConfig.version
         nodeVersion = devConfig.nodeConfig.version

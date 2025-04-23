@@ -60,7 +60,8 @@ internal class PortV1 private constructor(
     }
 
     override fun getTxTput(entryId: IntId): DataRate {
-//        _state.first { it == Port.STABLE }
+        assert(stabilizer.isValidated)
+
         return entries[entryId].tput
     }
 

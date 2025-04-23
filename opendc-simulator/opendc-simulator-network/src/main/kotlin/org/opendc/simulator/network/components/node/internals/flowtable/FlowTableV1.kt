@@ -94,7 +94,8 @@ internal class FlowTableV1 private constructor(
         entry.node = this@Node
         entry.netFlow = updt.netF
         entry.txPorts.clear()
-        this@Node.routPolicy.selectPorts(entry)
+        if (entry.netFlow.destId != this@Node.id)
+            this@Node.routPolicy.selectPorts(entry)
         return entry
     }
 

@@ -1,30 +1,29 @@
 package org.opendc.simulator.network.policies.routing
 
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.serialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
+import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
-import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
-import org.opendc.simulator.network.simscope.NetSimConfig
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NonSerializable
-import javax.naming.OperationNotSupportedException
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
 /**
  * TODO
  */
+@Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = NonSerializable::class)
 @Polymorphic
 internal sealed class RoutPolicy: AbstractCoroutineContextElement(Key) {
+    /**
+     * Determines which core switches flows coming from [Internet] will be routed to.
+     */
+    abstract val internetRoutPolicy: RoutPolicy
 
     /**
      * Selects the ports to forward [nodeFlowEntry]'s [NetFlow] to,
@@ -45,7 +44,7 @@ internal sealed class RoutPolicy: AbstractCoroutineContextElement(Key) {
      * This method needs to be invoked by the [NetSimScope] main job.
      */
     context(NetSimScope)
-    internal open suspend fun onFlowStarted(f: NetFlow) { /* NoOps */ }
+    internal open suspend fun onFlowStart(f: INetFlow) { /* NoOps */ }
 
     /**
      * It performs necessary actions so that all resources associated with the flow routing are freed.
@@ -53,7 +52,7 @@ internal sealed class RoutPolicy: AbstractCoroutineContextElement(Key) {
      * This method needs to be invoked by the [NetSimScope] main job.
      */
     context(NetSimScope)
-    internal open suspend fun onFlowStopped(f: NetFlow) { /* NoOps */ }
+    internal open suspend fun onFlowStop(f: INetFlow) { /* NoOps */ }
 
     /**
      * It performs the necessary updates due to node addition.

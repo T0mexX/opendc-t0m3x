@@ -10,6 +10,8 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("olpf")
 internal data object OLPF: RoutPolicy() {
+    override val internetRoutPolicy: RoutPolicy = ECMP()
+
     context(NetSimScope, Node<*>)
     override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
         val f = nodeFlowEntry.netFlow

@@ -6,6 +6,6 @@
             "exportInterval": "5min",
             "outputFolder": "output/ignored/tobedel"
         },
-        "routingPolicy": { "type":  "ospf" }
+        "routingPolicy": { "type":  "val" }
     }
 }

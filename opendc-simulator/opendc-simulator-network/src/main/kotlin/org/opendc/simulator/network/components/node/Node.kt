@@ -44,7 +44,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     /**
      * Policy that determines to which [Port]s the flowsById are forwarded to.
      */
-    var routPolicy: RoutPolicy
+    val routPolicy: RoutPolicy
 
     /**
      * Policy that determines how the flowsById data are handled in case of maximum bw reached.

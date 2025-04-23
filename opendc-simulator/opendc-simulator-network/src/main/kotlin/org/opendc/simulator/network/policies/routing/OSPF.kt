@@ -11,6 +11,8 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("ospf")
 internal class OSPF: RoutPolicy() {
+    override val internetRoutPolicy: RoutPolicy = ECMP()
+
     context(NetSimScope, Node<*>) override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
         val f = nodeFlowEntry.netFlow
         assert(nodeFlowEntry.txPorts.isEmpty())

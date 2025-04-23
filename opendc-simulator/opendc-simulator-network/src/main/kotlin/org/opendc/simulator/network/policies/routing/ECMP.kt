@@ -17,6 +17,8 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("ecmp")
 internal class ECMP : RoutPolicy() {
+    override val internetRoutPolicy: RoutPolicy = this
+
     context(NetSimScope, Node<*>)
     override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
         val f = nodeFlowEntry.netFlow

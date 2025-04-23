@@ -8,6 +8,7 @@ import org.opendc.simulator.network.components.node.CoreSwitch
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
+import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
@@ -38,12 +39,16 @@ internal abstract class NetworkImpl : Network {
 
     context(NetSimScope)
     override suspend fun startFlow(f: INetFlow) {
+        ctx[RoutPolicy]?.onFlowStart(f)
+
         sendNodesById[f.senderId]!!.startFlow(f)
         _flows += f.id to f
     }
 
     context(NetSimScope)
     override suspend fun stopFlow(f: INetFlow) {
+        ctx[RoutPolicy]?.onFlowStop(f)
+
         sendNodesById[f.senderId]!!.stopFlow(f)
         _flows -= f.id
     }

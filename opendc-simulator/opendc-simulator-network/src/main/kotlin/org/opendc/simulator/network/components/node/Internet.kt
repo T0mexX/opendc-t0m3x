@@ -19,12 +19,12 @@ import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 internal class Internet(
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
+    override val routPolicy: RoutPolicy,
 ): SenderNode<Internet>(INTERNET_ID), SerializableNode {
 
     override val portSpeed: DataRate = DataRate.max
     override var nPorts: Int = 0
     override var fairnessPolicy: FairnessPolicy = FirstComeFirstServed
-    override var routPolicy: RoutPolicy = ECMP()
 
     override val ports: List<Port> get() = _ports
     private val _ports: MutableList<Port> = mutableListOf()
@@ -57,6 +57,7 @@ internal class Internet(
             Internet(
                 flowTable = devConfig.nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer(),
+                routPolicy = config.routPolicy.internetRoutPolicy
             ).also {
                 it.invalidate()
             }
