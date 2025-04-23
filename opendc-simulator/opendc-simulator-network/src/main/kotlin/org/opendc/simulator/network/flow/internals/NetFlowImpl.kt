@@ -46,11 +46,6 @@ internal class NetFlowImpl private constructor(
     override suspend fun setDemand(demand: DataRate) {
         assert(demand >= DataRate.zero)
 
-        //TODO: remove
-        if (id.value == 33L) {
-            println("setDemand(${demand})")
-        }
-
         val msg = setDemandDisp.acquire().reset()
         msg.newDemand = demand
         msg.sendTo(this)
@@ -58,11 +53,6 @@ internal class NetFlowImpl private constructor(
 
     override suspend fun setThroughput(newThroughput: DataRate) {
         assert(newThroughput >= DataRate.zero)
-
-        //TODO: remove
-        if (id.value == 33L) {
-            println("setTput(${newThroughput})")
-        }
 
         val msg = setTputDisp.acquire().reset()
         msg.newThroughput = newThroughput.roundToIfWithinEpsilon(demand, epsilon = 1e-3)
@@ -99,9 +89,6 @@ internal class NetFlowImpl private constructor(
     private val _notificationChl: Channel<Msg<INetFlow, *>> = InvalidatorChl(this)
     override val msgChl: SendChannel<Msg<INetFlow, *>> = _notificationChl
 
-    private val _priorityNotificationChl: Channel<Msg<INetFlow, *>> = InvalidatorChl(this)
-    override val priorityMsgChl: SendChannel<Msg<INetFlow, *>> = _priorityNotificationChl
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Other
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,7 +114,7 @@ internal class NetFlowImpl private constructor(
             id = id ?: idDispenser.getFlowId(),
             demand = demand,
             stabilizer = barrier.stabilizer(),
-        )
+        ).also { it.invalidate() }
 
         override val setDemandDisp: FWDispenser<INetFlow.SetDemand> get() = _setDemandDisp
         private lateinit var _setDemandDisp: FWDispenser<INetFlow.SetDemand>

@@ -67,14 +67,6 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
      * TODO
      */
     context(NetSimScope)
-    suspend fun launchNodes() {
-        nodesById.values.forEach { with (it) { netLaunch() } }
-    }
-
-    /**
-     * TODO
-     */
-    context(NetSimScope)
     suspend fun startFlow(f: INetFlow)
 
     /**

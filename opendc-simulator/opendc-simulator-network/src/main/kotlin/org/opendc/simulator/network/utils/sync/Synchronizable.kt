@@ -21,7 +21,8 @@ internal interface Synchronizable<Self: Synchronizable<Self>> {
 
     /**
      * TODO
+     * TODO: mayne add config sync accuracy/granularity
      */
     context(NetSimScope)
-    suspend fun isSync(): Boolean = lastSync approx tmSrc.tmstamp
+    suspend fun isSync(): Boolean = lastSync.approx(tmSrc.tmstamp, epsilon = 1.0) // 1ms epsilon.
 }

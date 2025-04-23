@@ -25,11 +25,6 @@ internal interface Msg<in T, Self: Msg<T, Self>>: IFW<Self>
     /**
      * TODO
      */
-    suspend fun sendToPrioritized(to: T, dispose: Boolean = true): Self
-
-    /**
-     * TODO
-     */
     suspend fun reset(): Self
 
     enum class State {

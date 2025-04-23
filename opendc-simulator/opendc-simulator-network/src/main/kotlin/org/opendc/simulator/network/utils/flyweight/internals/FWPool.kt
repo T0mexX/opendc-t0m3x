@@ -32,12 +32,12 @@ internal class FWPool<out T: FW<T>, out O: FWId<T>>(
                 .getOrNull()
                 ?: objConstructor(this, idx)
                     // TODO: remove
-                    .also {
-                        mtx.withLock {
-                            bo++
+//                    .also {
+//                        mtx.withLock {
+//                            bo++
 //                            println(it::class.java.interfaces.toList().toString() + " n=$bo")
-                        }
-                    }
+//                        }
+//                    }
         }
     }
 

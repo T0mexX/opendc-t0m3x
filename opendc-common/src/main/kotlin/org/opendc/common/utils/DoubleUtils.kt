@@ -144,7 +144,7 @@ public fun Double.approxSmaller(
  */
 @JvmSynthetic
 @JvmName("approxSmaller, jvm name to avoid same jvm signature (not invokable from java)")
-public infix fun Double.approxSmaller(other: Double): Boolean = this.approxLarger(other, epsilon = DFLT_EPS_MULTIPLIER)
+public infix fun Double.approxSmaller(other: Double): Boolean = this.approxSmaller(other, epsilon = DFLT_EPS_MULTIPLIER)
 
 /**
  * Compares [this] with [other] using threshold comparison method with epsilon = [epsilon].

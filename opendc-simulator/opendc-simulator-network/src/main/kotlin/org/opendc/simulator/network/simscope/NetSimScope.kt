@@ -11,6 +11,7 @@ import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
+import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -97,7 +98,10 @@ internal class NetSimScope(
      * TODO
      */
     internal suspend fun sync(forceUpdt: Boolean = false) {
-        enRecorder.sync(forceUpdt)
+        barrier.awaitStability()
+        barrier.whileStable(NetSimStabilityMode.CHECKED) {
+            enRecorder.sync(forceUpdt)
+        }
         // TODO: net.sync
     }
 

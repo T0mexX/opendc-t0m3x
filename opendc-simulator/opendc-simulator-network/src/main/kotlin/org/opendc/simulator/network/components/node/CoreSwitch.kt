@@ -65,6 +65,7 @@ internal class CoreSwitch private constructor(
                 stabilizer = barrier.stabilizer()
             ).also { cs ->
                 cs.ports = 0.rangeUntil(cs.nPorts).map { idx -> nodeConfig.portConfig.version(cs, idx) }
+                cs.invalidate()
             }
         }
     }

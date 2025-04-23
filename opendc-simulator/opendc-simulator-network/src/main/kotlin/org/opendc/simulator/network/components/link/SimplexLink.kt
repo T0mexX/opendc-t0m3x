@@ -29,6 +29,8 @@ internal class SimplexLink(
     }
 
     override suspend fun claimBw(bw: DataRate): DataRate = mtx.withLock {
+        assert(bw != DataRate.zero)
+
         val available: DataRate = maxBw - usedBw
         return if (bw > available) {
             usedBw = maxBw
@@ -45,9 +47,11 @@ internal class SimplexLink(
      */
     context(FairnessPolicy)
     override suspend fun releaseBw(bw: DataRate, netF: INetFlow) = mtx.withLock {
-        require(bw approxSmallerOrEq  usedBw && bw > DataRate.zero) {"$bw $usedBw"}
+        assert(bw approxSmallerOrEq usedBw && bw > DataRate.zero) {"${bw.value} ${usedBw.value}"}
 
-        usedBw = (usedBw - bw).roundToIfWithinEpsilon(DataRate.zero)
+        if (bw.approx(DataRate.zero, epsilon = 1.0)) return@withLock
+
+        usedBw = (usedBw - bw).roundToIfWithinEpsilon(DataRate.zero, epsilon = 1.0)
         receiverPort.owner.msgAsyncRxUpdt(-bw, netF)
     }
 

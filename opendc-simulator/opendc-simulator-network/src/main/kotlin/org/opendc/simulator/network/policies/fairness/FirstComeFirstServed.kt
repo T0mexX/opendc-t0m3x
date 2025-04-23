@@ -28,13 +28,13 @@ internal data object FirstComeFirstServed : FairnessPolicy {
                 if (it.used.not()) return@onEach
                 val increaseBy = it.demand - it.tput
                 assert(increaseBy >= DataRate.zero) { increaseBy.value }
-                if(increaseBy approx DataRate.zero) return@onEach
+                if (increaseBy approx  DataRate.zero) return@onEach
                 val claimedBw = l.claimBw(increaseBy)
-                if (claimedBw approx DataRate.zero) return@onEach
-                it.tput = (it.tput + claimedBw).roundToIfWithinEpsilon(it.demand)
+                if (claimedBw approx  DataRate.zero) return@onEach
+                it.tput = (it.tput + claimedBw).roundToIfWithinEpsilon(it.demand, epsilon = 1.0)
                 assert(it.tput <= it.demand)
                 l.msgAsyncRxUpdt(deltaRate = claimedBw, it.netF)
-            }.launchIn(this)
+            }.launchIn(this@coroutineScope)
         }
     }
 }

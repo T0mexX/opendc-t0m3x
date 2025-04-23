@@ -67,6 +67,7 @@ internal open class Switch protected constructor(
                         nodeConfig.portConfig.version(s, idx)
                     }
                 }
+                s.invalidate()
             }
         }
     }

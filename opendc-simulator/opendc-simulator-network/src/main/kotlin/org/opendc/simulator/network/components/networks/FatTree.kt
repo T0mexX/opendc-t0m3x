@@ -59,7 +59,7 @@ internal class FatTree private constructor(
              * Ideally, all switches should have the same number of ports.
              * This value has to be even and larger than 2.
              */
-            val k: Int = listOf(coreSpecs, aggrSpecs, torSpecs).minOf { it.build().nPorts } / 2 * 2
+            val k: Int = listOf(coreSpecs, aggrSpecs, torSpecs).minOf { it.nPorts() } / 2 * 2
             require(k % 2 == 0 && k > 2) { "Fat tree can only be built with even-port-number (>2) switches" }
 
             this@NetSimScope.log.info("building fat-tree with k=$k")
@@ -68,7 +68,6 @@ internal class FatTree private constructor(
             val coreSwitchesChunked =
                 buildList {
                     repeat(k * k / 4) {
-                        val cr = coreSpecs.build()
                         add(
                             coreSpecs.buildAsCore(internet)
                         )
@@ -113,10 +112,7 @@ internal class FatTree private constructor(
             torSpecs: SwitchSpecs,
             hostNodeSpecs: HostNodeSpecs,
         ): FatTreePod {
-            val k: Int = listOf(
-                aggrSpecs.build(),
-                torSpecs.build(),
-            ).minOf { it.nPorts }
+            val k: Int = listOf(aggrSpecs,torSpecs).minOf { it.nPorts() }
 
             val hostNodes =
                 buildList {

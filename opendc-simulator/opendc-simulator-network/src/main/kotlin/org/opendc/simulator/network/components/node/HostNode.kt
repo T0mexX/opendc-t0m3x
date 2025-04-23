@@ -69,6 +69,7 @@ internal class HostNode private constructor(
                 stabilizer = barrier.stabilizer()
             ).also { h ->
                 h.ports = 0.rangeUntil(h.nPorts).map { idx -> nodeConfig.portConfig.version(h, idx) }
+                h.invalidate()
             }
         }
     }

@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.utils.tracker
 
+import org.opendc.simulator.network.utils.IntSz
 import java.util.TreeSet
 
 
@@ -15,6 +16,8 @@ internal interface Tracker<T: Trackable<T>> {
      * based on [mode], sorted by the comparator defined in [mode]
      */
     operator fun get(mode: TrackerMode<T>): Iterable<T>
+
+    fun sizeOf(mode: TrackerMode<T>): IntSz
 
     fun remove(item: T)
 
@@ -46,7 +49,7 @@ internal interface Tracker<T: Trackable<T>> {
             override operator fun plus(
                 mode: TrackerMode<T>,
             ) {
-                treesByMode.putIfAbsent(mode, mode.setUp(itemsGetter()))
+                treesByMode.computeIfAbsent(mode) { mode.setUp(itemsGetter())}
             }
 
             override infix operator fun minus(mode: TrackerMode<T>) {
@@ -57,6 +60,8 @@ internal interface Tracker<T: Trackable<T>> {
                 this + mode
                 return treesByMode[mode]!!
             }
+
+            override fun sizeOf(mode: TrackerMode<T>): IntSz = (this[mode] as TreeSet<T>).size
 
             override fun remove(item: T) {
                 treesByMode.values.forEach { treeSet ->

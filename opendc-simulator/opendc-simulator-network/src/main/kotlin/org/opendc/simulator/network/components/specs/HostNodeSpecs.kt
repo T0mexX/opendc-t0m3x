@@ -6,17 +6,35 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 
 @Serializable
 @SerialName("host-node-specs")
 internal data class HostNodeSpecs(
     val id: NodeId? = null,
-    val portSpeed: DataRate? = null,
-    val nPorts: Int? = null,
-    val fairnessPolicy: FairnessPolicy? = null,
-) : Specs<HostNode> {
+    private val portSpeed: DataRate? = null,
+    private val nPorts: Int? = null,
+    private val fairnessPolicy: FairnessPolicy? = null,
+) : NodeSpecs<HostNode> {
+
+    context(NetSimScope)
+    override fun nPorts(): Int =
+        nPorts
+            ?: devConfig.nodeConfig.hostNodeConfig.defaultNPorts
+            ?: devConfig.nodeConfig.defaultNPorts!!
+
+    context(NetSimScope)
+    override fun portSpeed(): DataRate =
+        portSpeed
+            ?: devConfig.nodeConfig.hostNodeConfig.defaultPortSpeed
+            ?: devConfig.nodeConfig.defaultPortSpeed!!
+
+    context(NetSimScope)
+    override fun fairnessPolicy(): FairnessPolicy =
+        fairnessPolicy
+            ?: devConfig.nodeConfig.hostNodeConfig.defaultFairnessPolicy
+            ?: devConfig.nodeConfig.defaultFairnessPolicy
+
     context(NetSimScope)
     override suspend fun build(): HostNode =
         HostNode(

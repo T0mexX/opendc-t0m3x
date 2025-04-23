@@ -32,7 +32,7 @@ internal class FlowTableV1 private constructor(
             new = true
             newEntry(updt)
         }
-        entry.rx = (entry.rx + updt.deltaRate).roundToIfWithinEpsilon(DataRate.zero)
+        entry.rx = (entry.rx + updt.deltaRate).roundToIfWithinEpsilon(DataRate.zero, epsilon = 1.0)
         entry.node = this@Node
         if (updt.netF.destId == this@Node.id) {
             updt.netF.setThroughput(entry.rx)

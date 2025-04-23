@@ -10,9 +10,4 @@ internal interface Msgable<T: Msgable<T>> {
      * TODO
      */
     val msgChl: SendChannel<Msg<T, *>>
-
-    /**
-     * TODO
-     */
-    val priorityMsgChl: SendChannel<Msg<T, *>>
 }

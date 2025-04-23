@@ -54,22 +54,6 @@ internal abstract class MsgImpl<T, Self: Msg<T, Self>> : Msg<T, Self>
     /**
      * TODO
      */
-    final override suspend fun sendToPrioritized(to: T, dispose: Boolean): Self {
-        // If dispose is false, `sender` wants to wait for the msg to be handled;
-        // hence `state` is going to be tracked, and this `msg` is not going to be disposed by the receiver.
-        if (dispose.not()) {
-            sender = coroutineContext
-            state.emit(Msg.State.PENDING)
-        }
-
-        to.priorityMsgChl.send(this)
-        @Suppress("UNCHECKED_CAST")
-        return this as Self
-    }
-
-    /**
-     * TODO
-     */
     override suspend fun reset(): Self {
         state.emit(Msg.State.UNTRACKED)
         sender = null

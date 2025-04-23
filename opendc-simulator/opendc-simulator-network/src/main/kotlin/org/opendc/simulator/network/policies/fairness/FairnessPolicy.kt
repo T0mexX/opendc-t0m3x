@@ -12,6 +12,7 @@ internal sealed interface FairnessPolicy {
     context(Port)
     suspend fun processDemandReductions(entryList: List<PortFlowEntry>) {
         entryList.forEach { entry ->
+            if (entry.used.not()) return@forEach
             if (entry.demand < entry.tput) {
                 this@Port.txLink!!.releaseBw(entry.tput - entry.demand, entry.netF)
                 entry.tput = entry.demand

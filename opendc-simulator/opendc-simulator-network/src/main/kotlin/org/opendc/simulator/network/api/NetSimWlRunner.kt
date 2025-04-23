@@ -64,7 +64,7 @@ public class NetSimWlRunner internal constructor(
 
                     // Execute all network events up until `nextDeadline` timestamp.
                     pb.stepBy(execUntil(nextDeadline))
-                    barrier.awaitStability()
+                    netScope.sync()
 
                     // If export is needed at the reached timestamp then do.
                     exporter?.let { exp ->

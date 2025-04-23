@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -11,6 +12,9 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.yield
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
@@ -36,15 +40,10 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override val routingTable: RoutingTable = RoutingTable(id)
-    override var job: Job? = null
+    override lateinit var job: Job
 
     override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {
-        assert(deltaRate.approx(DataRate.zero).not())
-
-        //TODO: remove
-        if (netF.id.value == 33L && this == netF.senderNode) {
-            println("msgAsyncRxUpdt(${deltaRate})")
-        }
+        assert(deltaRate.approx(DataRate.zero).not()) {deltaRate}
 
         val msg = rxUpdateDisp.acquire().reset()
         msg.deltaRate = deltaRate
@@ -88,17 +87,22 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
      */
     context(NetSimScope)
     protected suspend fun portProcessAwait() {
+        var bo: Int = 0
+        val mtx = Mutex()
         coroutineScope {
             ports.asFlow().onEach { p ->
                 portVersion
                     .startProcessingDisp
                     .acquire()
                     .reset()
-                    .sendToPrioritized(p, dispose = false)
+                    .sendTo(p, dispose = false)
                     .awaitHandling()
                     .dispose()
-            }.launchIn(this)
+                mtx.withLock { bo++ }
+            }.launchIn(this@coroutineScope)
         }
+        assert(bo == ports.size)
+        // TODO:remove
 //        ports.map { p ->
 //            portVersion
 //                .startProcessingDisp
@@ -127,22 +131,23 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     context(NetSimScope) override fun netLaunch(scope: CoroutineScope): Job {
+        assert(::job.isInitialized.not())
+
         job = scope.launch {
             ports.forEach { it.netLaunch() }
 
             while (isActive) {
                 while (true) {
-//                _notificationChl.receive().handle()
-                    _notificationChl.tryReceiveValidate().getOrNull()?.handle()
+                    _msgChl.tryReceiveValidate().getOrNull()?.handle()
                         ?: break
                 }
                 portProcessAwait()
-                _notificationChl.receive().handle()
+                _msgChl.receive().handle()
+                assert(stabilizer.isValidated.not())
             }
         }
-        assert(this.stabilizer.isValidated.not())
 
-        return job!!
+        return job
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,13 +155,9 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    override val msgChl: SendChannel<Msg<Node<*>, *>> get() = _notificationChl
+    override val msgChl: SendChannel<Msg<Node<*>, *>> get() = _msgChl
     @Suppress("LeakingThis")
-    private val _notificationChl: InvalidatorChl<Msg<Node<*>, *>> = InvalidatorChl(receiver = this)
-
-    override val priorityMsgChl: SendChannel<Msg<Node<*>, *>> get() = _priorityNotificationChl
-    @Suppress("LeakingThis")
-    private val _priorityNotificationChl: InvalidatorChl<Msg<Node<*>, *>> = InvalidatorChl(receiver = this)
+    private val _msgChl: InvalidatorChl<Msg<Node<*>, *>> = InvalidatorChl(receiver = this)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NodeVersion
@@ -261,7 +262,6 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
             _disconnectDisp =
                 poolAggr.getOrAdd(Node.Disconnect as FWId<Node.Disconnect>) { pool, idx ->
                     val portDisconnectDisp = portVersion.disconnectDisp
-                    val nodeReapplyRoutingDisp = reapplyRoutingDisp
                     object : Node.Disconnect, MsgImpl<Node<*>, Node.Disconnect>() {
                         override val pool = pool
                         override val poolIdx = idx
@@ -275,18 +275,18 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             val portToOther: Port = n.ports.firstOrNull { it.txLink?.receiverPort?.owner === otherN }!!
 
                             if (notifyOther) {
-                                val notif = pool.dispenser().acquire()
-                                notif.other = n
-                                notif.notifyOther = false
-                                other.priorityMsgChl.send(notif)
+                                val msg = pool.dispenser().acquire().reset()
+                                msg.other = n
+                                msg.notifyOther = false
+                                msg.sendTo(other)
                             }
 
-                            val notif = portDisconnectDisp.acquire()
-                            portToOther.priorityMsgChl.send(notif)
+                            val msg = portDisconnectDisp.acquire().reset()
+                            msg.sendTo(portToOther)
 
                             routingTable.removeNextHop(other)
                             shareRoutingVect(exchange = true)
-                            n.priorityMsgChl.send(nodeReapplyRoutingDisp.acquire())
+                            reapplyRoutingDisp.acquire().reset().sendTo(n)
 
                             handled()
                         }
@@ -309,6 +309,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 
                             // Make ports reapply fairness policy
                             n.portProcessAwait()
+
 //                            coroutineScope {
 //                                n.ports.asFlow().onEach { p ->
 //                                    portVersion

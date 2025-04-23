@@ -22,7 +22,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
         object AllByDemand : TrackerMode<NodeFlowEntry> {
             override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> =
                 setOf(NodeFlowEntry.Companion.RxProp)
-            override fun NodeFlowEntry.shouldBeTracked(): Boolean = true
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = rx > DataRate.zero
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int  =
                 rx.tobps().toInt() - other.rx.tobps().toInt()
         }

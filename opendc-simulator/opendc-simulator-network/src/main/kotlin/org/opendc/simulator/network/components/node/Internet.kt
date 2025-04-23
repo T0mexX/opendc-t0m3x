@@ -57,6 +57,8 @@ internal class Internet(
             Internet(
                 flowTable = devConfig.nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer(),
-            )
+            ).also {
+                it.invalidate()
+            }
     }
 }

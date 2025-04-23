@@ -68,24 +68,20 @@ internal class PortV1 private constructor(
     // Launchable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    context(NetSimScope) override fun netLaunch(scope: CoroutineScope): Job = scope.launch {
+    context(NetSimScope) override fun netLaunch(scope: CoroutineScope): Job = launch {
         while (isActive) {
-            select {
-                _priorityMsgChl.onReceive { it.handle() }
-                _msgChl.onReceive { it.handle() }
-            }
+            _msgChl.receive().also {
+                assert(stabilizer.isValidated.not())
+            }.handle()
         }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Notifiable
+    // Msgable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override val msgChl: SendChannel<Msg<Port, *>> get() = _msgChl
     private var _msgChl = InvalidatorChl<Msg<Port, *>>(this)
-
-    override val priorityMsgChl: SendChannel<Msg<Port, *>> get() = _priorityMsgChl
-    private val _priorityMsgChl = InvalidatorChl<Msg<Port, *>>(this)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Stateful
@@ -134,7 +130,7 @@ internal class PortV1 private constructor(
                 portIdx = portIdx,
                 initialCapacity = devConfig.portConfig.initialCapacity,
                 stabilizer = barrier.stabilizer()
-            )
+            ).also { it.invalidate() }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Notifications Dispensers
@@ -168,8 +164,14 @@ internal class PortV1 private constructor(
                             // If port disconnected no processing needed.
                             if (p._state.value == Port.DISCONNECTED) return handled()
 
+                            // Apply fairness policy and propagate updates to the connected node.
                             p._state.emit(Port.PROCESSING)
                             p.owner.fairnessPolicy.applyPolicy(p.entries)
+
+                            // Remove entries with 0 demand after updates propagated to connected node.
+                            p.entries.forEachIndexed { idx, e -> if (e.used && e.demand == DataRate.zero) p.rmEntry(idx)}
+
+                            // Update port state.
                             if (p.freeIdxs.getSize() == p.entries.size) {
                                 p._state.emit(Port.IDLE)
                             } else {
@@ -195,21 +197,14 @@ internal class PortV1 private constructor(
                     override lateinit var netF: INetFlow
 
                     context(Port) override suspend fun handle() {
+                        assert(newDemand >= DataRate.zero)
                         val p = this@Port as PortV1
-
-                        // If new demand is 0 then ignore. If it was an entry remove.
-                        if (newDemand approx DataRate.zero) {
-                            entryId?.let { p.rmEntry(it) }
-                            return handled()
-                        }
 
                         entryId = entryId ?: p.newEntry()
                         val entry = p.entries[entryId!!]
-                        val oldDemand = entry.demand
+                        assert(entry.used)
                         entry.netF = netF
                         entry.demand = newDemand
-                        // TODO remove
-                        assert(newDemand >= DataRate.zero) { newDemand.value }
 
                         handled()
                     }
