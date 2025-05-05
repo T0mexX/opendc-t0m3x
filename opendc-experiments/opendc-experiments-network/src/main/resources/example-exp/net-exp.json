@@ -1,11 +1,11 @@
 {
-    "networkSpecsPath": "resources/example-topologies/net-spec.json",
+    "networkSpecsPath": "resources/example-topologies/dragonfly-spec.json",
     "wlPath": "resources/example-traces/bb_net_wl54.parquet",
     "netSimConfig": {
         "netSimExportConfig": {
             "exportInterval": "5min",
             "outputFolder": "output/ignored/tobedel"
         },
-        "routingPolicy": { "type":  "val" }
+        "routingPolicy": { "type":  "ugal-l" }
     }
 }

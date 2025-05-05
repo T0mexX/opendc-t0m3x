@@ -142,7 +142,7 @@ public class NetWorkload(
 
     public fun fmt(): String =
         """
-        | == NETWORK WORKLOAD ===
+        | === NETWORK WORKLOAD ===
         | start instant: $startInstant
         | end instant: $endInstant
         | duration: ${Duration.ofMillis(endInstant.toEpochMilli() - startInstant.toEpochMilli())}

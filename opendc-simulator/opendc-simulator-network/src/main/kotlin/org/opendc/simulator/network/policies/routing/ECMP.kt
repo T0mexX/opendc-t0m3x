@@ -1,13 +1,10 @@
 package org.opendc.simulator.network.policies.routing
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
-import org.opendc.simulator.network.components.port.Port
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 
 
@@ -24,10 +21,14 @@ internal class ECMP : RoutPolicy() {
         val f = nodeFlowEntry.netFlow
         nodeFlowEntry.txPorts.clear()
 
-        this@Node.routingTable.getPossiblePathsTo(f.destId)
-            .onlyMinimal()
-            .forEach {
-                nodeFlowEntry.txPorts += it.associatedPort()
-            }
+        // Ports the flow will be forwarded to.
+        val txPorts = this@Node.routingTable.getPossiblePathsTo(f.destId).onlyMinimal()
+
+        // Add the tx ports to the `NodeFlowEntry`, with the corresponding
+        // percentage of this flow's data forwarded to those ports.
+        // Each port is assigned an equal share of the total data to send
+        txPorts.forEach {
+            nodeFlowEntry.txPorts[it.associatedPort()] = Percentage.ofRatio(1.0 / txPorts.size)
+        }
     }
 }

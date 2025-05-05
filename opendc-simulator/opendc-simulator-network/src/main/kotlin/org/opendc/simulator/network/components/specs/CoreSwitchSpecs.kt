@@ -5,9 +5,8 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.CoreSwitch
+import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
@@ -20,7 +19,7 @@ internal data class CoreSwitchSpecs(
     private val portSpeed: DataRate? = null,
     private val nPorts: Int? = null,
     private val fairnessPolicy: FairnessPolicy? = null,
-): NodeSpecs<CoreSwitch> {
+): NodeSpecs<GlobalSwitch> {
 
     context(NetSimScope)
     override fun nPorts(): Int =
@@ -44,8 +43,8 @@ internal data class CoreSwitchSpecs(
             ?: devConfig.nodeConfig.defaultFairnessPolicy
 
     context(NetSimScope)
-    override suspend fun build(): CoreSwitch =
-        CoreSwitch(
+    override suspend fun build(): GlobalSwitch =
+        GlobalSwitch(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
@@ -64,7 +63,7 @@ internal data class CoreSwitchSpecs(
      * TODO
      */
     context(NetSimScope)
-    suspend fun buildAsCore(internet: Internet): CoreSwitch =
+    suspend fun buildAsCore(internet: Internet): GlobalSwitch =
         this.copy(
             nPorts = (
                 nPorts
@@ -73,7 +72,6 @@ internal data class CoreSwitchSpecs(
                 ) + 1
         ).build().also {
             it.invalidate()
-            it.netLaunch()
             it.connectTo(internet)
         }
 }

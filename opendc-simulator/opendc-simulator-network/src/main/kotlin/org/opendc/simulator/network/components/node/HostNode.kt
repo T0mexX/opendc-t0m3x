@@ -70,6 +70,7 @@ internal class HostNode private constructor(
             ).also { h ->
                 h.ports = 0.rangeUntil(h.nPorts).map { idx -> nodeConfig.portConfig.version(h, idx) }
                 h.invalidate()
+                h.netLaunch()
             }
         }
     }

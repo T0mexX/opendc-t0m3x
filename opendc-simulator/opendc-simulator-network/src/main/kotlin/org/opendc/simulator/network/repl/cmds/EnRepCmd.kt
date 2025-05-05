@@ -22,12 +22,27 @@
 
 package org.opendc.simulator.network.repl.cmds
 
+import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.arguments.convert
+import com.github.ajalt.clikt.parameters.types.file
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.repl.synthetic.SyntheticWl
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import java.io.File
 
 private const val CMD_STR: String = "energy-report"
 
 internal class EnRepCmd : REPLCmd(name = CMD_STR) {
+    private val synthType: SyntheticWl<*> by argument(
+        help = "",
+    ).convert { str ->
+        // Wrap into JSON object to use built in polymorphic deserialization.
+        Json.decodeFromString("""{ "type": "$str" } """)
+    }
+
+
     override fun aliases(): Map<String, List<String>> =
         mapOf(
             "en-rep" to listOf(CMD_STR),
@@ -36,13 +51,10 @@ internal class EnRepCmd : REPLCmd(name = CMD_STR) {
             "er" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run(): Unit =
-        runBlocking(scope.ctx) {
-            with(scope) {
-                barrier.whileStable(NetSimStabilityMode.ENFORCED) {
-                    sync(forceUpdt = true)
-                    echo(enRecorder.fmt())
-                }
-            }
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+            sync(forceUpdt = true)
+            echo(enRecorder.fmt())
         }
+    }
 }

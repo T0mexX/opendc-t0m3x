@@ -44,21 +44,17 @@ internal class LinkRmCmd : REPLCmd("rm") {
         names = arrayOf("-n", "--nodes", "--nodeids"),
     ).long().multiple().unique().check("nodes must be 2.") { it.size == 2 }
 
-    override fun run(): Unit =
-        runBlocking {
-            scope.barrier.awaitStability()
-            val node1: Node<*>? = net[NodeId(nodeIds.toList()[0])]
-            val node2: Node<*>? = net[NodeId(nodeIds.toList()[1])]
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.awaitStability()
+        val node1: Node<*>? = net[NodeId(nodeIds.toList()[0])]
+        val node2: Node<*>? = net[NodeId(nodeIds.toList()[1])]
 
-            if (node1 == null || node2 == null) {
-                issueMessage("Unable to remove link")
-                return@runBlocking
-            }
-
-            runCatching {
-                node1.disconnectFrom(node2)
-            }.exceptionOrNull()?.let {
-                issueMessage("Unable to remove link")
-            } ?: echo("Link removed successfully")
+        if (node1 == null || node2 == null) {
+            issueMessage("Unable to remove link, invalid ids.")
+            return@execREPLCmdCatching
         }
+
+        node1.disconnectFrom(node2)
+        echo("Link removed successfully")
+    }
 }

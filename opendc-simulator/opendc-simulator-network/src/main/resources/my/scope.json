@@ -1,0 +1,11 @@
+{
+    "netSimConfig": {
+        "routingPolicy": {
+            "type": "ugal-l"
+        },
+        "netSimDevConfig": {
+
+        }
+    },
+    "initialTmStamp": "1970-10-01T15:23:44Z"
+}

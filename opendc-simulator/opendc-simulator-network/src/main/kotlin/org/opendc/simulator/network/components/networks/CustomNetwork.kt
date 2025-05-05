@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.components.node.CoreSwitch
+import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.specs.CustomNetworkSpecs
 import org.opendc.simulator.network.components.specs.Specs
@@ -15,9 +15,8 @@ import org.opendc.simulator.network.utils.NonSerializable
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal class CustomNetwork private constructor(
-    override val routPolicy: RoutPolicy,
     nodes: Collection<Node<*>>,
-    override val internet: Internet,
+    override val inet: Internet,
 ): NetworkImpl() {
 
     override val _nodesById: MutableMap<NodeId, Node<*>> = nodes.associateBy { it.id }.toMutableMap()
@@ -30,13 +29,12 @@ internal class CustomNetwork private constructor(
     // TODO: do not crash when error for REPL
     context(NetSimScope)
     suspend operator fun plus(node: Node<*>) = barrier.whileStable {
-        require(node.id != internet.id)
+        require(node.id != inet.id)
         require(node.id !in nodesById)
 
         _nodesById[node.id] = node
         (node as? SenderNode)?.let { _sendNodesById[it.id] = it }
-        node.netLaunch()
-        (node as? CoreSwitch)?.connectTo(internet)
+        (node as? GlobalSwitch)?.connectTo(inet)
     }
 
     context(NetSimScope)
@@ -105,16 +103,21 @@ internal class CustomNetwork private constructor(
 
     companion object {
         context(NetSimScope)
-        suspend operator fun invoke(nodes: Collection<Node<*>> = emptyList()): CustomNetwork =
-            CustomNetwork(
-                routPolicy = this@NetSimScope.config.routPolicy,
-                nodes = nodes,
-                internet = Internet(),
+        suspend operator fun invoke(nodes: Collection<Node<*>> = emptyList()): CustomNetwork {
+            val inet = Internet()
+
+            return CustomNetwork(
+                nodes = nodes + inet,
+                inet = inet,
             ).also { net ->
-                nodes.forEach { n -> n.netLaunch() }
-                net.internet.netLaunch()
-                net.getNodesById<CoreSwitch>().values.forEach { cs -> cs.connectTo(net.internet) }
-                registerNetwork(net)
-            }.also { this@NetSimScope.config.routPolicy.setUp() }
+                net.getNodesById<GlobalSwitch>().values.forEach { cs -> cs.connectTo(net.inet) }
+
+                // Setup global routing policy if needed.
+                this@NetSimScope.config.routPolicy.setUp()
+
+                // Register the network in the simulation scope.
+                this@NetSimScope.registerNetwork(net)
+            }
+        }
     }
 }

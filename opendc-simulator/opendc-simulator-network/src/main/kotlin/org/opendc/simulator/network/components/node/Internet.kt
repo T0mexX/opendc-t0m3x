@@ -60,6 +60,7 @@ internal class Internet(
                 routPolicy = config.routPolicy.internetRoutPolicy
             ).also {
                 it.invalidate()
+                it.netLaunch()
             }
     }
 }

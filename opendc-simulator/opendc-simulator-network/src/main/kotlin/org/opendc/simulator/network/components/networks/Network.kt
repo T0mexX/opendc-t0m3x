@@ -1,25 +1,21 @@
 package org.opendc.simulator.network.components.networks
 
-import kotlinx.coroutines.Job
 import kotlinx.serialization.Serializable
+import org.opendc.simulator.network.components.node.GlobalSwitch
+import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
+import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
-import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.NonSerializable
-import org.opendc.simulator.network.utils.evntemitter.publics.Evnt
-import org.opendc.simulator.network.utils.evntemitter.publics.EvntEmitter
 import org.opendc.simulator.network.utils.evntemitter.publics.IEvntEmitter
-import org.opendc.simulator.network.utils.flyweight.publics.FWId
-import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
 
 /**
  * TODO
@@ -27,11 +23,6 @@ import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
-    /**
-     * TODO
-     */
-    val routPolicy: RoutPolicy
-
     /**
      * TODO
      */
@@ -56,7 +47,7 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
     /**
      * TODO
      */
-    val internet: Internet
+    val inet: Internet
 
     /**
      * TODO
@@ -86,6 +77,18 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
      */
     context(NetSimScope)
     suspend fun fmtFlows(mode: NetSimStabilityMode = config.stabilityMode): String
+
+    context(NetSimScope)
+    suspend fun fmt(mode: NetSimStabilityMode = config.stabilityMode): String =
+        barrier.whileStable(mode) {
+            """
+                === Network ===
+                | nodes: ${nodeLs.size - 1}
+                | switches: ${getNodesById<Switch>().size}
+                | global switches: ${getNodesById<GlobalSwitch>().size}
+                | hosts: ${getNodesById<HostNode>().size}
+            """.trimIndent()
+        }
 
     companion object {
         /**

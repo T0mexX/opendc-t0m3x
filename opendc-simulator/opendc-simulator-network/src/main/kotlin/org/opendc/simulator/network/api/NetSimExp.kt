@@ -31,7 +31,7 @@ public data class NetSimExp internal constructor(
     public suspend fun runner(): NetSimWlRunner {
         // Create simulation scope.
         val scope = NetSimScope(
-            // Add configurations to scope (including `NetSimDevConfig`.
+            // Add configurations to scope (including `NetSimDevConfig`).
             netSimConfig +
                 // Add an internally managed simulation virtual time source,
                 // starting at the first deadline of the workload.
@@ -44,8 +44,7 @@ public data class NetSimExp internal constructor(
             // Build network in the scope of the simulation,
             // so that all coroutines running the network components
             // are in the simulation scope and can be canceled hierarchically.
-            val net = networkSpecs.build()
-            registerNetwork(net)
+            networkSpecs.build()
         }
 
         return NetSimWlRunner(scope, wl)

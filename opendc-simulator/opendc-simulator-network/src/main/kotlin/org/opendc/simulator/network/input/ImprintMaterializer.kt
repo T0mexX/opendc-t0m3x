@@ -96,7 +96,7 @@ internal class ImprintMaterializer(rqstSchema: MessageType) : RecordMaterializer
 
             override fun end() {
                 check(imprintBuilder.transmitterId != INTERNET_ID || imprintBuilder.destId != INTERNET_ID) {
-                    "either transmitter id or destination id should be defined. Null values are used to represent flow to/from internet"
+                    "either transmitter id or destination id should be defined. Null values are used to represent flow to/from inet"
                 }
             }
         }

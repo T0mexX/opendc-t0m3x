@@ -71,7 +71,7 @@ internal val TRANSMITTER_ID_FIELD =
 
 /**
  * The absence of destination for [NET_TX_FIELD] (transmission) is interpreted
- * as an inter-datacenter transmission (to internet).
+ * as an inter-datacenter transmission (to inet).
  */
 internal val DEST_ID_FIELD =
     Types

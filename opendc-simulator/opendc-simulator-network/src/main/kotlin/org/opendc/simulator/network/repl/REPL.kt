@@ -28,7 +28,6 @@ import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.PrintHelpMessage
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.subcommands
-import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.components.networks.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.AdvTimeCmd
@@ -40,11 +39,13 @@ import org.opendc.simulator.network.repl.cmds.flow.FlowCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowInfoCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowMkCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowRmCmd
+import org.opendc.simulator.network.repl.cmds.flow.FlowSynthWlCmd
 import org.opendc.simulator.network.repl.cmds.flow.FlowUpdtCmd
 import org.opendc.simulator.network.repl.cmds.link.LinkCmd
 import org.opendc.simulator.network.repl.cmds.link.LinkMkCmd
 import org.opendc.simulator.network.repl.cmds.link.LinkRmCmd
 import org.opendc.simulator.network.repl.cmds.network.NetCmd
+import org.opendc.simulator.network.repl.cmds.network.NetInfoCmd
 import org.opendc.simulator.network.repl.cmds.network.NetSnapCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkCmd
@@ -54,7 +55,6 @@ import org.opendc.simulator.network.repl.cmds.node.NodeMkSwitchCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeRmCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeSnapCmd
 import org.opendc.simulator.network.simscope.NetSimScope
-import java.time.Instant
 
 public suspend fun main() {
     val scope = NetSimScope()
@@ -85,16 +85,17 @@ public suspend fun main() {
                 ),
                 AdvTimeCmd(),
                 FlowCmd().subcommands(
-
                     FlowMkCmd(),
                     FlowInfoCmd(),
                     FlowRmCmd(),
                     FlowUpdtCmd(),
+                    FlowSynthWlCmd(),
                 ),
                 EnRepCmd(),
                 ExportCmd(),
                 NetCmd().subcommands(
                     NetSnapCmd(),
+                    NetInfoCmd(),
                 ),
                 ImportCmd(),
                 QuitCmd(),

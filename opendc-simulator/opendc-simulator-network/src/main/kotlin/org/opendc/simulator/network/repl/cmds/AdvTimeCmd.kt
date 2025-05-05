@@ -46,15 +46,11 @@ internal class AdvTimeCmd : REPLCmd(name = CMD_STR) {
             "adv-tm" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run() =
-        runBlocking(scope.ctx) {
-            with(scope) {
-                barrier.whileStable(NetSimStabilityMode.ENFORCED) {
-                    (tmSrc as NetSimTmSrc.Internal).advanceBy(tmDelta)
-                    scope.sync()
-                }
-                echo("| Advanced time by $tmDelta. Time elapsed since start: ${tmSrc.sinceStart}")
-            }
-
+    override fun run() = execREPLCmdCatching {
+        barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+            (tmSrc as NetSimTmSrc.Internal).advanceBy(tmDelta)
+            scope.sync()
         }
+        echo("| Advanced time by $tmDelta. Time elapsed since start: ${tmSrc.sinceStart}")
+    }
 }

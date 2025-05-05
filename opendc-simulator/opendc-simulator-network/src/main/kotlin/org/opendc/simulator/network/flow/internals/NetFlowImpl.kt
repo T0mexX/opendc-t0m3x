@@ -108,13 +108,18 @@ internal class NetFlowImpl private constructor(
             destId: NodeId,
             id: FlowId?,
             demand: DataRate,
-        ): NetFlowImpl = NetFlowImpl(
-            senderId = senderId,
-            destId = destId,
-            id = id ?: idDispenser.getFlowId(),
-            demand = demand,
-            stabilizer = barrier.stabilizer(),
-        ).also { it.invalidate() }
+        ): NetFlowImpl {
+            assert(destId != senderId)
+            return NetFlowImpl(
+                senderId = senderId,
+                destId = destId,
+                id = id ?: idDispenser.getFlowId(),
+                demand = demand,
+                stabilizer = barrier.stabilizer(),
+            ).also {
+                it.invalidate()
+            }
+        }
 
         override val setDemandDisp: FWDispenser<INetFlow.SetDemand> get() = _setDemandDisp
         private lateinit var _setDemandDisp: FWDispenser<INetFlow.SetDemand>

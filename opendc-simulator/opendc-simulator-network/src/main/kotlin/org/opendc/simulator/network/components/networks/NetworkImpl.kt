@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.components.node.CoreSwitch
+import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
@@ -60,9 +60,10 @@ internal abstract class NetworkImpl : Network {
             "\n" +
                 """
                 | === NETWORK INFO ===
-                | num of core switches: ${getNodesById<CoreSwitch>().size}
-                | num of host nodes: ${getNodesById<HostNode>().size}
-                | num of nodes: ${this.nodesById.size} (including INTERNET abstract node)
+                | nodes: ${this.nodeLs.size - 1}
+                | switches: ${getNodesById<GlobalSwitch>().size}
+                | global switches: ${getNodesById<GlobalSwitch>().size}
+                | hosts: ${getNodesById<HostNode>().size}
                 """.trimIndent()
         }
 
@@ -98,7 +99,7 @@ internal abstract class NetworkImpl : Network {
         }
 
         /**
-         * [NodeId] reserved for internet representation (for inter-datacenter communication).
+         * [NodeId] reserved for inet representation (for inter-datacenter communication).
          */
         val INTERNET_ID: NodeId = NodeId(Long.MIN_VALUE)
     }

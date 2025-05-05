@@ -43,15 +43,12 @@ internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
             "snap" to listOf(CMD_STR),
         )
 
-    override fun run(): Unit =
-        runBlocking(scope.ctx) {
-            with(scope) {
-                barrier.whileStable(NetSimStabilityMode.ENFORCED) {
-                    sync(forceUpdt = true)
-                    net.nodesById[NodeId(id)]?.let {
-                        echo(it.snapshot().fmt())
-                    } ?: issueMessage("Unable to display snapshot")
-                }
-            }
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+            sync(forceUpdt = true)
+            net.nodesById[NodeId(id)]?.let {
+                echo(it.snapshot().fmt())
+            } ?: issueMessage("Unable to display snapshot")
         }
+    }
 }

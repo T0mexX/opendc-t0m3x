@@ -43,22 +43,19 @@ internal class NodeMkSwitchCmd : REPLCmd(name = CMD_STR) {
             "s" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run(): Unit =
-        runBlocking(scope.ctx) {
-            with(scope) {
-                barrier.awaitStability()
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.awaitStability()
 
-                val newSwitch =
-                    Switch(
-                        id = id,
-                        portSpeed = speed,
-                        nPorts = nPorts,
-                    )
+        val newSwitch =
+            Switch(
+                id = id,
+                portSpeed = speed,
+                nPorts = nPorts,
+            )
 
-                (net as? CustomNetwork)?.plus(newSwitch)
-                    ?.also { barrier.awaitStability() }
-                    ?.let { echo("| Added node $newSwitch") }
-                    ?: issueMessage("Unable to add node.")
-            }
-        }
+        (net as? CustomNetwork)?.plus(newSwitch)
+            ?.also { barrier.awaitStability() }
+            ?.let { echo("| Added node $newSwitch") }
+            ?: issueMessage("Unable to add node.")
+    }
 }

@@ -323,15 +323,15 @@ public class NodeSnapshot internal constructor(
                     node = this,
                     instant = tmSrc.instant(),
                     numIncomingFlows = allSz - genSz,
-                    numOutgoingFlows = allSz - consSz,
+                    numOutgoingFlows = outSz,
                     numGeneratingFlows = genSz,
                     numConsumedFlows = consSz,
                     currMinFlowTputPerc = out.takeIf { outSz != 0 }?.let {
                         out.minOf { it.tput() roundedPercentageOf it.rx }
-                    },
+                    } ?.also { assert(it.value.isNaN().not()) },
                     currMaxFlowTputPerc = out.takeIf { outSz != 0 }?.let {
-                        out.maxOf { it.tput() roundedPercentageOf it.rx }
-                    },
+                        out.maxOf { it.tput() roundedPercentageOf it.rx.also { assert(it.value.isNaN().not()) } }
+                    } ?.also { assert(it.value.isNaN().not()) },
                     currAvrgFlowTputPerc = out.averageOfUnitOrNull { it.tput() roundedPercentageOf it.rx },
                     currNodeTputPercAllFlows = out.sumOfUnit { it.tput() } roundedPercentageOf out.sumOfUnit { it.rx },
                     currPwrUse = computePwrDraw(),

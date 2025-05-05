@@ -35,7 +35,7 @@ classDiagram
     class Switch{
     }
 
-    note for CoreSwitch "Only nodes connected to internet"
+    note for CoreSwitch "Only nodes connected to inet"
     class CoreSwitch {
 
     }

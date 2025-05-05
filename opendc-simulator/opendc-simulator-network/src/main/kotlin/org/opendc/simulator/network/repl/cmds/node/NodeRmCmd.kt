@@ -41,15 +41,11 @@ internal class NodeRmCmd : REPLCmd(name = "rm") {
         help = "Id of the node",
     ).long().check("node does not exist") { net.nodesById.contains(NodeId(it)) }
 
-    override fun run(): Unit =
-        runBlocking(scope.ctx) {
-            with(scope) {
-                barrier.awaitStability()
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.awaitStability()
 
-                // TODO: runcatching
-                (net as? CustomNetwork)?.let { cstNet ->
-                    echo("Removed node ${cstNet.minus(NodeId(id))}") ?: issueMessage("Unable to remove node")
-                } ?: issueMessage("Unable to remove node")
-            }
-        }
+        (net as? CustomNetwork)?.let { cstNet ->
+            echo("Removed node ${cstNet.minus(NodeId(id))}") ?: issueMessage("Unable to remove node")
+        } ?: echo("Unable to remove node", err = true)
+    }
 }

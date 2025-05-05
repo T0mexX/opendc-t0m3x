@@ -68,6 +68,7 @@ internal open class Switch protected constructor(
                     }
                 }
                 s.invalidate()
+                s.netLaunch()
             }
         }
     }

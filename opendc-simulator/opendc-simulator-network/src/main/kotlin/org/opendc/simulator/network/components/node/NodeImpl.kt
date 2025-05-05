@@ -79,7 +79,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
      * TODO
      */
     context(NetSimScope)
-    protected open suspend fun getFreePort(): Port = ports.first { it.txLink == null }
+    protected open suspend fun getFreePort(): Port? = ports.firstOrNull { it.txLink == null }
 
     /**
      * TODO
@@ -223,7 +223,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                         override suspend fun handle() {
                             val n = this@Node as NodeImpl
                             val otherN = other as NodeImpl
-                            val freePort: Port = n.getFreePort()
+                            val freePort: Port = n.getFreePort() ?: error("unable to connect node, no port available")
 
                             //
                             n.awaitPorts()
@@ -348,6 +348,10 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                         n.awaitPorts()
 
                         val freePort: Port = n.getFreePort()
+                            ?: let {
+                                n
+                                error("unable to connect node, no port available")
+                            }
                         val msg = portVersion.connectDisp.acquire().reset()
                         msg.other = toBeAccepted
                         msg.linkBw = linkBw

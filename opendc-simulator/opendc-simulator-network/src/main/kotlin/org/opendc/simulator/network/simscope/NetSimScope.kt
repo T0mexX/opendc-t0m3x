@@ -1,21 +1,37 @@
 package org.opendc.simulator.network.simscope
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.serialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
+import org.opendc.common.units.Timestamp
+import org.opendc.simulator.network.components.networks.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion
+import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import org.opendc.simulator.network.utils.NETWORK_JSON
+import java.io.File
+import java.nio.file.Path
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
+@Serializable(with = NetSimScope.NetSimScopeSerializer::class)
 internal class NetSimScope(
     override var coroutineContext: CoroutineContext = EmptyCoroutineContext,
 ) : CoroutineScope {
@@ -90,13 +106,6 @@ internal class NetSimScope(
         }
         _net = net
     }
-//
-//    internal fun registerAutoExporter(exporter: NetSimAutoExporter) {
-//        require(autoExporter == null)
-//
-//        ctx += exporter
-//        coroutineContext += exporter
-//    }
 
     /**
      * TODO
@@ -109,27 +118,70 @@ internal class NetSimScope(
         // TODO: net.sync
     }
 
+    fun launch(
+        block: suspend NetSimScope.() -> Unit
+    ): Job = launch(ctx) {
+        block()
+    }
 
-//    launch
 
     companion object {
-        internal fun <T> CoroutineScope.launchNetworkSim(
-            ctx: CoroutineContext = EmptyCoroutineContext,
-            start: CoroutineStart = CoroutineStart.DEFAULT,
-            block: suspend NetSimScope.() -> Unit,
-        ): Job {
+//        internal fun <T> CoroutineScope.launchNetworkSim(
+//            ctx: CoroutineContext = EmptyCoroutineContext,
+//            start: CoroutineStart = CoroutineStart.DEFAULT,
+//            block: suspend NetSimScope.() -> Unit,
+//        ): Job {
+//
+//            return NetSimScope().launch {
+//                with(this as NetSimScope) {
+//
+//                }
+//            }
+    }
 
-            return NetSimScope().launch {
-                with(this as NetSimScope) {
+    /**
+     * TODO
+     */
+    internal class NetSimScopeSerializer: KSerializer<NetSimScope> {
+        @Serializable
+        private data class Surr(
+            val initialTmStamp: Timestamp? = null,
+            val netPath: String? = null,
+            val netSimConfig: NetSimConfig? = null,
+        )
 
+        override val descriptor: SerialDescriptor = serialDescriptor<Surr>()
+
+        @OptIn(ExperimentalSerializationApi::class)
+        override fun deserialize(
+            decoder: Decoder
+        ): NetSimScope = with(decoder.decodeSerializableValue(serializer<Surr>())) {
+            var ctx: CoroutineContext = EmptyCoroutineContext
+
+            initialTmStamp?.let {
+                ctx += NetSimTmSrc.Internal(initialTmStamp = it)
+            }
+
+            netSimConfig?.let {
+                ctx += it
+            }
+
+            return NetSimScope(ctx).also { scope ->
+
+                with(scope) {
+                    runBlocking(scope.ctx) {
+                        netPath?.let {
+                            NETWORK_JSON.decodeFromStream<Specs<Network>>(File(netPath).inputStream()).build()
+                        } ?: let {
+                            CustomNetwork()
+                        }
+                    }
                 }
             }
-//            NetSimScope(ctx).launch(block = block)
-//            val newContext = newCoroutineContext(ctx)
+        }
 
-//            val coroutine = object : Abstrac    StandaloneCoroutine(newContext, active = true)
-//            coroutine.start(start, coroutine, block)
-//            return coroutine
+        override fun serialize(encoder: Encoder, value: NetSimScope) {
+            throw UnsupportedOperationException()
         }
     }
 }

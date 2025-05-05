@@ -22,7 +22,6 @@
 
 package org.opendc.simulator.network.api.snapshots
 
-import kotlinx.coroutines.delay
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Percentage
@@ -32,11 +31,10 @@ import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
-import org.opendc.simulator.network.components.node.CoreSwitch
+import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
-import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable
@@ -237,7 +235,7 @@ public class NetworkSnapshot private constructor(
                 numNodes = nodesById.size,
                 numHostNodes = getNodesById<HostNode>().size,
                 claimedHostNodes = getNodesById<HostNode>().size,
-                numCoreSwitches = getNodesById<CoreSwitch>().size,
+                numCoreSwitches = getNodesById<GlobalSwitch>().size,
                 numActiveFlows = activeFlows.size,
                 totTput = totThroughput,
                 totTputPerc = if (activeFlows.isEmpty()) null else totThroughput roundedPercentageOf totDemand,

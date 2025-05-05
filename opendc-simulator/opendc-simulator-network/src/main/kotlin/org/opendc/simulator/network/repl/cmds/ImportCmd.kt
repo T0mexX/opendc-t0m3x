@@ -33,8 +33,10 @@ import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.repl.REPLTmSrc
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
 import java.time.Instant
+import kotlin.coroutines.EmptyCoroutineContext
 
 private const val CMD_STR: String = "import"
 
@@ -44,28 +46,13 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
     ).file()
 
     @OptIn(ExperimentalSerializationApi::class)
-    override fun run(): Unit =
-        runBlocking {
+    override fun run(): Unit = execREPLCmdCatching(EmptyCoroutineContext) {
+        val newScope = NETWORK_JSON.decodeFromStream<NetSimScope>(targetFile.inputStream())
 
-            val networkSpecs = try {
-                Json { ignoreUnknownKeys = true }
-                    .decodeFromStream<Specs<Network>>(targetFile.inputStream())
-            } catch (e: Exception) {
-                echo("Unable to import network topology. Cause: \n${e.message}", err = true)
-                return@runBlocking
-            }
+        // Create a new simulation scope.
+        scope.cancel()
+        env.scope = newScope
 
-            // Create a new simulation scope.
-            scope.cancel()
-            env.scope = NetSimScope()
-
-            // Set up imported network in the new simulation scope.
-            with(env.scope) {
-                val newNet: Network = networkSpecs.build()
-                env.network = newNet
-//                    env.energyRecorder = NetEnRecorder(newNet)
-
-                echo("Network imported successfully")
-            }
-        }
+        echo("Network simulation scope imported successfully.")
+    }
 }

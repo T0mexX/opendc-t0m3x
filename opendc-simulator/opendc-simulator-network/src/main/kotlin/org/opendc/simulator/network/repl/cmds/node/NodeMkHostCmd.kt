@@ -43,23 +43,17 @@ internal class NodeMkHostCmd : REPLCmd(name = CMD_STR) {
             "h" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run(): Unit =
-        runBlocking(scope.ctx) {
-            with(scope) {
-                barrier.awaitStability()
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.awaitStability()
 
-                val newHost =
-                    HostNode(
-                        id = id,
-                        portSpeed = speed,
-                        nPorts = nPorts,
-                    )
+        val newHost =
+            HostNode(
+                id = id,
+                portSpeed = speed,
+                nPorts = nPorts,
+            )
 
-
-                (net as? CustomNetwork)?.plus(newHost)
-                    ?.also { barrier.awaitStability() }
-                    ?.let { echo("| Added node $newHost") }
-                    ?: issueMessage("Unable to add node.")
-            }
-        }
+        (net as CustomNetwork).plus(newHost)
+        echo("| Node added successfully")
+    }
 }

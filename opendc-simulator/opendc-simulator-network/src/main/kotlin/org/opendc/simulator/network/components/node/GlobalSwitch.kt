@@ -10,7 +10,7 @@ import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
-internal class CoreSwitch private constructor(
+internal class GlobalSwitch private constructor(
     id: NodeId,
     portSpeed: DataRate,
     nPorts: Int,
@@ -21,7 +21,7 @@ internal class CoreSwitch private constructor(
     stabilizer: NetSimStabilizer,
 ) : Switch(id, portSpeed, nPorts, fairnessPolicy, routPolicy, enModel, flowTable, stabilizer), SerializableNode {
 
-    override fun toSpecs(): Specs<CoreSwitch> =
+    override fun toSpecs(): Specs<GlobalSwitch> =
         CoreSwitchSpecs(
             id = id,
             portSpeed = portSpeed,
@@ -38,11 +38,11 @@ internal class CoreSwitch private constructor(
             nPorts: Int? = null,
             fairnessPolicy: FairnessPolicy? = null,
             enModel: EnModel<Switch>? = null,
-        ): CoreSwitch {
+        ): GlobalSwitch {
             val nodeConfig = devConfig.nodeConfig
             val switchConfig = devConfig.nodeConfig.switchConfig
             val coreSwitchConfig = nodeConfig.coreSwitchConfig
-            return CoreSwitch(
+            return GlobalSwitch(
                 id = id ?: idDispenser.getNodeId(),
                 portSpeed = portSpeed
                     ?: coreSwitchConfig.defaultPortSpeed
@@ -66,6 +66,7 @@ internal class CoreSwitch private constructor(
             ).also { cs ->
                 cs.ports = 0.rangeUntil(cs.nPorts).map { idx -> nodeConfig.portConfig.version(cs, idx) }
                 cs.invalidate()
+                cs.netLaunch()
             }
         }
     }

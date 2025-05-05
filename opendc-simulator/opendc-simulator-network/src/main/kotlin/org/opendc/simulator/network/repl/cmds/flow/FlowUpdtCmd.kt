@@ -32,17 +32,14 @@ internal class FlowUpdtCmd : REPLCmd(CMD_STR) {
             "update" to listOf(CMD_STR),
         )
 
-    override fun run(): Unit =
-        runBlocking(scope.ctx) {
-            with(scope) {
-                barrier.awaitStability()
-                val f = net.flowsById[FlowId(id)] ?: let {
-                    issueMessage("Unable to retrieve flow")
-                    return@runBlocking
-                }
-                f.setDemand(newDemand)
-                barrier.awaitStability()
-                echo("| Demand updated successfully, new throughput=${f.throughput}") ?: issueMessage("Unable to stop flow")
-            }
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.awaitStability()
+        val f = net.flowsById[FlowId(id)] ?: let {
+            echo("invalid flow id", err = true)
+            return@execREPLCmdCatching
         }
+        f.setDemand(newDemand)
+        barrier.awaitStability()
+        echo("| Demand updated successfully, new throughput=${f.throughput}") ?: issueMessage("Unable to stop flow")
+    }
 }

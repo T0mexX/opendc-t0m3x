@@ -24,12 +24,14 @@ package org.opendc.simulator.network.repl.cmds
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.REPLEnv
 import org.opendc.simulator.network.repl.REPLTmSrc
 import org.opendc.simulator.network.simscope.NetSimScope
+import kotlin.coroutines.CoroutineContext
 
 internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
     protected val log by logger(name)
@@ -44,6 +46,26 @@ internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
         registeredSubcommands().flatMap {
             it.aliases().toList()
         }.toMap()
+
+    /**
+     * TODO
+     */
+    fun execREPLCmdCatching(
+        ctx: CoroutineContext = scope.ctx,
+        block: suspend NetSimScope.() -> Unit
+    ) = runBlocking(ctx) {
+        runCatching {
+            scope.block()
+        }.let {
+            if (it.isFailure) {
+                echo("unable to execute command ${this@REPLCmd.commandName}.\n" +
+                    "reason: ${it.exceptionOrNull()!!.message}\n" +
+                    "cause: ${it.exceptionOrNull()!!.cause}",
+                    err = true,
+                )
+            }
+        }
+    }
 
     companion object {
         inline fun <reified T> decodeOrNull(str: String): T? {

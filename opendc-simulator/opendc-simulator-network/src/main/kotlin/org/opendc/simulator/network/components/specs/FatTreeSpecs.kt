@@ -5,27 +5,30 @@ import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.networks.FatTree
 import org.opendc.simulator.network.simscope.NetSimScope
 
+/**
+ * TODO
+ * @param k
+ */
 @Serializable
-@SerialName("fat-tree-specs")
+@SerialName("ftree")
 internal data class FatTreeSpecs(
     val name: String = "Default",
+    val k: Int,
     val switchSpecs: SwitchSpecs? = null,
-    val coreSwitchSpecs: SwitchSpecs? = null,
-    val aggrSwitchSpecs: SwitchSpecs? = null,
-    val torSwitchSpecs: SwitchSpecs? = null,
-    val hostNodeSpecs: HostNodeSpecs,
+    val crSwSpecs: SwitchSpecs = switchSpecs!!,
+    val aggrSwSpecs: SwitchSpecs = switchSpecs!!,
+    val accessSwSpecs: SwitchSpecs = switchSpecs!!,
+    val hostSpecs: HostNodeSpecs,
 ) : Specs<FatTree> {
+
+    init {
+        require(k % 2 == 0)
+    }
+
     /**
      * Returns a [FatTree] if the specs are valid, throws error otherwise.
      */
-
     context(NetSimScope)
     override suspend fun build(): FatTree =
-        FatTree(
-            coreSpecs = coreSwitchSpecs?.toCoreSwitchSpecs()
-                ?: switchSpecs?.toCoreSwitchSpecs()!!,
-            aggrSpecs = aggrSwitchSpecs ?: switchSpecs!!,
-            torSpecs = torSwitchSpecs ?: switchSpecs!!,
-            hostNodeSpecs = hostNodeSpecs,
-        )
+        FatTree(this)
 }

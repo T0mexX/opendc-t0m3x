@@ -13,7 +13,9 @@ internal abstract class SenderNode<Self: SenderNode<Self>>(id: NodeId): NodeImpl
      */
     context(NetSimScope)
     suspend fun startFlow(netF: INetFlow) {
-        require(netF.demand >= DataRate.zero)
+        assert(netF.demand >= DataRate.zero)
+        assert(netF.destId != this.id)
+        assert(netF.senderId == this.id)
 
         // TODO: maybe check that flow does not exist
         netF.netLaunch()

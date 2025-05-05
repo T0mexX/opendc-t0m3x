@@ -2,6 +2,7 @@ package org.opendc.simulator.network.api
 
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
@@ -52,15 +53,13 @@ public class NetSimWlRunner internal constructor(
     /**
      * TODO
      */
-    public suspend fun run(): Unit = with(netScope) {
+    public suspend fun run(): Unit = netScope.launch {
         preRun()
 
         val simTime: TimeDelta = TimeDelta.ofMillis(
             measureTimeMillis {
                 while (wl.hasNext()) {
                     val nextDeadline = nextDeadline()
-//                     TODO remove
-//                    check(wl.events.none { it.deadline < nextDeadline})
 
                     // Execute all network events up until `nextDeadline` timestamp.
                     pb.stepBy(execUntil(nextDeadline))
@@ -77,7 +76,7 @@ public class NetSimWlRunner internal constructor(
         )
 
         postRun(simTime)
-    }
+    }.join()
 
     context(NetSimScope)
     private fun nextDeadline() =

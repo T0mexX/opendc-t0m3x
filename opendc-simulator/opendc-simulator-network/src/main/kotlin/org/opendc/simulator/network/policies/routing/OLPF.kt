@@ -2,11 +2,15 @@ package org.opendc.simulator.network.policies.routing
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
 import org.opendc.simulator.network.simscope.NetSimScope
 
+/**
+ * TODO
+ */
 @Serializable
 @SerialName("olpf")
 internal data object OLPF: RoutPolicy() {
@@ -20,7 +24,7 @@ internal data object OLPF: RoutPolicy() {
             .firstOrNull()
             ?.let { path ->
                 nodeFlowEntry.txPorts.clear()
-                nodeFlowEntry.txPorts += path.associatedPort()
+                nodeFlowEntry.txPorts[path.associatedPort()] = Percentage.ofPercentage(100)
             }
     }
 

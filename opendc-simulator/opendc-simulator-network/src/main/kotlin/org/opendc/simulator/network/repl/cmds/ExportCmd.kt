@@ -40,23 +40,13 @@ internal class ExportCmd : REPLCmd(name = CMD_STR) {
         help = "Where the network will be exported",
     ).file()
 
-    override fun run(): Unit =
-        runBlocking {
-            scope.barrier.awaitStability()
-            try {
-                if (targetFile.exists().not()) {
-                    targetFile.toPath().normalize().createParentDirectories()
-                }
-
-                targetFile.writeText(Json.encodeToString(net.toSpecs()))
-            } catch (e: IOException) {
-                val cancExc =
-                    CancellationException(
-                        message = "unable to export network",
-                        cause = e,
-                    )
-                issueMessage("${cancExc.message}. Reason: ${cancExc.cause?.message ?: "unknown"}")
-            }
-            echo("network successfully exported to ${targetFile.absolutePath}")
+    override fun run(): Unit = execREPLCmdCatching {
+        scope.barrier.awaitStability()
+        if (targetFile.exists().not()) {
+            targetFile.toPath().normalize().createParentDirectories()
         }
+
+        targetFile.writeText(Json.encodeToString(net.toSpecs()))
+        echo("network successfully exported to ${targetFile.absolutePath}")
+    }
 }

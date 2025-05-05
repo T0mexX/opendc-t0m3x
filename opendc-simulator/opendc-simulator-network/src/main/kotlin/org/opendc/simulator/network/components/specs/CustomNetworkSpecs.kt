@@ -25,7 +25,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
  * [Specs] of [CustomNetwork], deserializable from JSON.
  * From ***this*** the corresponding custom network can be built.
  */
-@kotlinx.serialization.Serializable
+@Serializable
 @SerialName("custom-specs")
 internal data class CustomNetworkSpecs(
     val nodesSpecs: List<Specs<SerializableNode>> = emptyList(),

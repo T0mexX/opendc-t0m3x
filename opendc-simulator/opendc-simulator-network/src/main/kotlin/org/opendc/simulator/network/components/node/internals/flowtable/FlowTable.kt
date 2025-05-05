@@ -2,6 +2,7 @@ package org.opendc.simulator.network.components.node.internals.flowtable
 
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable.Companion.Consumed.shouldBeTracked
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.tracker.TrackablePropId
@@ -22,7 +23,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
         object AllByDemand : TrackerMode<NodeFlowEntry> {
             override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> =
                 setOf(NodeFlowEntry.Companion.RxProp)
-            override fun NodeFlowEntry.shouldBeTracked(): Boolean = rx > DataRate.zero
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = rx > DataRate.zero || netFlow.senderId == node.id
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int  =
                 rx.tobps().toInt() - other.rx.tobps().toInt()
         }

@@ -2,6 +2,7 @@ package org.opendc.simulator.network.policies.routing
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
 import org.opendc.simulator.network.components.port.Port
@@ -22,7 +23,7 @@ internal class OSPF: RoutPolicy() {
             .firstOrNull()
             ?.let { path ->
                 nodeFlowEntry.txPorts.clear()
-                nodeFlowEntry.txPorts += path.associatedPort()
+                nodeFlowEntry.txPorts[path.associatedPort()] = Percentage.ofPercentage(100)
             }
     }
 

@@ -42,13 +42,14 @@ internal class FlowTableV1 private constructor(
 
         assert(entry.rx >= DataRate.zero) { entry.rx.value }
 
-        val perPort = entry.rx / entry.txPorts.size
-        entry.txPorts.forEach {
+        entry.txPorts.forEach { (p, perc) ->
+            // The data-rate sent to port `p` of this flow.
+            val portDemand = entry.rx * perc
             if (new) {
-                entry.portFlowEntryIds[it.portIdx] =
-                    it.msgSetTxDemand(perPort, entry.netFlow) ?: -1
+                entry.portFlowEntryIds[p.portIdx] =
+                    p.msgSetTxDemand(portDemand, entry.netFlow) ?: -1
             } else {
-                it.msgSetTxDemand(perPort, entry.netFlow, entry.portFlowEntryIds[it.portIdx])
+                p.msgSetTxDemand(portDemand, entry.netFlow, entry.portFlowEntryIds[p.portIdx])
             }
         }
         if (entry.rx approx DataRate.zero) rmEntry(entry)
@@ -61,7 +62,7 @@ internal class FlowTableV1 private constructor(
         val entriesFlow = _flows.values.asFlow()
         // Reset current port outgoing data-rates.
         entriesFlow.collect { entry ->
-            entry.txPorts.forEach { p ->
+            entry.txPorts.keys.forEach { p ->
                 p.msgSetTxDemand(DataRate.zero, netF = entry.netFlow, entryId = entry.portFlowEntryIds[p.portIdx])
             }
         }
@@ -78,9 +79,9 @@ internal class FlowTableV1 private constructor(
     override suspend fun reset(f: NetFlow) {
         val entry = _flows[f]!!
         entry.rx = DataRate.zero
-        entry.txPorts.forEach {
-            entry.portFlowEntryIds[it.portIdx] =
-                it.msgSetTxDemand(DataRate.zero, entry.netFlow) ?: -1
+        entry.txPorts.keys.forEach { p ->
+            entry.portFlowEntryIds[p.portIdx] =
+                p.msgSetTxDemand(DataRate.zero, entry.netFlow) ?: -1
         }
         rmEntry(entry)
     }
@@ -90,9 +91,9 @@ internal class FlowTableV1 private constructor(
         val entry = nodeFlowEntryDispenser.acquire()
         entry.tracker = this
         entry.resizeIfNeeded()
-        entry.rx = DataRate.zero
-        entry.node = this@Node
         entry.netFlow = updt.netF
+        entry.node = this@Node
+        entry.rx = DataRate.zero
         entry.txPorts.clear()
         if (entry.netFlow.destId != this@Node.id)
             this@Node.routPolicy.selectPorts(entry)
@@ -100,7 +101,7 @@ internal class FlowTableV1 private constructor(
     }
 
     private suspend fun rmEntry(entry: NodeFlowEntry) {
-        _flows.remove(entry.netFlow)!!.dispose()
+        _flows.remove(entry.netFlow)!!.untrack().dispose()
     }
 
     companion object: FlowTableVersion {

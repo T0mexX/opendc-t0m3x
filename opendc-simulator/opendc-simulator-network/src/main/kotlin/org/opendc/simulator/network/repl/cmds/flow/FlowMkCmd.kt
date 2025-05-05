@@ -53,21 +53,18 @@ internal class FlowMkCmd : REPLCmd("mk") {
         names = arrayOf("-d", "--destinationid", "--destid"),
     ).long().required().check("destination invalid") { net.nodesById.contains(NodeId(it)) }
 
-    override fun run(): Unit =
-        runBlocking {
-            with(scope) {
-                barrier.awaitStability()
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.awaitStability()
 
-                val newFlow = scope.devConfig.netFlowConfig.version(
-                    demand = demand,
-                    senderId = NodeId(senderId),
-                    destId = NodeId(destId),
-                )
-                newFlow.netLaunch()
+        val newFlow = scope.devConfig.netFlowConfig.version(
+            demand = demand,
+            senderId = NodeId(senderId),
+            destId = NodeId(destId),
+        )
+        newFlow.netLaunch()
 
-                net.startFlow(newFlow)
-                barrier.awaitStability()
-                echo("| Started flow $newFlow")
-            }
-        }
+        net.startFlow(newFlow)
+        barrier.awaitStability()
+        echo("| Started flow $newFlow")
+    }
 }

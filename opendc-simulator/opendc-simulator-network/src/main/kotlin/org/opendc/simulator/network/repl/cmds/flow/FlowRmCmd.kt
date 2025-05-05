@@ -34,15 +34,12 @@ internal class FlowRmCmd : REPLCmd("rm") {
         help = "The id of the flow to be remvoed",
     ).long().check("flow does not exist") { long -> net.flowsById.contains(FlowId(long)) }
 
-    override fun run(): Unit =
-        runBlocking(scope.ctx) {
-            with(scope) {
-                barrier.awaitStability()
-                val f = net.flowsById[FlowId(id)] ?: let {
-                    issueMessage("Unable to stop flow")
-                    return@runBlocking
-                }
-                echo("| Stopped flow ${net.stopFlow(f)}") ?: issueMessage("Unable to stop flow")
-            }
+    override fun run(): Unit = execREPLCmdCatching {
+        barrier.awaitStability()
+        val f = net.flowsById[FlowId(id)] ?: let {
+            issueMessage("Unable to stop flow")
+            return@execREPLCmdCatching
         }
+        echo("| Stopped flow ${net.stopFlow(f)}") ?: issueMessage("Unable to stop flow")
+    }
 }
