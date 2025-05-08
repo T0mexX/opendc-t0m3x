@@ -12,7 +12,6 @@ import org.opendc.simulator.network.policies.routing.RoutPolicy
 internal data class HostNodeConfig(
     val defaultNPorts: Int? = null,
     val defaultPortSpeed: DataRate? = null,
-    val defaultFairnessPolicy: FairnessPolicy? = null,
 ) {
     // TODO: make serializable
     val defaultEnModel: EnModel<HostNode>? get() = HostNodeDfltEnModel

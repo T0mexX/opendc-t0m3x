@@ -18,7 +18,6 @@ internal data class CoreSwitchSpecs(
     val id: NodeId? = null,
     private val portSpeed: DataRate? = null,
     private val nPorts: Int? = null,
-    private val fairnessPolicy: FairnessPolicy? = null,
 ): NodeSpecs<GlobalSwitch> {
 
     context(NetSimScope)
@@ -36,19 +35,11 @@ internal data class CoreSwitchSpecs(
             ?: devConfig.nodeConfig.defaultPortSpeed!!
 
     context(NetSimScope)
-    override fun fairnessPolicy(): FairnessPolicy =
-        fairnessPolicy
-            ?: devConfig.nodeConfig.coreSwitchConfig.defaultFairnessPolicy
-            ?: devConfig.nodeConfig.switchConfig.defaultFairnessPolicy
-            ?: devConfig.nodeConfig.defaultFairnessPolicy
-
-    context(NetSimScope)
     override suspend fun build(): GlobalSwitch =
         GlobalSwitch(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
-            fairnessPolicy = fairnessPolicy,
         )
 
     fun toSwitchSpecs(): SwitchSpecs =
@@ -56,7 +47,6 @@ internal data class CoreSwitchSpecs(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
-            fairnessPolicy = fairnessPolicy,
         )
 
     /**

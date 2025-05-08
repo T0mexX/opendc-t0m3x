@@ -14,7 +14,6 @@ internal data class HostNodeSpecs(
     val id: NodeId? = null,
     private val portSpeed: DataRate? = null,
     private val nPorts: Int? = null,
-    private val fairnessPolicy: FairnessPolicy? = null,
 ) : NodeSpecs<HostNode> {
 
     context(NetSimScope)
@@ -30,18 +29,11 @@ internal data class HostNodeSpecs(
             ?: devConfig.nodeConfig.defaultPortSpeed!!
 
     context(NetSimScope)
-    override fun fairnessPolicy(): FairnessPolicy =
-        fairnessPolicy
-            ?: devConfig.nodeConfig.hostNodeConfig.defaultFairnessPolicy
-            ?: devConfig.nodeConfig.defaultFairnessPolicy
-
-    context(NetSimScope)
     override suspend fun build(): HostNode =
         HostNode(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
-            fairnessPolicy = fairnessPolicy,
         )
 }
 

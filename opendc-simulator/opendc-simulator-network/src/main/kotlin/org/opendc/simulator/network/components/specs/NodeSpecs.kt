@@ -23,10 +23,4 @@ internal interface NodeSpecs<T>: Specs<T>
      */
     context(NetSimScope)
     fun portSpeed(): DataRate
-
-    /**
-     * TODO
-     */
-    context(NetSimScope)
-    fun fairnessPolicy(): FairnessPolicy
 }

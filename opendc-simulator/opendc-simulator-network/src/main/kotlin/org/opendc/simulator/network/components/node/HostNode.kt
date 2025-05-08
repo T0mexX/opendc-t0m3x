@@ -36,7 +36,6 @@ internal class HostNode private constructor(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
-            fairnessPolicy = fairnessPolicy,
         )
 
     companion object {
@@ -58,9 +57,7 @@ internal class HostNode private constructor(
                 nPorts = nPorts
                     ?: hostConfig.defaultNPorts
                     ?: nodeConfig.defaultNPorts!!,
-                fairnessPolicy = fairnessPolicy
-                    ?: hostConfig.defaultFairnessPolicy
-                    ?: nodeConfig.defaultFairnessPolicy,
+                fairnessPolicy = this@NetSimScope.config.fairPolicy,
                 routPolicy = this@NetSimScope.config.routPolicy,
                 enModel = enModel
                     ?:hostConfig.defaultEnModel

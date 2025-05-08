@@ -24,7 +24,7 @@ internal class Internet(
 
     override val portSpeed: DataRate = DataRate.max
     override var nPorts: Int = 0
-    override var fairnessPolicy: FairnessPolicy = FirstComeFirstServed
+    override var fairnessPolicy: FairnessPolicy = FirstComeFirstServed()
 
     override val ports: List<Port> get() = _ports
     private val _ports: MutableList<Port> = mutableListOf()

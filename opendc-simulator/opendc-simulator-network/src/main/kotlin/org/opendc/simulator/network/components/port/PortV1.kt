@@ -6,8 +6,6 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.link.ReceiveLink
 import org.opendc.simulator.network.components.link.SendLink
@@ -167,7 +165,7 @@ internal class PortV1 private constructor(
 
                             // Apply fairness policy and propagate updates to the connected node.
                             p._state.emit(Port.PROCESSING)
-                            p.owner.fairnessPolicy.applyPolicy(p.entries)
+                            p.owner.fairnessPolicy.applyFairness(p.entries)
 
                             // Remove entries with 0 demand after updates propagated to connected node.
                             p.entries.forEachIndexed { idx, e -> if (e.used && e.demand == DataRate.zero) p.rmEntry(idx)}

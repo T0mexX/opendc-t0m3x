@@ -30,7 +30,6 @@ internal open class Switch protected constructor(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
-            fairnessPolicy = fairnessPolicy,
         )
 
     companion object {
@@ -39,7 +38,6 @@ internal open class Switch protected constructor(
             id: NodeId? = null,
             portSpeed: DataRate? = null,
             nPorts: Int? = null,
-            fairnessPolicy: FairnessPolicy? = null,
             enModel: EnModel<Switch>? = null,
         ): Switch {
             val nodeConfig = devConfig.nodeConfig
@@ -52,9 +50,7 @@ internal open class Switch protected constructor(
                 nPorts = nPorts
                     ?: switchConfig.defaultNPorts
                     ?: nodeConfig.defaultNPorts!!,
-                fairnessPolicy = fairnessPolicy
-                    ?: switchConfig.defaultFairnessPolicy
-                    ?: nodeConfig.defaultFairnessPolicy,
+                fairnessPolicy = this@NetSimScope.config.fairPolicy,
                 routPolicy = this@NetSimScope.config.routPolicy,
                 enModel = enModel
                     ?:switchConfig.defaultEnModel

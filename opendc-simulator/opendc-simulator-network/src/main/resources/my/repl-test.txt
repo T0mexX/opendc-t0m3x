@@ -1,5 +1,23 @@
 import resources/my/scope.json
 net info
+n mk -n 0 -b 1000Gbps -p 1 h
+n mk -n 1 -b 1Gbps -p 2 s
+n mk -n 2 -b 1000Gbps -p 1 h
+l mk -n 0 -n 1 -b 1000Gbps
+l mk -n 1 -n 2 -b 1000Gbps
+net info
+f mk -s 0 -d 2 -b 600Gbps
+f mk -s 0 -d 2 -b 400Gbps
+f info
+q
+
+
+
+
+import resources/my/scope.json
+net info
+f synth full 100%
+f info
 q
 
 

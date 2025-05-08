@@ -52,6 +52,7 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
         // Create a new simulation scope.
         scope.cancel()
         env.scope = newScope
+        env.network = newScope.net
 
         echo("Network simulation scope imported successfully.")
     }

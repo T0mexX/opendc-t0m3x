@@ -26,7 +26,6 @@ internal class GlobalSwitch private constructor(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
-            fairnessPolicy = fairnessPolicy,
         )
 
 
@@ -36,7 +35,6 @@ internal class GlobalSwitch private constructor(
             id: NodeId? = null,
             portSpeed: DataRate? = null,
             nPorts: Int? = null,
-            fairnessPolicy: FairnessPolicy? = null,
             enModel: EnModel<Switch>? = null,
         ): GlobalSwitch {
             val nodeConfig = devConfig.nodeConfig
@@ -52,10 +50,7 @@ internal class GlobalSwitch private constructor(
                     ?: coreSwitchConfig.defaultNPorts
                     ?: switchConfig.defaultNPorts
                     ?: nodeConfig.defaultNPorts!!,
-                fairnessPolicy = fairnessPolicy
-                    ?: coreSwitchConfig.defaultFairnessPolicy
-                    ?: switchConfig.defaultFairnessPolicy
-                    ?: nodeConfig.defaultFairnessPolicy,
+                fairnessPolicy = this@NetSimScope.config.fairPolicy,
                 routPolicy = this@NetSimScope.config.routPolicy,
                 enModel = enModel
                     ?: coreSwitchConfig.defaultEnModel

@@ -24,7 +24,7 @@ internal data class NodeConfig(
     val coreSwitchConfig: CoreSwitchConfig = CoreSwitchConfig(),
     val defaultNPorts: Int? = null,
     val defaultPortSpeed: DataRate? = null,
-    val defaultFairnessPolicy: FairnessPolicy = FirstComeFirstServed,
+    val defaultFairnessPolicy: FairnessPolicy = FirstComeFirstServed(),
 ) {
     val defaultEnModel: EnModel<Node<*>> get() =
         throw IllegalStateException("No default generic node energy model")

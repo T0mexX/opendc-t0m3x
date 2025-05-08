@@ -15,9 +15,9 @@ import org.opendc.simulator.network.components.port.PortFlowEntry
  */
 @Serializable
 @SerialName("fcfs")
-internal data object FirstComeFirstServed : FairnessPolicy {
+internal class FirstComeFirstServed : FairnessPolicy() {
     context(Port)
-    override suspend fun applyPolicy(entryList: List<PortFlowEntry>) {
+    override suspend fun applyFairness(entryList: List<PortFlowEntry>) {
         val p = this@Port
         val l = p.txLink!!
 
@@ -29,11 +29,10 @@ internal data object FirstComeFirstServed : FairnessPolicy {
                 val increaseBy = it.demand - it.tput
                 assert(increaseBy >= DataRate.zero) { increaseBy.value }
                 if (increaseBy approx  DataRate.zero) return@onEach
-                val claimedBw = l.claimBw(increaseBy)
+                val claimedBw = l.claimBw(increaseBy, it.netF)
                 if (claimedBw approx  DataRate.zero) return@onEach
                 it.tput = (it.tput + claimedBw).roundToIfWithinEpsilon(it.demand, epsilon = 1.0)
                 assert(it.tput <= it.demand)
-                l.msgAsyncRxUpdt(deltaRate = claimedBw, it.netF)
             }.launchIn(this@coroutineScope)
         }
     }

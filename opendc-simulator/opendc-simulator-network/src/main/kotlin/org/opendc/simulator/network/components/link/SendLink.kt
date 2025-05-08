@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.link
 
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
@@ -11,48 +12,73 @@ import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
 /**
- * TODO
+ * Interface for a unidirectional network communication link from the sender perspective,
+ * used to send messages and manage bandwidth between nodes.
+ *
+ * This interface does not manage per-flow bandwidth allocations.
+ * Instead, it focuses on the overall utilization of the link.
+ *
+ * A [SendLink] can also be used as a [Msg] [Channel] to send msgs directly to the receiver nodes.
  */
 internal interface SendLink: SendChannel<Msg<Node<*>, *>> {
     /**
-     * TODO
+     * The port on the receiver node that this link connects to.
      */
     val receiverPort: Port
 
     /**
-     * TODO
+     * The node that owns the [receiverPort], representing the destination of this link.
      */
-    override suspend fun send(element: Msg<Node<*>, *>)
+    val receiverNode: Node<*> get() = receiverPort.owner
 
     /**
-     * TODO
+     * The maximum bandwidth capacity of this link.
      */
     val maxBw: DataRate
 
     /**
-     * TODO
+     * The currently available (unutilized) bandwidth on this link.
      */
     val availableBw: DataRate
 
     /**
-     * TODO
+     * The current utilization of the link, expressed as a percentage of [maxBw].
      */
     val util: Percentage
 
     /**
-     * TODO
+     * Increases the current bandwidth usage on this link by the specified amount, [bw],
+     * and notifies the receiver node with a delta bandwidth update, attributing the change to [netF].
+     *
+     * Note: This class does not maintain a mapping between flows and their allocated bandwidth.
+     * It solely tracks total bandwidth usage for congestion management.
+     *
+     * Context parameter [FairnessPolicy] is only present to enforce (almost)
+     * the method to be invoked only during fairness policy phase of update processing.
+     *
+     * @param bw The amount of bandwidth to be claimed.
+     * @param netF The flow to which this bandwidth release should be attributed.
+     * @throws AssertionError If assertions are enabled (`-ea` VM option) and the amount of
+     * bandwidth being claimed is negative.
      */
-    suspend fun claimBw(bw: DataRate): DataRate
+    context(FairnessPolicy)
+    suspend fun claimBw(bw: DataRate, netF: INetFlow): DataRate
 
     /**
-     * TODO
-     * context forces call to be during fairness phase. just more compiler time safe coding
+     * Reduces the current bandwidth usage on this link by the specified amount, [bw],
+     * and notifies the receiver node with a delta bandwidth update, attributing the change to [netF].
+     *
+     * Note: This class does not maintain a mapping between flows and their allocated bandwidth.
+     * It solely tracks total bandwidth usage for congestion management.
+     *
+     * Context parameter [FairnessPolicy] is only present to enforce (almost)
+     * the method to be invoked only during fairness policy phase of update processing.
+     *
+     * @param bw The amount of bandwidth to release.
+     * @param netF The flow to which this bandwidth release should be attributed.
+     * @throws AssertionError If assertions are enabled (`-ea` VM option) and the amount of
+     * bandwidth being released is negative or exceeds the bandwidth currently in use.
      */
     context(FairnessPolicy)
     suspend fun releaseBw(bw: DataRate, netF: INetFlow)
-
-    /**
-     * TODO
-     */
-    suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow)
 }

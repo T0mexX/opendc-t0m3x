@@ -22,6 +22,7 @@ import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
+import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
@@ -46,6 +47,7 @@ internal class NetSimScope(
     val enRecorder: NetSimEnRecorder
     val tmSrc: NetSimTmSrc<*>
     val routPolicy: RoutPolicy
+    val fairPolicy: FairnessPolicy
     val log by logger()
     val net: Network get() = _net
     private lateinit var _net: Network
@@ -74,6 +76,7 @@ internal class NetSimScope(
             tmpCtx[NetSimTmSrc] ?: let { tmpCtx += NetSimTmSrc.Internal() }
             tmpCtx[NetSimEnRecorder] ?: let { tmpCtx += NetSimEnRecorder(tmpCtx[NetSimTmSrc]!!) }
             tmpCtx[RoutPolicy] ?: let { tmpCtx += tmpCtx[NetSimConfig]!!.routPolicy }
+            tmpCtx[FairnessPolicy] ?: let { tmpCtx += tmpCtx[NetSimConfig]!!.fairPolicy }
         }
         coroutineContext = tmpCtx
         config = tmpCtx[NetSimConfig]!!
@@ -84,6 +87,7 @@ internal class NetSimScope(
         tmSrc = tmpCtx[NetSimTmSrc]!!
         enRecorder = tmpCtx[NetSimEnRecorder]!!
         routPolicy = tmpCtx[RoutPolicy]!!
+        fairPolicy = tmpCtx[FairnessPolicy]!!
 
         portVersion = devConfig.portConfig.version
         nodeVersion = devConfig.nodeConfig.version

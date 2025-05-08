@@ -2,11 +2,11 @@
     "type": "ftree",
     "k": 4,
     "hostSpecs": {
-        "portSpeed": "100Gbps",
+        "portSpeed": "1Gbps",
         "nPorts": 1
     },
     "switchSpecs": {
-        "portSpeed": "1Gbps",
+        "portSpeed": "100Mbps",
         "nPorts": 4
     }
 }

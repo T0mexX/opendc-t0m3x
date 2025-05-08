@@ -61,7 +61,6 @@ internal class FlowMkCmd : REPLCmd("mk") {
             senderId = NodeId(senderId),
             destId = NodeId(destId),
         )
-        newFlow.netLaunch()
 
         net.startFlow(newFlow)
         barrier.awaitStability()

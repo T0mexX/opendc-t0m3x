@@ -14,7 +14,6 @@ internal data class SwitchSpecs(
     val id: NodeId? = null,
     private val portSpeed: DataRate? = null,
     private val nPorts: Int? = null,
-    private val fairnessPolicy: FairnessPolicy? = null,
 ): NodeSpecs<Switch> {
     context(NetSimScope)
     override fun nPorts(): Int =
@@ -29,18 +28,11 @@ internal data class SwitchSpecs(
             ?: devConfig.nodeConfig.defaultPortSpeed!!
 
     context(NetSimScope)
-    override fun fairnessPolicy(): FairnessPolicy =
-        fairnessPolicy
-            ?: devConfig.nodeConfig.switchConfig.defaultFairnessPolicy
-            ?: devConfig.nodeConfig.defaultFairnessPolicy
-
-    context(NetSimScope)
     override suspend fun build(): Switch =
         Switch(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
-            fairnessPolicy = fairnessPolicy,
         )
 
     fun toCoreSwitchSpecs(): CoreSwitchSpecs =
@@ -48,6 +40,5 @@ internal data class SwitchSpecs(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
-            fairnessPolicy = fairnessPolicy,
         )
 }
