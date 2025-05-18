@@ -31,7 +31,7 @@ internal class FlowSynthWlCmd: REPLCmd(name = CMD_STR) {
     }
 
     private val demand: Unit<*> by argument(
-        help = "The demand of the synthetic flows (e.g. '1 Gbps' or '100%'). " +
+        help = "The demand of the synthetic flows (E_.g. '1 Gbps' or '100%'). " +
             "If a percentage is used, that percentage of the tx bandwidth of " +
             "the sender host is used as demand",
     ).convert { str ->
@@ -43,7 +43,7 @@ internal class FlowSynthWlCmd: REPLCmd(name = CMD_STR) {
             return@convert Json.decodeFromString<Percentage>(str)
         }
 
-        fail("either a data-rate (e.g. '1Gbps') or a load percentage (e.g. '100%') should be passed as parameter")
+        fail("either a data-rate (E_.g. '1Gbps') or a load percentage (E_.g. '100%') should be passed as parameter")
     }
 
     override fun aliases(): Map<String, List<String>> =

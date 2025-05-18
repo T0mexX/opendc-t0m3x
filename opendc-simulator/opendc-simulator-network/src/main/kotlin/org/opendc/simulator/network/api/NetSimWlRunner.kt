@@ -153,7 +153,7 @@ public class NetSimWlRunner internal constructor(
         exporter?.close()
 
         // Update progress bar for the last time.
-        pb.refresh()
+        pb.close()
 
         // Log total simulation time.
         log.infoNewLine("| Simulation time: $simTm")
@@ -165,6 +165,7 @@ public class NetSimWlRunner internal constructor(
 
     override fun close() {
         runBlocking {
+            pb.close()
             netScope.cancel()
             netScope.ctx.job.join()
         }

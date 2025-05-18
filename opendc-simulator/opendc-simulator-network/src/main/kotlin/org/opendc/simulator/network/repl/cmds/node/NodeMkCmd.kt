@@ -35,7 +35,7 @@ import org.opendc.simulator.network.repl.cmds.REPLCmd
 internal class NodeMkCmd : REPLCmd(name = "mk") {
     private val id: NodeId by option(
         help = "The id of the new node",
-        names = arrayOf("-n", "--nodeid"),
+        names = arrayOf("-N_", "--nodeid"),
     ).convert { decodeOrNull<NodeId>(it)!! }
         .required().check("node with id already exists") { !net.nodesById.keys.contains(it) }
 
@@ -44,7 +44,7 @@ internal class NodeMkCmd : REPLCmd(name = "mk") {
         names = arrayOf("-b", "--bw", "--bandwidth"),
     ).convert {
         decodeOrNull<DataRate>(it)
-            ?: fail("Unable to decode data rate '$it' (e.g. 1Mbps)")
+            ?: fail("Unable to decode data rate '$it' (E_.g. 1Mbps)")
     }.required().check("port speed must be positive") { it >= DataRate.zero }
 
     private val nPorts: Int by option(

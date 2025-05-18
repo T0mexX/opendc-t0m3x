@@ -23,7 +23,7 @@ internal class FlowUpdtCmd : REPLCmd(CMD_STR) {
         names = arrayOf("-b", "--bw", "--bandwidth")
     ).convert {
         decodeOrNull<DataRate>(it)
-            ?: fail("Unable to parse data rate '$it' (e.g. 1Gbps)")
+            ?: fail("Unable to parse data rate '$it' (E_.g. 1Gbps)")
     }.required()
 
     override fun aliases(): Map<String, List<String>> =

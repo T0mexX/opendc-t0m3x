@@ -22,7 +22,7 @@ def accuracy_evaluator(
         - default is 0.5 (balanced penalty)
         - < 0.5: more penalty for overestimations
         - > 0.5: more penalty for underestimations
-        e.g., RMSLE_hyperparameter=0.3 -> 30% penalty for overestimations, 70% penalty for underestimations (3:7 ratio)
+        E_.g., RMSLE_hyperparameter=0.3 -> 30% penalty for overestimations, 70% penalty for underestimations (3:7 ratio)
     :return: None, but prints the accuracy metrics
     """
 

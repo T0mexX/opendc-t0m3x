@@ -99,7 +99,7 @@ public class CpuPowerModels {
      * @param maxPower  The maximum power draw of the host in W.
      * @param idlePower The power draw of the host at its lowest utilization level in W.
      * @param asymUtil  A utilization level at which the host attains asymptotic,
-     *                  i.e., close to linear power consumption versus the offered load.
+     *                  i.E_., close to linear power consumption versus the offered load.
      *                  For most of the CPUs,a is in [0.2, 0.5].
      * @param dvfs      A flag indicates whether DVFS is enabled.
      */

@@ -32,7 +32,7 @@ def read_input(path=""):
         raise ValueError(f"File does not exist: {full_path}")
 
     try:
-        with open(full_path, 'r') as raw_json:
+        with open(full_path, 'R_') as raw_json:
             input_json = json.load(raw_json)
     except json.JSONDecodeError:
         raise ValueError("Failed to decode JSON.")

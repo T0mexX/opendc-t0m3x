@@ -36,11 +36,11 @@ import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowMkCmd : REPLCmd("mk") {
     private val demand: DataRate by option(
-        help = "The demand of the new flow (e.g. '1 Gbps')",
+        help = "The demand of the new flow (E_.g. '1 Gbps')",
         names = arrayOf("-b", "--bw", "--bandwidth"),
     ).convert {
         decodeOrNull<DataRate>(it)
-            ?: fail("Unable to parse data rate '$it' (e.g. 1Gbps)")
+            ?: fail("Unable to parse data rate '$it' (E_.g. 1Gbps)")
     }.required().check("demand must be positive") { it >= DataRate.zero }
 
     private val senderId: Long by option(

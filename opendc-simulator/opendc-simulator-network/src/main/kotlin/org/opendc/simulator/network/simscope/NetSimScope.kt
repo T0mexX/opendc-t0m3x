@@ -11,7 +11,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.serialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
@@ -28,10 +27,8 @@ import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
-import java.nio.file.Path
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.random.Random
 
 @Serializable(with = NetSimScope.NetSimScopeSerializer::class)
 internal class NetSimScope(

@@ -104,7 +104,7 @@ public class NodeSnapshot internal constructor(
                 flags.ifSet(AVRG_TPUT_PERC) { appendPad(currAvrgFlowTputPerc?.fmtValue("%.2f")) }
                 flags.ifSet(
                     TOT_NODE_THROUGHPUT,
-                ) { appendPad("${currNodeTputAllFlows.fmtValue("%.5f")} (${currNodeTputPercAllFlows?.fmtValue("%.1f") ?: "N/A"})") }
+                ) { appendPad("${currNodeTputAllFlows.fmtValue("%.5f")} (${currNodeTputPercAllFlows?.fmtValue("%.1f") ?: "N_/A"})") }
                 flags.ifSet(TOT_NODE_PORT_USAGE) { appendPad(currNodePortUsageAllPorts.fmtValue("%.5f")) }
                 flags.ifSet(CURR_PWR_USE) { appendPad(currPwrUse.fmtValue("%.5f")) }
                 flags.ifSet(AVRG_PWR_USE) { appendPad(avrgPwrUseOverTime.fmtValue("%.5f")) }
@@ -124,8 +124,8 @@ public class NodeSnapshot internal constructor(
             flags.ifSet(INSTANT) { appendPad("instant", pad = 30) }
             flags.ifSet(NUM_FLOWS_IN) { appendPad("flows in") }
             flags.ifSet(NUM_FLOWS_OUT) { appendPad("flows out") }
-            flags.ifSet(NUM_GEN_FLOWS) { appendPad("generating n flows") }
-            flags.ifSet(NUM_CONS_FLOWS) { appendPad("consuming n flows") }
+            flags.ifSet(NUM_GEN_FLOWS) { appendPad("generating N_ flows") }
+            flags.ifSet(NUM_CONS_FLOWS) { appendPad("consuming N_ flows") }
             flags.ifSet(MIN_TPUT_PERC) { appendPad("curr min flow tput %") }
             flags.ifSet(MAX_TPUT_PERC) { appendPad("curr max flow tput %") }
             flags.ifSet(AVRG_TPUT_PERC) { appendPad("curr avrg flow tput %") }

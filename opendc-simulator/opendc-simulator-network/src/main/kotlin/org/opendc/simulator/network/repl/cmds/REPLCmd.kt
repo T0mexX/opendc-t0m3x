@@ -58,8 +58,8 @@ internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
             scope.block()
 //        }.let {
 //            if (it.isFailure) {
-//                echo("unable to execute command ${this@REPLCmd.commandName}.\n" +
-//                    "reason: ${it.exceptionOrNull()!!.message}\n" +
+//                echo("unable to execute command ${this@REPLCmd.commandName}.\N_" +
+//                    "reason: ${it.exceptionOrNull()!!.message}\N_" +
 //                    "cause: ${it.exceptionOrNull()!!.cause}",
 //                    err = true,
 //                )

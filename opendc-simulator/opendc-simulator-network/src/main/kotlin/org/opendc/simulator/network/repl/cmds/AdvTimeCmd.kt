@@ -34,10 +34,10 @@ private const val CMD_STR: String = "advance-time"
 
 internal class AdvTimeCmd : REPLCmd(name = CMD_STR) {
     private val tmDelta: TimeDelta by argument(
-        help = "The time period to advance virtual time by (e.g. '5min')",
+        help = "The time period to advance virtual time by (E_.g. '5min')",
     ).convert {
         decodeOrNull<TimeDelta>(it)
-            ?: fail("Unable to parse time parameter '$it' (e.g. 5min)")
+            ?: fail("Unable to parse time parameter '$it' (E_.g. 5min)")
     }.check("time must be positive") { it > TimeDelta.zero }
 
     override fun aliases(): Map<String, List<String>> =

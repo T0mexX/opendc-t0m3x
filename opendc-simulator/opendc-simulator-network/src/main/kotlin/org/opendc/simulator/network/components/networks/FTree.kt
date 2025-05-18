@@ -1,6 +1,9 @@
 package org.opendc.simulator.network.components.networks
 
 import kotlinx.serialization.Serializable
+import me.tongfei.progressbar.ProgressBar
+import me.tongfei.progressbar.ProgressBarBuilder
+import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
@@ -36,15 +39,11 @@ internal class FTree private constructor(
 
     context(NetSimScope)
     override suspend fun fmt(mode: NetSimStabilityMode): String = barrier.whileStable(mode) {
-        """
-            === Network (FatTree) ===
-            | k: ${specs.k}
-            | levels: 3
-            | nodes: ${nodeLs.size - 1}
-            | switches: ${getNodesById<Switch>().size}
-            | global switches: ${getNodesById<GlobalSwitch>().size}
-            | hosts: ${getNodesById<HostNode>().size}
-        """.trimIndent()
+        super.fmt(mode) +
+            """
+                ${'\u200B'}
+                 | k (pods): ${specs.k}
+            """.trimIndent()
     }
 
     companion object {
@@ -52,6 +51,14 @@ internal class FTree private constructor(
         suspend operator fun invoke(
             specs: FatTreeSpecs,
         ): FTree {
+            // Progress bar used while building network.
+            val pb = ProgressBarBuilder()
+                // Each step is building a node or adding a link.
+                .setInitialMax(specs.E_.toLong() + specs.V_)
+                .setStyle(ProgressBarStyle.ASCII)
+                .setTaskName("Building DragonFly Network...")
+                .build()
+
             val inet = Internet()
 
             /**
@@ -63,8 +70,7 @@ internal class FTree private constructor(
             val k: Int = listOf(specs.crSwSpecs, specs.aggrSwSpecs, specs.accessSwSpecs).minOf { it.nPorts() } / 2 * 2
             require(k % 2 == 0 && k > 2) { "Fat tree can only be built with even-port-number (>2) switches" }
 
-            this@NetSimScope.log.info("building fat-tree with k=$k")
-            val pods = buildList { repeat(k) { add(getPod(specs.aggrSwSpecs, specs.accessSwSpecs, specs.hostSpecs)) } }
+            val pods = buildList { repeat(k) { add(getPod(specs.aggrSwSpecs, specs.accessSwSpecs, specs.hostSpecs, pb)) } }
 
             val coreSwitchesChunked =
                 buildList {
@@ -74,10 +80,12 @@ internal class FTree private constructor(
                         )
                     }
                 }.chunked(k / 2)
+            pb.stepBy(k.toLong() * k / 4)
 
             pods.forEach { pod ->
                 pod.aggrSwitches.forEachIndexed { switchIdx, switch ->
                     coreSwitchesChunked[switchIdx].forEach { it.msgSyncConnect(switch) }
+                    pb.stepBy(coreSwitchesChunked[switchIdx].size.toLong())
                 }
             }
 
@@ -96,6 +104,13 @@ internal class FTree private constructor(
                     put(inet.id, inet)
                 }.toMutableMap()
 
+
+            // Assert built topology corresponds to specs.
+            assert(nodesById.size - 1 == specs.V_)
+            assert(nodesById.values.filterIsInstance<Switch>().size == specs.R_)
+            assert(nodesById.values.filterIsInstance<HostNode>().size == specs.N_)
+            assert(pb.current == specs.E_.toLong() + specs.V_)
+
             return FTree(
                 specs = specs,
                 nodesById = nodesById,
@@ -110,6 +125,8 @@ internal class FTree private constructor(
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)
+
+                pb.close()
             }
         }
 
@@ -118,6 +135,7 @@ internal class FTree private constructor(
             aggrSpecs: SwitchSpecs,
             torSpecs: SwitchSpecs,
             hostNodeSpecs: HostNodeSpecs,
+            pb: ProgressBar,
         ): FTreePod {
             val k: Int = listOf(aggrSpecs,torSpecs).minOf { it.nPorts() }
 
@@ -125,21 +143,25 @@ internal class FTree private constructor(
                 buildList {
                     repeat((k / 2).toDouble().pow(2.0).toInt()) { add(hostNodeSpecs.build()) }
                 }
+            pb.stepBy(hostNodes.size.toLong())
 
             val torSwitches =
                 buildList {
                     repeat(k / 2) { add(torSpecs.build()) }
                 }
+            pb.stepBy(torSwitches.size.toLong())
 
             hostNodes.forEachIndexed { index, server ->
                 server.msgSyncConnect(torSwitches[index / (k / 2)])
             }
+            pb.stepBy(hostNodes.size.toLong())
 
             val aggrSwitches =
                 torSwitches
                     .map { _ ->
                         val newSwitch = aggrSpecs.build()
                         torSwitches.forEach { newSwitch.msgSyncConnect(it) }
+                        pb.stepBy(torSwitches.size.toLong() + 1)
                         newSwitch
                     }.toList()
 

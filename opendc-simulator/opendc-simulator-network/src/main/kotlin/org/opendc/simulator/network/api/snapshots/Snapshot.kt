@@ -52,7 +52,7 @@ public abstract class Snapshot<T> {
     ) {
         obj?.let {
             append(obj.toString().padEnd(pad))
-        } ?: append("N/A".padEnd(pad))
+        } ?: append("N_/A".padEnd(pad))
     }
 
     protected fun StringBuilder.appendPad(

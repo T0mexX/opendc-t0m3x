@@ -27,7 +27,7 @@ import org.opendc.simulator.network.repl.cmds.REPLNoOpCmd
 internal class NodeCmd : REPLNoOpCmd(name = "node") {
     override fun aliases(): Map<String, List<String>> =
         mapOf(
-            "n" to listOf("node"),
+            "N_" to listOf("node"),
             "nd" to listOf("node"),
         ) + super.aliases()
 }

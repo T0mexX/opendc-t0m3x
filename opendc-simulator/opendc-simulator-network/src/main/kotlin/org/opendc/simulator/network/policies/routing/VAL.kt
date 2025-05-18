@@ -56,12 +56,12 @@ import java.util.Stack
 //    }
 //
 //    context(NetSimScope)
-//    override suspend fun onNodeAdded(n: Node<*>) {
+//    override suspend fun onNodeAdded(N_: Node<*>) {
 //        TODO()
 //    }
 //
 //    context(NetSimScope)
-//    override suspend fun onNodeRemoved(n: Node<*>) {
+//    override suspend fun onNodeRemoved(N_: Node<*>) {
 //        TODO()
 //    }
 //
@@ -70,13 +70,13 @@ import java.util.Stack
 //     */
 //    private fun Network.randomNodeExcept(vararg excludedNodes: Node<*>): Node<*> {
 //        var randomIdx = nodeLs.indices.random()
-//        var n: Node<*>
+//        var N_: Node<*>
 //        do {
-//            n = nodeLs[randomIdx]
+//            N_ = nodeLs[randomIdx]
 //            randomIdx = if (randomIdx == nodeLs.size - 1) 0 else randomIdx + 1
-//        } while (n in excludedNodes)
+//        } while (N_ in excludedNodes)
 //
-//        return n
+//        return N_
 //    }
 //
 //    /**
@@ -126,9 +126,9 @@ import java.util.Stack
 //
 //    /**
 //     * Selecting a random middle router can create loops in the routing path
-//     * (e.g., simply A->B->C->B->D if C=Rm, A=Rs, D=Rd).
+//     * (E_.g., simply A->B->C->B->D if C=Rm, A=Rs, D=Rd).
 //     * This method removes loops
-//     * (e.g., A->B->C->B->D becomes A->B->D).
+//     * (E_.g., A->B->C->B->D becomes A->B->D).
 //     */
 //    context(NetSimScope)
 //    private fun RoutPath.withNoLoops(): RoutPath {
@@ -148,10 +148,10 @@ import java.util.Stack
 //                this.remove(stack.pop())!!
 //            }
 //            // The first node that was part of the loop.
-//            val n = stack.peek()
+//            val N_ = stack.peek()
 //
 //            // Remove the step that leaded to loop.
-//            this[n]!!.remove(n.ports.find { it.txLink!!.receiverPort.owner == rm })
+//            this[N_]!!.remove(N_.ports.find { it.txLink!!.receiverPort.owner == rm })
 //        }
 //
 //        fun step() {
@@ -168,10 +168,10 @@ import java.util.Stack
 //                    p.txLink!!.receiverPort.owner
 //
 //                // Step in all possible directions (max 2).
-//                }?.forEach { n ->
-//                    if (n in stack) return@forEach backTrack(to = n)
+//                }?.forEach { N_ ->
+//                    if (N_ in stack) return@forEach backTrack(to = N_)
 //
-//                    stack.push(n)
+//                    stack.push(N_)
 //                    step()
 //                    stack.pop()
 //

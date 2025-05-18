@@ -18,12 +18,12 @@ import org.opendc.simulator.network.simscope.NetSimScope
 /**
  * Specifications of a [Clos] network.
  *
- * @param n Number of switch layers of the Clos network.
+ * @param N_ Number of switch layers of the Clos network.
  * @param nodesPerLayer Number of nodes per layer.
- * This map has `n + 1` entries, 1 for each switch layer + the host layer.
+ * This map has `N_ + 1` entries, 1 for each switch layer + the host layer.
  * Each node in a layer is fully connected with the layers above/below.
  * The first layer is `0` and corresponds to [GlobalSwitch]s,
- * the last layer is [n] and will be filled with [HostNode]s.
+ * the last layer is [N_] and will be filled with [HostNode]s.
  * @param portSpeedPerLayer Port speed of nodes for each layer.
  * Same mapping as [nodesPerLayer] applies.
  *
@@ -35,7 +35,20 @@ internal class ClosSpecs(
     val n: Int,
     val nodesPerLayer: Map<Int, Int>,
     val portSpeedPerLayer: Map<Int, DataRate>,
-) : Specs<Clos> {
+) : NetworkSpecs<Clos> {
+    override val V_: Int =
+        nodesPerLayer.values.sum()
+
+    override val N_: Int =
+        nodesPerLayer.maxBy { it.key }.value
+
+    override val R_: Int = V_ - N_
+
+    override val E_: Int =
+        (0 until n).sumOf { layerIdx ->
+            nodesPerLayer[layerIdx]!! * nodesPerLayer[layerIdx + 1]!!
+        }
+
     context(NetSimScope) override suspend fun build(): Clos = Clos(this)
 }
 
@@ -48,11 +61,11 @@ internal class ClosSpecs(
 private class ClosSpecsSerializer : KSerializer<ClosSpecs> {
     /**
      * @param n Number of switch layers.
-     * @param nodesPerLayer Maps the layers (0 to n) to the number of nodes in those layers.
+     * @param nodesPerLayer Maps the layers (0 to N_) to the number of nodes in those layers.
      * Layer 0 is the uppermost, built of global switches. The lowest layer is [n], built of host nodes.
      * Missing values will be replaced by [dfltNodesPerLayer] if defined.
      * @param dfltNodesPerLayer The default value used for missing ones in [nodesPerLayer].
-     * @param portSpeedPerLayer  Maps the layers (0 to n-1) to the port speed of the nodes in those layers.
+     * @param portSpeedPerLayer  Maps the layers (0 to N_-1) to the port speed of the nodes in those layers.
      * Same mapping rules as [nodesPerLayer] apply.
      * Missing values will be replaced by [dfltPortSpeed] if provided,
      * or fall back to the default defined in [NetSimDevConfig]. If none of these are set, deserialization fails.
@@ -116,7 +129,7 @@ private class ClosSpecsSerializer : KSerializer<ClosSpecs> {
         encoder.encodeSerializableValue(
             serializer(),
             Surr(
-                n = value.n,
+                n = value.N_,
                 nodesPerLayer = nPerL,
                 dfltNodesPerLayer = nPerLMode,
                 portSpeedPerLayer = drPerL,

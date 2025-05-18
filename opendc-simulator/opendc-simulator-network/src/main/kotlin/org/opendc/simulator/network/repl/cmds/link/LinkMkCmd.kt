@@ -36,16 +36,16 @@ import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class LinkMkCmd : REPLCmd("mk") {
     private val bw: DataRate by option(
-        help = "The link capacity (e.g. '1 Gbps')",
+        help = "The link capacity (E_.g. '1 Gbps')",
         names = arrayOf("-b", "--bw", "--bandwidth"),
     ).convert {
         decodeOrNull<DataRate>(it)
-            ?: fail("Unable to parse data rate '$it' (e.g. 1Gbps)")
+            ?: fail("Unable to parse data rate '$it' (E_.g. 1Gbps)")
     }.required().check("bandwidth must be >= 0") { it >= DataRate.zero }
 
     private val nodeIds: Set<Long> by option(
         help = "The id of the first node",
-        names = arrayOf("-n", "--nodes", "--nodeids"),
+        names = arrayOf("-N_", "--nodes", "--nodeids"),
     ).long().multiple().unique().check("nodes must be 2.") { it.size == 2 }
 
     override fun run(): Unit = execREPLCmdCatching {

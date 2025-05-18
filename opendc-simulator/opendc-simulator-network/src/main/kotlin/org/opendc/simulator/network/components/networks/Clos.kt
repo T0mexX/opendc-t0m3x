@@ -1,5 +1,7 @@
 package org.opendc.simulator.network.components.networks
 
+import me.tongfei.progressbar.ProgressBarBuilder
+import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.Internet
@@ -13,7 +15,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 
 /**
- * Network of [ClosSpecs.n] fully connected layers. Last layer is of [HostNode]s.
+ * Network of [ClosSpecs.N_] fully connected layers. Last layer is of [HostNode]s.
  */
 internal class Clos(
     val specs: ClosSpecs,
@@ -35,14 +37,11 @@ internal class Clos(
 
     context(NetSimScope)
     override suspend fun fmt(mode: NetSimStabilityMode): String =
+        super.fmt(mode) +
         """
-            === Network (Clos) ===
-            | n: ${specs.n}
-            | nodesPerLayer: ${layers.map { it.size }}
-            | nodes: ${nodeLs.size - 1}
-            | switches: ${getNodesById<Switch>().size}
-            | global switches: ${getNodesById<GlobalSwitch>().size}
-            | hosts: ${getNodesById<HostNode>().size}
+            ${'\u200B'}
+             | n (layers): ${specs.n}
+             | nodes per layer: ${specs.nodesPerLayer}
         """.trimIndent()
 
     companion object {
@@ -50,6 +49,14 @@ internal class Clos(
          * Suspending constructor.
          */
         context(NetSimScope) suspend operator fun invoke(specs: ClosSpecs): Clos {
+            // Progress bar used while building network.
+            val pb = ProgressBarBuilder()
+                // Each step is building a node or adding a link.
+                .setInitialMax(specs.E_.toLong() + specs.V_)
+                .setStyle(ProgressBarStyle.ASCII)
+                .setTaskName("Building DragonFly Network...")
+                .build()
+
             val inet = Internet()
             val layers = buildList {
                 repeat(specs.n + 1) { add(mutableListOf<Node<*>>()) }
@@ -80,6 +87,7 @@ internal class Clos(
                             else -> Switch(portSpeed = speed, nPorts = nAbove + nBelow)
                         }
                     )
+                    pb.step()
                 }
             }
 
@@ -94,9 +102,16 @@ internal class Clos(
                     // Connect to the layer below.
                     layers.getOrNull(layerIdx + 1)?.forEach { nBelow ->
                         n.msgSyncConnect(nBelow)
+                        pb.step()
                     }
                 }
             }
+
+            // Assert built topology corresponds to specs.
+            assert(layers.sumOf { it.size } == specs.V_)
+            assert(layers.dropLast(1).sumOf { it.size } == specs.R_)
+            assert(layers.last().size == specs.N_)
+            assert(pb.current == specs.E_.toLong() + specs.V_)
 
             return Clos(
                 specs = specs,
@@ -111,6 +126,8 @@ internal class Clos(
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)
+
+                pb.close()
             }
         }
     }

@@ -8,6 +8,7 @@ import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.Switch
+import org.opendc.simulator.network.components.specs.NetworkSpecs
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
@@ -81,12 +82,14 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
     context(NetSimScope)
     suspend fun fmt(mode: NetSimStabilityMode = config.stabilityMode): String =
         barrier.whileStable(mode) {
+            val specs = this.toSpecs() as NetworkSpecs
             """
-                === Network ===
-                | nodes: ${nodeLs.size - 1}
-                | switches: ${getNodesById<Switch>().size}
+               === Network (${this::class.simpleName}) ===
+                | V (nodes/vertices): ${specs.V_}
+                | N (hosts): ${specs.N_}
+                | R (switches/routers): ${specs.R_}
+                | E (links/edges): ${specs.E_}
                 | global switches: ${getNodesById<GlobalSwitch>().size}
-                | hosts: ${getNodesById<HostNode>().size}
             """.trimIndent()
         }
 

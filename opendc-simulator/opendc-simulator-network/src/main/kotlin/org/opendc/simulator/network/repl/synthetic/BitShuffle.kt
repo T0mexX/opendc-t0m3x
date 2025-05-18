@@ -17,16 +17,16 @@ import kotlin.math.log2
  * Bit-shuffle synthetic traffic pattern.
  * It creates communication flows by cyclically rotating host ID bits to the left.
  *
- * - The `n` hosts are assigned temporary IDs from `0` to `n - 1`,
+ * - The `N_` hosts are assigned temporary IDs from `0` to `N_ - 1`,
  * - Each host sends to the host whose ID is a left rotation (bitwise shuffle)
- *   of its own ID by one position, considering only the least significant `log2(n)` bits.
+ *   of its own ID by one position, considering only the least significant `log2(N_)` bits.
  *
  * This pattern is used to evaluate traffic dispersion in network topologies,
  * as it introduces structured, non-local communication similar to that
  * observed in FFT and butterfly computation stages.
  *
  * Example:
- * For `n = 8` (3-bit addresses), host `0b101` (5) will send to `0b011` (3),
+ * For `N_ = 8` (3-bit addresses), host `0b101` (5) will send to `0b011` (3),
  * since rotating `101` left by 1 gives `011`.
  */
 @Serializable

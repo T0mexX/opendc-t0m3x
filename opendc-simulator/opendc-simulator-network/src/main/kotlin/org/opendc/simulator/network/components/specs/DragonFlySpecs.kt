@@ -26,17 +26,37 @@ internal data class DragonFlySpecs(
     val globalSwitchesPerGroup: Int = 1,
     val switchSpecs: SwitchSpecs,
     val hostSpecs: HostNodeSpecs,
-): Specs<DragonFly> {
+): NetworkSpecs<DragonFly> {
+    /**
+     * Number of routers (switches) in the network.
+     */
+    override val R_: Int = a * g
 
     /**
      * Number of terminals (hosts) in the network.
      */
-    val n: Int = a * p * g
+    override val N_: Int = a * p * g
+
+    /**
+     * Number of vertices (nodes) in the network.
+     */
+    override val V_: Int = R_ + R_ * p
+
+    /**
+     * Number of edges (links) in the network.
+     */
+    override val E_: Int = let {
+        val intraGroupsSw2Sw = (a *  (a - 1) / 2) * g
+        val intraGroupH2Sw = a * p * g
+        val interGroup = R_ * h / 2
+
+        intraGroupH2Sw + intraGroupsSw2Sw + interGroup
+    }
 
     /**
      * Property of dragonfly. `true` if there is exactly one connection between each pair of groups
      */
-    val isMaxSize: Boolean = n == a * p * (a * h + 1)
+    val isMaxSize: Boolean = N_ == a * p * (a * h + 1)
 
     init {
         // "The network should be balanced so that a ≥ 2h, 2p ≥ 2h"

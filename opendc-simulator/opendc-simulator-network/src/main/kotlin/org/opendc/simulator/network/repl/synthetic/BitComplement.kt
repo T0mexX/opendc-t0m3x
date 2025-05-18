@@ -17,12 +17,12 @@ import kotlin.math.log2
  * Bit-complement synthetic traffic pattern.
  * It allows starting flows according to bit-complement of host ids.
  *
- * - The `n` hosts are mapped to temporary ids 0 to n-1,
+ * - The `N_` hosts are mapped to temporary ids 0 to N_-1,
  * - Each host will start a flow directed to the bit-complement of its own id,
- *   considering only the least significant `log(n)` bits.
+ *   considering only the least significant `log(N_)` bits.
  *
  * Example:
- * For `n = 8` (3-bit addresses), host `0b010` (2) will send to `0b101` (5).
+ * For `N_ = 8` (3-bit addresses), host `0b010` (2) will send to `0b101` (5).
  */
 @Serializable
 @SerialName("bit-complement")

@@ -1,5 +1,8 @@
 package org.opendc.simulator.network.components.networks
 
+import me.tongfei.progressbar.ProgressBar
+import me.tongfei.progressbar.ProgressBarBuilder
+import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.Internet
@@ -10,6 +13,7 @@ import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.specs.DragonFlySpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 
 /**
  * @see DragonFlySpecs for network parameters.
@@ -35,6 +39,23 @@ internal class DragonFly private constructor(
 
     override fun toSpecs(): Specs<Network> = specs
 
+    context(NetSimScope)
+    override suspend fun fmt(mode: NetSimStabilityMode): String = barrier.whileStable(mode) {
+        super.fmt(mode) +
+            """
+                ${'\u200B'}
+                 | g (groups): ${specs.g}
+                 | a (routers per group): ${specs.a}
+                 | p (terminal per router): ${specs.p}
+                 | h (inter-group edges per router): ${specs.h}
+            """.trimIndent()
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Suspending Constructor
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     companion object {
         /**
          * Suspending constructor.
@@ -44,10 +65,18 @@ internal class DragonFly private constructor(
         suspend operator fun invoke(
             specs: DragonFlySpecs,
         ): DragonFly {
+            // Progress bar used while building network.
+            val pb = ProgressBarBuilder()
+                // Each step is building a node or adding a link.
+                .setInitialMax(specs.E_.toLong() + specs.V_)
+                .setStyle(ProgressBarStyle.ASCII)
+                .setTaskName("Building DragonFly Network...")
+                .build()
+
             val int = Internet()
 
             // Build groups and their internal connections.
-            val groups = 0.rangeUntil(specs.g).map { DFGroup(specs, int) }
+            val groups = 0.rangeUntil(specs.g).map { DFGroup(specs, int, pb) }
 
             fun Switch.isConnectedTo(other: Switch): Boolean =
                 this.ports.any { it.txLink?.receiverPort?.owner == other }
@@ -79,7 +108,7 @@ internal class DragonFly private constructor(
                 val toSwI = nConns.entries.find {
                     it.value < specs.h
                         // "From" and "to" indices to be different to avoid circular connection
-                        // (e.g., group1 to group 3, group 3 to group 1)
+                        // (E_.g., group1 to group 3, group 3 to group 1)
                         && it.key != fromSwI
                         // Connection between these 2 switch indexes at group distance `toGDeltaI` has to be missing.
                         && groups[0].switches[fromSwI].isConnectedTo(groups[toGDeltaI].switches[it.key]).not()
@@ -94,6 +123,9 @@ internal class DragonFly private constructor(
                     assert(fromSw.isConnectedTo(toSw).not())
                     g.switches[fromSwI].msgSyncConnect(toSw)
                 }
+
+                // Update progress bar.
+                pb.stepBy(groups.size.toLong())
 
                 toGDeltaI = (toGDeltaI + 1) % specs.g
                 if (toGDeltaI == 0) {
@@ -117,6 +149,12 @@ internal class DragonFly private constructor(
                 }
             )
 
+            // Assert the number of vertices (nodes) in the network is the one derived from the specs.
+            assert(specs.V_ == groups.sumOf { it.switches.size + it.hosts.size }) {"${specs.V_} ${groups.sumOf { it.switches.size + it.hosts.size }}"}
+
+            // Assert progress bar consistency.
+            assert(pb.current == specs.E_.toLong() + specs.V_) {"${pb.current} ${specs.E_.toLong() + specs.V_}"}
+
             return DragonFly(
                 specs = specs,
                 groups = groups,
@@ -130,6 +168,8 @@ internal class DragonFly private constructor(
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)
+
+                pb.close()
             }
         }
     }
@@ -150,7 +190,7 @@ internal class DragonFly private constructor(
              * Suspending constructor.
              */
             context(NetSimScope)
-            suspend operator fun invoke(specs: DragonFlySpecs, int: Internet): DFGroup {
+            suspend operator fun invoke(specs: DragonFlySpecs, int: Internet, pb: ProgressBar): DFGroup {
                 // Remaining global switches to add to group.
                 var glSwNum = specs.globalSwitchesPerGroup
 
@@ -159,22 +199,26 @@ internal class DragonFly private constructor(
                     if (--glSwNum >= 0) specs.switchSpecs.toCoreSwitchSpecs().buildAsCore(int)
                     else specs.switchSpecs.build()
                 }
+                pb.stepBy(switches.size.toLong())
 
                 // Establish connections between switches of the same group (pairwise connections).
                 switches.forEachIndexed { idx, sw1 ->
                     switches.drop(idx + 1).forEach { sw2 ->
                         sw1.msgSyncConnect(sw2)
                     }
+                    pb.stepBy(switches.size.toLong() - idx - 1)
                 }
 
                 // Establish connection between each switch and terminals (hosts).
                 val hosts = buildList {
                     switches.forEach { sw ->
                         0.rangeUntil(specs.p).map {
+                            pb.step()
                             specs.hostSpecs.build()
                         }.forEach { h ->
                             h.msgSyncConnect(sw)
                             add(h)
+                            pb.step()
                         }
                     }
                 }

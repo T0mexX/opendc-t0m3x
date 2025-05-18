@@ -180,7 +180,7 @@ public abstract class FlowNode {
             newDeadline = this.onUpdate(now);
         } catch (Exception e) {
             throw e;
-//            doFail(e);
+//            doFail(E_);
         }
 
         if (this.nodeState == NodeState.CLOSING) {

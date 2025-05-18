@@ -16,15 +16,15 @@ import kotlin.math.log2
  * Bit-reversal synthetic traffic pattern.
  * It establishes communication flows based on the bit-reversed IDs of hosts.
  *
- * - The `n` hosts are mapped to temporary IDs from `0` to `n - 1`,
+ * - The `N_` hosts are mapped to temporary IDs from `0` to `N_ - 1`,
  * - Each host initiates a flow to the host whose ID is the bit-reversal
- *   of its own ID, considering only the least significant `log2(n)` bits.
+ *   of its own ID, considering only the least significant `log2(N_)` bits.
  *
  * This pattern is commonly used to simulate non-local, structured traffic,
  * particularly in FFT-based algorithms and butterfly network topologies.
  *
  * Example:
- * For `n = 8` (3-bit addresses), host `0b010` (2) will send to `0b010` (2),
+ * For `N_ = 8` (3-bit addresses), host `0b010` (2) will send to `0b010` (2),
  * and host `0b011` (3) will send to `0b110` (6).
  */
 
@@ -57,7 +57,7 @@ internal data object BitReversal: SyntheticWl<Network> {
         map.forEach { (tmpId, h) ->
             var destIdInt = tmpId.value.revNBits(nBits)
 
-            // If `n` least significant bits are palindromes, then use complement instead.
+            // If `N_` least significant bits are palindromes, then use complement instead.
             if (destIdInt == tmpId.value)
                 destIdInt = destIdInt xor mask
 
