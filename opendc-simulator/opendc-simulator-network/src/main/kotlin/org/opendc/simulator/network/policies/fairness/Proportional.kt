@@ -32,7 +32,7 @@ internal class Proportional: FairnessPolicy() {
                 // Apply data-rate reductions.
                 f.onEach { e ->
                     if (e.used.not()) return@onEach
-                    val delta = l.maxBw * (e.demand / dmndSum) - e.tput
+                    val delta = (  (l.maxBw * (e.demand / dmndSum)  ) min e.demand) - e.tput
                     if (delta >= DataRate.zero) return@onEach
                     l.releaseBw(-delta, e.netF)
                     e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1e-6)
@@ -41,7 +41,7 @@ internal class Proportional: FairnessPolicy() {
                 // Apply data-rate increases.
                 f.onEach { e ->
                     if (e.used.not()) return@onEach
-                    val delta = l.maxBw * (e.demand / dmndSum) - e.tput
+                    val delta = (  (l.maxBw * (e.demand / dmndSum)  ) min e.demand) - e.tput
                     if (delta <= DataRate.zero) return@onEach
                     val claimed = l.claimBw(delta, e.netF)
                     if (claimed approx DataRate.zero) return@onEach

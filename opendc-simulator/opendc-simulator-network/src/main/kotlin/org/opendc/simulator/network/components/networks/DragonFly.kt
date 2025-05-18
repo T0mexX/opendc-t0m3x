@@ -9,7 +9,6 @@ import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.specs.DragonFlySpecs
 import org.opendc.simulator.network.components.specs.Specs
-import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
@@ -19,7 +18,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
  */
 internal class DragonFly private constructor(
     val specs: DragonFlySpecs,
-    groups: List<Group>,
+    val groups: List<DFGroup>,
     override val inet: Internet,
 ): NetworkImpl() {
     override val _nodesById: MutableMap<NodeId, Node<*>> = buildMap {
@@ -48,7 +47,7 @@ internal class DragonFly private constructor(
             val int = Internet()
 
             // Build groups and their internal connections.
-            val groups = 0.rangeUntil(specs.g).map { Group(specs, int) }
+            val groups = 0.rangeUntil(specs.g).map { DFGroup(specs, int) }
 
             fun Switch.isConnectedTo(other: Switch): Boolean =
                 this.ports.any { it.txLink?.receiverPort?.owner == other }
@@ -63,7 +62,7 @@ internal class DragonFly private constructor(
 
             fun <T> List<T>.getModuloIdx(idx: Int): T = this[idx % this.size]
 
-            fun Group.nConnectionsWith(other: Group): Int =
+            fun DFGroup.nConnectionsWith(other: DFGroup): Int =
                 switches.sumOf { thisSw ->
                     other.switches.count { otherSw ->
                         otherSw.isConnectedTo(thisSw)
@@ -77,14 +76,23 @@ internal class DragonFly private constructor(
                 val fromSwI = nConns.entries.find { it.value < specs.h }?.key ?: break
                 nConns.compute(fromSwI) { _, v -> v!! + 1 }
 
-                val toSwI = nConns.entries.find { it.value < specs.h }!!.key
+                val toSwI = nConns.entries.find {
+                    it.value < specs.h
+                        // "From" and "to" indices to be different to avoid circular connection
+                        // (e.g., group1 to group 3, group 3 to group 1)
+                        && it.key != fromSwI
+                        // Connection between these 2 switch indexes at group distance `toGDeltaI` has to be missing.
+                        && groups[0].switches[fromSwI].isConnectedTo(groups[toGDeltaI].switches[it.key]).not()
+                }!!.key
                 nConns.compute(toSwI) { _, v -> v!! + 1 }
 
                 groups.forEachIndexed { gIdx, g ->
                     val targetG = groups.getModuloIdx(gIdx + toGDeltaI)
-                    val toSw = targetG.switches.getModuloIdx(toSwI)
+                    val fromSw = g.switches[fromSwI]
+                    val toSw = targetG.switches[toSwI]
                     assert(targetG !== g)
-                    g.switches[fromSwI].connectTo(toSw)
+                    assert(fromSw.isConnectedTo(toSw).not())
+                    g.switches[fromSwI].msgSyncConnect(toSw)
                 }
 
                 toGDeltaI = (toGDeltaI + 1) % specs.g
@@ -101,6 +109,9 @@ internal class DragonFly private constructor(
                 groups.all { g1 ->
                     groups.filter { it !== g1 }
                         .all { g2 ->
+                            assert(g1.nConnectionsWith(g2) >= (specs.a * specs.h + 1) / specs.g) {
+                                "${g1.nConnectionsWith(g2)}, ${(specs.a * specs.h + 1) / specs.g}"
+                            }
                             g1.nConnectionsWith(g2) >= (specs.a * specs.h + 1) / specs.g
                         }
                 }
@@ -129,7 +140,7 @@ internal class DragonFly private constructor(
      * connections to terminals and [DragonFlySpecs.a] * [DragonFlySpecs.h]
      * connections to global channels.
      */
-    private class Group private constructor(
+    internal class DFGroup private constructor(
         val hosts: List<HostNode>,
         val switches: List<Switch>,
         ) {
@@ -139,7 +150,7 @@ internal class DragonFly private constructor(
              * Suspending constructor.
              */
             context(NetSimScope)
-            suspend operator fun invoke(specs: DragonFlySpecs, int: Internet): Group {
+            suspend operator fun invoke(specs: DragonFlySpecs, int: Internet): DFGroup {
                 // Remaining global switches to add to group.
                 var glSwNum = specs.globalSwitchesPerGroup
 
@@ -152,7 +163,7 @@ internal class DragonFly private constructor(
                 // Establish connections between switches of the same group (pairwise connections).
                 switches.forEachIndexed { idx, sw1 ->
                     switches.drop(idx + 1).forEach { sw2 ->
-                        sw1.connectTo(sw2)
+                        sw1.msgSyncConnect(sw2)
                     }
                 }
 
@@ -162,13 +173,13 @@ internal class DragonFly private constructor(
                         0.rangeUntil(specs.p).map {
                             specs.hostSpecs.build()
                         }.forEach { h ->
-                            h.connectTo(sw)
+                            h.msgSyncConnect(sw)
                             add(h)
                         }
                     }
                 }
 
-                return Group(hosts, switches)
+                return DFGroup(hosts, switches)
             }
         }
     }

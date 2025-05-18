@@ -31,6 +31,7 @@ import java.io.File
 import java.nio.file.Path
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.random.Random
 
 @Serializable(with = NetSimScope.NetSimScopeSerializer::class)
 internal class NetSimScope(
@@ -174,11 +175,12 @@ internal class NetSimScope(
 
                 with(scope) {
                     runBlocking(scope.ctx) {
+                        // If a path to a network topology defined then try to build it.
                         netPath?.let {
                             NETWORK_JSON.decodeFromStream<Specs<Network>>(File(netPath).inputStream()).build()
-                        } ?: let {
-                            CustomNetwork()
-                        }
+
+                        // Else build an empty modifiable `CustomNetwork` in the scope.
+                        } ?: CustomNetwork()
                     }
                 }
             }

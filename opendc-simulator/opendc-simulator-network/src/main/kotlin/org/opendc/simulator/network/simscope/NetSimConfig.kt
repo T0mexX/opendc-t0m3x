@@ -1,6 +1,5 @@
 package org.opendc.simulator.network.simscope
 
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
@@ -17,6 +16,7 @@ import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import javax.naming.OperationNotSupportedException
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
+import kotlin.random.Random
 
 
 //TODO: Make serializer
@@ -31,6 +31,7 @@ public data class NetSimConfig internal constructor(
     internal val routPolicy: RoutPolicy = ECMP(),
     internal val fairPolicy: FairnessPolicy = Proportional(),
     internal val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
+    val random: Random = Random(Random.nextInt()),
     val wlToNetIdMapping: Boolean = true,
 ): AbstractCoroutineContextElement(Key) {
 
@@ -48,6 +49,7 @@ public data class NetSimConfig internal constructor(
             val netSimExportConfig: NetworkExportConfig? = null,
             val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
             val wlToNetIdMapping: Boolean = true,
+            val seed: Int = Random.nextInt(),
             @Polymorphic val routingPolicy: RoutPolicy = ECMP(),
             @Polymorphic val fairnessPolicy: FairnessPolicy = Proportional(),
         )
@@ -57,15 +59,16 @@ public data class NetSimConfig internal constructor(
         override val descriptor: SerialDescriptor = serialDescriptor<NetSimConfigSurrogate>()
 
         override fun deserialize(decoder: Decoder): NetSimConfig {
-            val surrogate: NetSimConfigSurrogate = decoder.decodeSerializableValue(surrogateSerial)
+            val surr: NetSimConfigSurrogate = decoder.decodeSerializableValue(surrogateSerial)
 
             return NetSimConfig(
-                stabilityMode = surrogate.stabilityMode,
-                netSimExportConfig = surrogate.netSimExportConfig,
-                netSimDevConfig = surrogate.netSimDevConfig,
-                wlToNetIdMapping = surrogate.wlToNetIdMapping,
-                routPolicy = surrogate.routingPolicy,
-                fairPolicy = surrogate.fairnessPolicy,
+                stabilityMode = surr.stabilityMode,
+                netSimExportConfig = surr.netSimExportConfig,
+                netSimDevConfig = surr.netSimDevConfig,
+                wlToNetIdMapping = surr.wlToNetIdMapping,
+                routPolicy = surr.routingPolicy,
+                fairPolicy = surr.fairnessPolicy,
+                random = Random(surr.seed)
             )
         }
 

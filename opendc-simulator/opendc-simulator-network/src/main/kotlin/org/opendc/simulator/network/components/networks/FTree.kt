@@ -19,10 +19,11 @@ import kotlin.math.pow
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-internal class FatTree private constructor(
+internal class FTree private constructor(
     private val specs: FatTreeSpecs,
     nodesById: Map<NodeId, Node<*>>,
     override val inet: Internet,
+    val pods: List<FTreePod>,
 ): NetworkImpl() {
     override val _nodesById: MutableMap<NodeId, Node<*>> =
         nodesById.toMutableMap()
@@ -31,7 +32,7 @@ internal class FatTree private constructor(
     override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
         getNodesById<SenderNode<*>>().toMutableMap()
 
-    override fun toSpecs(): Specs<FatTree> = specs
+    override fun toSpecs(): Specs<FTree> = specs
 
     context(NetSimScope)
     override suspend fun fmt(mode: NetSimStabilityMode): String = barrier.whileStable(mode) {
@@ -50,7 +51,7 @@ internal class FatTree private constructor(
         context(NetSimScope)
         suspend operator fun invoke(
             specs: FatTreeSpecs,
-        ): FatTree {
+        ): FTree {
             val inet = Internet()
 
             /**
@@ -76,14 +77,14 @@ internal class FatTree private constructor(
 
             pods.forEach { pod ->
                 pod.aggrSwitches.forEachIndexed { switchIdx, switch ->
-                    coreSwitchesChunked[switchIdx].forEach { it.connectTo(switch) }
+                    coreSwitchesChunked[switchIdx].forEach { it.msgSyncConnect(switch) }
                 }
             }
 
             val coreSwitches = coreSwitchesChunked.flatten()
             val aggregationSwitches = pods.flatMap { it.aggrSwitches }
             val torSwitches = pods.flatMap { it.torSwitches }
-            val leafs = pods.flatMap { it.hostNodes }
+            val leafs = pods.flatMap { it.hosts }
 
             val nodesById =
                 buildMap {
@@ -95,10 +96,11 @@ internal class FatTree private constructor(
                     put(inet.id, inet)
                 }.toMutableMap()
 
-            return FatTree(
+            return FTree(
                 specs = specs,
                 nodesById = nodesById,
                 inet = inet,
+                pods = pods,
             ).also {
                 // Setup global routing policy if needed.
                 this@NetSimScope.config.routPolicy.setUp()
@@ -116,7 +118,7 @@ internal class FatTree private constructor(
             aggrSpecs: SwitchSpecs,
             torSpecs: SwitchSpecs,
             hostNodeSpecs: HostNodeSpecs,
-        ): FatTreePod {
+        ): FTreePod {
             val k: Int = listOf(aggrSpecs,torSpecs).minOf { it.nPorts() }
 
             val hostNodes =
@@ -130,26 +132,26 @@ internal class FatTree private constructor(
                 }
 
             hostNodes.forEachIndexed { index, server ->
-                server.connectTo(torSwitches[index / (k / 2)])
+                server.msgSyncConnect(torSwitches[index / (k / 2)])
             }
 
             val aggrSwitches =
                 torSwitches
                     .map { _ ->
                         val newSwitch = aggrSpecs.build()
-                        torSwitches.forEach { newSwitch.connectTo(it) }
+                        torSwitches.forEach { newSwitch.msgSyncConnect(it) }
                         newSwitch
                     }.toList()
 
-            return FatTreePod(hostNodes = hostNodes, aggrSwitches = aggrSwitches, torSwitches = torSwitches)
+            return FTreePod(hosts = hostNodes, aggrSwitches = aggrSwitches, torSwitches = torSwitches)
         }
     }
 
     /**
      * TODO
      */
-    private class FatTreePod(
-        val hostNodes: List<HostNode>,
+    internal class FTreePod(
+        val hosts: List<HostNode>,
         val torSwitches: List<Switch>,
         val aggrSwitches: List<Switch>,
     )

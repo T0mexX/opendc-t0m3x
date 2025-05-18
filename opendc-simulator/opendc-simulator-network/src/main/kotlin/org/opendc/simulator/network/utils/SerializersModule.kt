@@ -12,6 +12,14 @@ import org.opendc.simulator.network.policies.routing.ECMP
 import org.opendc.simulator.network.policies.routing.OSPF
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.policies.routing.UGALL
+import org.opendc.simulator.network.repl.synthetic.BitComplement
+import org.opendc.simulator.network.repl.synthetic.BitReversal
+import org.opendc.simulator.network.repl.synthetic.BitShuffle
+import org.opendc.simulator.network.repl.synthetic.Full
+import org.opendc.simulator.network.repl.synthetic.SyntheticWl
+import org.opendc.simulator.network.repl.synthetic.adversarial.AdversarialWl
+import org.opendc.simulator.network.repl.synthetic.adversarial.DFAdv
+import org.opendc.simulator.network.repl.synthetic.adversarial.FTreeAdv
 
 public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
     polymorphic(RoutPolicy::class) {
@@ -23,6 +31,18 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
         subclass(FirstComeFirstServed::class)
         subclass(MaxMin::class)
         subclass(Proportional::class)
+    }
+    polymorphic(SyntheticWl::class) {
+        subclass(BitComplement::class)
+        subclass(BitReversal::class)
+        subclass(BitShuffle::class)
+        subclass(Full::class)
+        subclass(FTreeAdv::class)
+        subclass(DFAdv::class)
+        polymorphic(AdversarialWl::class) {
+            subclass(FTreeAdv::class)
+            subclass(DFAdv::class)
+        }
     }
 }
 

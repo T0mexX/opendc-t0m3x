@@ -2,7 +2,7 @@ package org.opendc.simulator.network.components.specs
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.opendc.simulator.network.components.networks.FatTree
+import org.opendc.simulator.network.components.networks.FTree
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
@@ -19,16 +19,16 @@ internal data class FatTreeSpecs(
     val aggrSwSpecs: SwitchSpecs = switchSpecs!!,
     val accessSwSpecs: SwitchSpecs = switchSpecs!!,
     val hostSpecs: HostNodeSpecs,
-) : Specs<FatTree> {
+) : Specs<FTree> {
 
     init {
         require(k % 2 == 0)
     }
 
     /**
-     * Returns a [FatTree] if the specs are valid, throws error otherwise.
+     * Returns a [FTree] if the specs are valid, throws error otherwise.
      */
     context(NetSimScope)
-    override suspend fun build(): FatTree =
-        FatTree(this)
+    override suspend fun build(): FTree =
+        FTree(this)
 }

@@ -1,3 +1,0 @@
-import resources/verify-tops/clos/clos(n:3,a:16).json
-net info
-quit

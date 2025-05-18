@@ -4,13 +4,16 @@ import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
+import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.flow.internals.INetFlow
+import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.utils.Launchable
+import org.opendc.simulator.network.utils.flyweight.publics.FW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.notifiable.ReqMsg
@@ -19,11 +22,13 @@ import org.opendc.simulator.network.utils.notifiable.Msgable
 
 
 /**
- * Interface representing a node in a [Network2].
+ * Interface representing a node in a [Network].
+ *
+ * @param Self The more specific type of this [Node].
  */
 internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvalidatable, Msgable<Node<*>>, Launchable, EnConsumer<Self> {
     /**
-     * ID of the node. Uniquely identifies the node in the [Network22].
+     * ID of the node. Uniquely identifies the node in the [Network].
      */
     val id: NodeId
 
@@ -37,8 +42,14 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      */
     val nPorts: Int
 
+    /**
+     * List of ports available on this node.
+     */
     val ports: List<Port>
 
+    /**
+     * The coroutine's job that is running this node's logic and processing incoming messages.
+     */
     val job: Job?
 
     /**
@@ -57,25 +68,59 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      */
     val routingTable: RoutingTable
 
+    /**
+     * Contains information about the [NetFlow]s transiting through this node.
+     */
     val flowTable: FlowTable
 
+    /**
+     * Convenience method to send a [RxUpdt] [Msg] to this node.
+     * @see RxUpdt
+     */
     suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow)
 
-    suspend fun connectTo(other: Node<*>, linkBw: DataRate = this.portSpeed min other.portSpeed)
+    /**
+     * Convenience method to send a [Connect] [Msg] to this node.
+     * @see Connect
+     */
+    suspend fun msgSyncConnect(other: Node<*>, linkBw: DataRate = this.portSpeed min other.portSpeed)
 
-    suspend fun disconnectFrom(other: Node<*>)
+    /**
+     * Convenience method to send a [Disconnect] [Msg] to this node.
+     * @see RxUpdt
+     */
+    suspend fun msgSyncDisconnect(other: Node<*>)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Notifications
+    // Messages
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    interface RxUpdate: Msg<Node<*>, RxUpdate> {
+    /**
+     * A [Msg] that informs the receiving node that the incoming data rate for flow [netF]
+     * has changed by [deltaRate].
+     *
+     * This message is used to propagate bandwidth updates and is processed to adjust the
+     * node’s internal state accordingly.
+     *
+     * For details about inter-component communication using messages, see [Msg].
+     * For an explanation of flyweight objects used during simulation, see [FW].
+     */
+    interface RxUpdt: Msg<Node<*>, RxUpdt> {
         var netF: INetFlow
         var deltaRate: DataRate
 
-        companion object : FWId<RxUpdate>
+        companion object : FWId<RxUpdt>
     }
 
+    /**
+     * A [Msg] instructing the receiving node to initiate a connection to [other]
+     * using a link with the specified bandwidth capacity [linkBw].
+     *
+     * This msg can be used for dynamic link establishment during simulation, especially in REPL environment.
+     *
+     * For details about inter-component communication using messages, see [Msg].
+     * For an explanation of flyweight objects used during simulation, see [FW].
+     */
     interface Connect: Msg<Node<*>, Connect> {
         var other: Node<*>
         var linkBw: DataRate
@@ -83,6 +128,28 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
         companion object : FWId<Connect>
     }
 
+    /**
+     * A [Msg] instructing the receiving node to accept connection from [toBeAccepted] port and its owner node,
+     * using a link with the specified bandwidth capacity [linkBw].
+     *
+     * This msg is sent by the [Node] that initiate the connection.
+     *
+     * This msg can be used for dynamic link establishment during simulation, especially in REPL environment.
+     *
+     * For details about inter-component communication using messages, see [Msg].
+     * For an explanation of flyweight objects used during simulation, see [FW].
+     * @see Connect
+     */
+    interface AcceptConnection: ReqMsg<Node<*>, Port, AcceptConnection> {
+        var toBeAccepted: Port
+        var linkBw: DataRate
+
+        companion object : FWId<AcceptConnection>
+    }
+
+    /**
+     * TODO: Not used after total refactor.
+     */
     interface Disconnect: Msg<Node<*>, Disconnect> {
         var other: Node<*>
         var notifyOther: Boolean
@@ -90,17 +157,19 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
         companion object : FWId<Disconnect>
     }
 
+    /**
+     * A [Msg] instructing the receiving node to reapply [Node.routPolicy]~[RoutPolicy].
+     * Typically, triggered internally upon new connection/disconnection,
+     * or externally in case of a global routing policy.
+     *
+     * For details about inter-component communication using messages, see [Msg].
+     * For an explanation of flyweight objects used during simulation, see [FW].
+     */
     interface ReapplyRouting: Msg<Node<*>, ReapplyRouting> {
 
         companion object : FWId<ReapplyRouting>
     }
 
-    interface AcceptConnection: ReqMsg<Node<*>, Port, AcceptConnection> {
-        var toBeAccepted: Port
-        var linkBw: DataRate
-
-        companion object : FWId<AcceptConnection>
-    }
 
 
 

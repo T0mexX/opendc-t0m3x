@@ -8,7 +8,6 @@ import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.specs.CustomNetworkSpecs
 import org.opendc.simulator.network.components.specs.Specs
-import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NonSerializable
 
@@ -34,7 +33,7 @@ internal class CustomNetwork private constructor(
 
         _nodesById[node.id] = node
         (node as? SenderNode)?.let { _sendNodesById[it.id] = it }
-        (node as? GlobalSwitch)?.connectTo(inet)
+        (node as? GlobalSwitch)?.msgSyncConnect(inet)
     }
 
     context(NetSimScope)
@@ -75,7 +74,7 @@ internal class CustomNetwork private constructor(
                 warnOfUnsetLink(id1, id2)
                 return@forEach
             }
-            node1.connectTo(node2)
+            node1.msgSyncConnect(node2)
         }
     }
 
@@ -110,7 +109,7 @@ internal class CustomNetwork private constructor(
                 nodes = nodes + inet,
                 inet = inet,
             ).also { net ->
-                net.getNodesById<GlobalSwitch>().values.forEach { cs -> cs.connectTo(net.inet) }
+                net.getNodesById<GlobalSwitch>().values.forEach { cs -> cs.msgSyncConnect(net.inet) }
 
                 // Setup global routing policy if needed.
                 this@NetSimScope.config.routPolicy.setUp()

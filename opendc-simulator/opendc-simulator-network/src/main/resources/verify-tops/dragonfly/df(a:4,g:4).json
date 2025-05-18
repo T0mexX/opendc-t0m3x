@@ -1,0 +1,13 @@
+{
+    "type": "dragonfly",
+    "a": 4,
+    "g": 4,
+    "switchSpecs": {
+        "nPorts": 8,
+        "portSpeed": "1Gbps"
+    },
+    "hostSpecs": {
+        "nPorts": 4,
+        "portSpeed": "1Gbps"
+    }
+}

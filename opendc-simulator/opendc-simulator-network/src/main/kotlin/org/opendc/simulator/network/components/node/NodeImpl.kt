@@ -4,7 +4,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -14,7 +13,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.yield
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
@@ -51,14 +49,14 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
         msg.sendTo(this)
     }
 
-    override suspend fun connectTo(other: Node<*>, linkBw: DataRate) {
+    override suspend fun msgSyncConnect(other: Node<*>, linkBw: DataRate) {
         val msg = connectDisp.acquire().reset()
         msg.other = other
         msg.linkBw = linkBw
         msg.sendTo(this, dispose = false).awaitHandling().dispose()
     }
 
-    override suspend fun disconnectFrom(other: Node<*>) {
+    override suspend fun msgSyncDisconnect(other: Node<*>) {
         val notif = disconnectDisp.acquire().reset()
         notif.other = other
         notif.sendTo(this)
@@ -68,6 +66,9 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     // Node Implementation
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Awaits all ports to be in [Port.STABLE] or [Port.DISCONNECTED] or [Port.IDLE] states.
+     */
     private suspend fun awaitPorts() {
         if (ports.isEmpty()) return
         combine(ports.map { it.state }) { states ->
@@ -76,21 +77,19 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     }
 
     /**
-     * TODO
+     * @return One free port (not connected) available on this node.
      */
     context(NetSimScope)
     protected open suspend fun getFreePort(): Port? = ports.firstOrNull { it.txLink == null }
 
     /**
-     * TODO
-     * this awaits for process to finish
+     * Sends [Port.Process] msgs to all ports on the node and awaits the ports to be done processing the updates.
      */
     context(NetSimScope)
     protected suspend fun portProcessAwait() {
-        var bo: Int = 0
-        val mtx = Mutex()
         coroutineScope {
             ports.asFlow().onEach { p ->
+                // TODO: change to use `Port` convenience methods.
                 portVersion
                     .startProcessingDisp
                     .acquire()
@@ -98,50 +97,33 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                     .sendTo(p, dispose = false)
                     .awaitHandling()
                     .dispose()
-                mtx.withLock { bo++ }
             }.launchIn(this@coroutineScope)
         }
-        assert(bo == ports.size)
-        // TODO:remove
-//        ports.map { p ->
-//            portVersion
-//                .startProcessingDisp
-//                .acquire()
-//                .reset()
-//                .sendToPrioritized(p, dispose = false)
-//        }.forEach {
-//            it.awaitHandling().dispose()
-//        }
-//
-//        coroutineScope {
-//            ports.asFlow().onEach { p ->
-//                portVersion
-//                    .startProcessingDisp
-//                    .acquire()
-//                    .reset()
-//                    .sendToPrioritized(p, dispose = false)
-//                    .awaitHandling()
-//                    .dispose()
-//            }.launchIn(this)
-//        }
+
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Launchable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    context(NetSimScope) override fun netLaunch(scope: CoroutineScope): Job {
+    context(NetSimScope)
+    override fun netLaunch(scope: CoroutineScope): Job {
         assert(::job.isInitialized.not())
 
         job = scope.launch {
+            // Launch all ports coroutines.
             ports.forEach { it.netLaunch() }
 
             while (isActive) {
                 while (true) {
+                    // Accumulate multiple updates if possible
+                    // before telling the ports to process them and propagate results.
                     _msgChl.tryReceiveValidate().getOrNull()?.handle()
                         ?: break
                 }
+                // Make ports process updates and propagate results.
                 portProcessAwait()
+                // Suspending receive. When node suspends here, its stability is validated.
                 _msgChl.receive().handle()
                 assert(stabilizer.isValidated.not())
             }
@@ -151,13 +133,13 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Notifiable
+    // Msgable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    override val msgChl: SendChannel<Msg<Node<*>, *>> get() = _msgChl
     @Suppress("LeakingThis")
     private val _msgChl: InvalidatorChl<Msg<Node<*>, *>> = InvalidatorChl(receiver = this)
+    override val msgChl: SendChannel<Msg<Node<*>, *>> get() = _msgChl
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NodeVersion
@@ -168,11 +150,12 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     companion object : NodeVersion {
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Notifications
+        // Msgs
+        ////// Dispenser initialization for flyweight `Msg` objects related to `Node`s
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        override val rxUpdateDisp: FWDispenser<Node.RxUpdate> get() = _rxUpdateDisp
-        private lateinit var _rxUpdateDisp: FWDispenser<Node.RxUpdate>
+        override val rxUpdateDisp: FWDispenser<Node.RxUpdt> get() = _rxUpdateDisp
+        private lateinit var _rxUpdateDisp: FWDispenser<Node.RxUpdt>
 
         override val connectDisp: FWDispenser<Node.Connect> get() = _connectDisp
         private lateinit var _connectDisp: FWDispenser<Node.Connect>
@@ -189,21 +172,18 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 
         context(NetSimScope) override suspend fun initDispensers() {
             _rxUpdateDisp =
-                poolAggr.getOrAdd(Node.RxUpdate as FWId<Node.RxUpdate>) { pool, idx ->
-                    object : Node.RxUpdate, MsgImpl<Node<*>, Node.RxUpdate>() {
-                        override val pool = pool
-                        override val poolIdx = idx
+                poolAggr.getOrAdd(Node.RxUpdt as FWId<Node.RxUpdt>) { pool, idx ->
+                    /**
+                     * Anonymous implementation of [Node.RxUpdt].
+                     */
+                    object : Node.RxUpdt, MsgImpl<Node<*>, Node.RxUpdt>(pool, idx) {
                         override lateinit var netF: INetFlow
                         override var deltaRate: DataRate = DataRate.zero
 
                         context(Node<*>)
                         override suspend fun handle() {
                             assert(deltaRate.approx(DataRate.zero).not())
-
-                            val n = this@Node as NodeImpl
                             flowTable.rxUpdt(this)
-//                             TODO: change
-//                            n.portProcessAwait()
                             handled()
                         }
                     }
@@ -213,9 +193,10 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 
             _connectDisp =
                 poolAggr.getOrAdd(Node.Connect as FWId<Node.Connect>) { pool, idx ->
-                    object : Node.Connect, MsgImpl<Node<*>, Node.Connect>() {
-                        override val pool = pool
-                        override val poolIdx = idx
+                    /**
+                     * Anonymous implementation of [Node.Connect].
+                     */
+                    object : Node.Connect, MsgImpl<Node<*>, Node.Connect>(pool, idx) {
                         override lateinit var other: Node<*>
                         override var linkBw = DataRate.zero
 
@@ -225,16 +206,13 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             val otherN = other as NodeImpl
                             val freePort: Port = n.getFreePort() ?: error("unable to connect node, no port available")
 
-                            //
-                            n.awaitPorts()
-
                             // Ask another node to accept connection and retrieve its port.
                             val reqMsg = nodeVersion.acceptConnectionDisp.acquire().reset()
                             reqMsg.linkBw = linkBw
                             reqMsg.toBeAccepted = freePort
                             val otherPort = reqMsg.sendTo(otherN).awaitResponse()
 
-                            // Dispose of the "flyweight" `AnsweredNotification` after receiving answer.
+                            // Dispose of the "flyweight" `ReqMsg` after receiving response.
                             reqMsg.dispose()
 
                             // Ask the port on this node to connect to the port on the other node.
@@ -243,14 +221,13 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             msg.other = otherPort
                             msg.sendTo(freePort, dispose = false).awaitHandling().dispose()
 
-                            // Update routing tables of all nodes.
+                            // Update routing tables of all nodes. TODO: change
                             val otherVect: RoutingVect = other.exchangeRoutVect(routingTable.getVect(), vectOwner = n)
                             routingTable.mergeRoutingVector(otherVect, vectOwner = other)
                             shareRoutingVect(except = listOf(other))
 
                             // Reapply routing after routing table update.
                             reapplyRoutingDisp.acquire().reset().handle()
-//                            reapplyRoutingDisp.acquire().sendToPrioritized(n, dispose = false).awaitHandling().dispose()
 
                             handled()
                         }
@@ -262,9 +239,10 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
             _disconnectDisp =
                 poolAggr.getOrAdd(Node.Disconnect as FWId<Node.Disconnect>) { pool, idx ->
                     val portDisconnectDisp = portVersion.disconnectDisp
-                    object : Node.Disconnect, MsgImpl<Node<*>, Node.Disconnect>() {
-                        override val pool = pool
-                        override val poolIdx = idx
+                    /**
+                     * Anonymous implementation of [Node.Disconnect].
+                     */
+                    object : Node.Disconnect, MsgImpl<Node<*>, Node.Disconnect>(pool, idx) {
                         override lateinit var other: Node<*>
                         override var notifyOther = false
 
@@ -297,34 +275,18 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 
             _reapplyRoutingDisp =
                 poolAggr.getOrAdd(Node.ReapplyRouting as FWId<Node.ReapplyRouting>) { pool, idx ->
-                    object : Node.ReapplyRouting, MsgImpl<Node<*>, Node.ReapplyRouting>() {
-                        override val pool = pool
-                        override val poolIdx = idx
-
+                    /**
+                     * Anonymous implementation of [Node.ReapplyRouting].
+                     */
+                    object : Node.ReapplyRouting, MsgImpl<Node<*>, Node.ReapplyRouting>(pool, idx) {
                         context(Node<*>)
                         override suspend fun handle() {
                             val n = this@Node as NodeImpl
 
                             n.flowTable.reapplyRouting()
 
-                            // Make ports reapply fairness policy
+                            // Make ports reapply fairness policy.
                             n.portProcessAwait()
-
-//                            coroutineScope {
-//                                n.ports.asFlow().onEach { p ->
-//                                    portVersion
-//                                        .startProcessingDisp
-//                                        .acquire()
-//                                        .reset()
-//                                        .sendToPrioritized(p, dispose = false)
-//                                        .awaitHandling()
-//                                        .dispose()
-//                                }.launchIn(this)
-//                            }
-//                            n.ports.map {
-//                                portVersion.startProcessingDisp.acquire().sendToPrioritized(it, dispose = false)
-////                                it.priorityMsgChl.send(portVersion.startProcessingDisp.acquire())
-//                            }.map { it.awaitHandling().dispose() }
 
                             handled()
                         }
@@ -334,9 +296,10 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 
 
             _acceptConnectioDisp = poolAggr.getOrAdd(Node.AcceptConnection as FWId<Node.AcceptConnection>) { pool, idx ->
-                object : Node.AcceptConnection, ReqMsgImpl<Node<*>, Port, Node.AcceptConnection>() {
-                    override val pool = pool
-                    override val poolIdx = idx
+                /**
+                 * Anonymous implementation of [Node.AcceptConnection].
+                 */
+                object : Node.AcceptConnection, ReqMsgImpl<Node<*>, Port, Node.AcceptConnection>(pool, idx) {
                     override lateinit var toBeAccepted: Port
                     override var linkBw: DataRate = DataRate.zero
 

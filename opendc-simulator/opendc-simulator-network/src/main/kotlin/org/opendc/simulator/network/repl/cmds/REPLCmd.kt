@@ -54,17 +54,17 @@ internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
         ctx: CoroutineContext = scope.ctx,
         block: suspend NetSimScope.() -> Unit
     ) = runBlocking(ctx) {
-        runCatching {
+//        runCatching {
             scope.block()
-        }.let {
-            if (it.isFailure) {
-                echo("unable to execute command ${this@REPLCmd.commandName}.\n" +
-                    "reason: ${it.exceptionOrNull()!!.message}\n" +
-                    "cause: ${it.exceptionOrNull()!!.cause}",
-                    err = true,
-                )
-            }
-        }
+//        }.let {
+//            if (it.isFailure) {
+//                echo("unable to execute command ${this@REPLCmd.commandName}.\n" +
+//                    "reason: ${it.exceptionOrNull()!!.message}\n" +
+//                    "cause: ${it.exceptionOrNull()!!.cause}",
+//                    err = true,
+//                )
+//            }
+//        }
     }
 
     companion object {

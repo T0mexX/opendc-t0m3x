@@ -152,9 +152,7 @@ internal class PortV1 private constructor(
             _startProcessingDisp =
                 poolAggr.getOrAdd(Port.Process as FWId<Port.Process>) { pool, idx ->
                     val stab = barrier.stabilizer()
-                    object : Port.Process, IInvalidatable, MsgImpl<Port, Port.Process>() {
-                        override val pool = pool
-                        override val poolIdx: Idx = idx
+                    object : Port.Process, IInvalidatable, MsgImpl<Port, Port.Process>(pool, idx) {
                         override val stabilizer: NetSimStabilizer = stab
 
                         context(Port) override suspend fun handle() {
@@ -187,9 +185,7 @@ internal class PortV1 private constructor(
             _setDemandDisp =
                 poolAggr.getOrAdd(Port.SetDemand as FWId<Port.SetDemand>) { pool, idx ->
                 val stab = barrier.stabilizer()
-                object : Port.SetDemand, IInvalidatable, MsgImpl<Port, Port.SetDemand>() {
-                    override val pool: FWPool<Port.SetDemand, FWId<Port.SetDemand>> = pool
-                    override val poolIdx: Idx = idx
+                object : Port.SetDemand, IInvalidatable, MsgImpl<Port, Port.SetDemand>(pool, idx) {
                     override val stabilizer: NetSimStabilizer = stab
                     override var newDemand: DataRate = DataRate.zero
                     override var entryId: IntId? = null
@@ -213,9 +209,7 @@ internal class PortV1 private constructor(
 
             _connectDisp =
                 poolAggr.getOrAdd(Port.Connect as FWId<Port.Connect>) { pool, idx ->
-                    object : Port.Connect, MsgImpl<Port, Port.Connect>()  {
-                        override val pool = pool
-                        override val poolIdx: Idx = idx
+                    object : Port.Connect, MsgImpl<Port, Port.Connect>(pool, idx)  {
                         override lateinit var other: Port
                         override var linkBw: DataRate? = DataRate.zero
 
@@ -248,10 +242,7 @@ internal class PortV1 private constructor(
 
             _disconnectDisp =
                 poolAggr.getOrAdd(Port.Disconnect as FWId<Port.Disconnect>) { pool, idx ->
-                    object : Port.Disconnect, MsgImpl<Port, Port.Disconnect>() {
-                        override val pool = pool
-                        override val poolIdx = idx
-
+                    object : Port.Disconnect, MsgImpl<Port, Port.Disconnect>(pool, idx) {
                         context(Port) override suspend fun handle() {
                             val p = this@Port as PortV1
                             p._state.emit(Port.DISCONNECTING)

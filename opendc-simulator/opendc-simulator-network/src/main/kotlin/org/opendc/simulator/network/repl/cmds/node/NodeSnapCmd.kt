@@ -24,9 +24,14 @@ package org.opendc.simulator.network.repl.cmds.node
 
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
+import com.github.ajalt.clikt.parameters.arguments.convert
+import com.github.ajalt.clikt.parameters.arguments.default
+import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
+import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
@@ -34,9 +39,16 @@ import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 private const val CMD_STR: String = "snapshot"
 
 internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
-    private val id: Long by argument(
+    private val nId: NodeId by argument(
         help = "The id of the node whose snapshot is to be displayed",
-    ).long().check("node does not exist") { net.nodesById.contains(NodeId(it)) }
+    ).convert { str ->
+        if (str == "inet") return@convert NetworkImpl.INTERNET_ID
+
+        val long = Json.decodeFromString<Long>(str)
+        val nId = NodeId(long)
+        if (nId !in net.nodesById) fail("node not found")
+        else nId
+    }
 
     override fun aliases(): Map<String, List<String>> =
         mapOf(
@@ -46,9 +58,7 @@ internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
     override fun run(): Unit = execREPLCmdCatching {
         barrier.whileStable(NetSimStabilityMode.ENFORCED) {
             sync(forceUpdt = true)
-            net.nodesById[NodeId(id)]?.let {
-                echo(it.snapshot().fmt())
-            } ?: issueMessage("Unable to display snapshot")
+            echo(net.nodesById[nId]!!.snapshot().fmt())
         }
     }
 }

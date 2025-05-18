@@ -10,8 +10,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 /**
  * TODO
  */
-@Serializable
-internal sealed interface SyntheticWl<in T: Network> {
+internal interface SyntheticWl<in T: Network> {
     /**
      * TODO
      * @param demandMapping Maps each [HostNode] to their new flow demand.

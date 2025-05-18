@@ -58,7 +58,7 @@ internal data object BitComplement: SyntheticWl<Network> {
                 // Step only needed if the number of hosts is not a power of 2.
                 destIdInt =
                     if (destIdInt != 0L) destIdInt.clearLeftMostBit()
-                    else map.keys.random().value
+                    else map.keys.random(config.random).value
             }
 
             // The destination host.

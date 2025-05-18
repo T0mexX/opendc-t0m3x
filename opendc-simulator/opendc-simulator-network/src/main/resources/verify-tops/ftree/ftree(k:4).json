@@ -6,7 +6,7 @@
         "nPorts": 1
     },
     "switchSpecs": {
-        "portSpeed": "100Mbps",
+        "portSpeed": "1Gbps",
         "nPorts": 4
     }
 }

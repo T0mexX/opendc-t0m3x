@@ -23,7 +23,7 @@ internal class FlowTableV1 private constructor(
      * TODO
      */
     context(NetSimScope, Node<*>)
-    override suspend fun rxUpdt(updt: Node.RxUpdate) {
+    override suspend fun rxUpdt(updt: Node.RxUpdt) {
         assert(updt.deltaRate.approx(DataRate.zero).not())
 
         var new = false
@@ -87,7 +87,7 @@ internal class FlowTableV1 private constructor(
     }
 
     context(NetSimScope, Node<*>)
-    private suspend fun newEntry(updt: Node.RxUpdate): NodeFlowEntry {
+    private suspend fun newEntry(updt: Node.RxUpdt): NodeFlowEntry {
         val entry = nodeFlowEntryDispenser.acquire()
         entry.tracker = this
         entry.resizeIfNeeded()

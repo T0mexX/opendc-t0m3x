@@ -26,7 +26,7 @@ internal data object Full: SyntheticWl<Network> {
                     devConfig.netFlowConfig.version(
                         senderId = h1.id,
                         destId = h2.id,
-                        demand = demandMapping(h1)
+                        demand = demandMapping(h1) / (hosts.size - 1)
                     )
                 )
             }

@@ -88,12 +88,12 @@ internal class Clos(
                 layer.forEach { n ->
                     // Connect the uppermost layer to the internet.
                     if (layerIdx == 0) {
-                        n.connectTo(inet)
+                        n.msgSyncConnect(inet)
                     }
 
                     // Connect to the layer below.
                     layers.getOrNull(layerIdx + 1)?.forEach { nBelow ->
-                        n.connectTo(nBelow)
+                        n.msgSyncConnect(nBelow)
                     }
                 }
             }

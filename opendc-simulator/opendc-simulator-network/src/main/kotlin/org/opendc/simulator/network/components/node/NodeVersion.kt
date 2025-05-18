@@ -3,12 +3,11 @@ package org.opendc.simulator.network.components.node
 import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
-import org.opendc.simulator.network.utils.flyweight.publics.FWId
 
 @Serializable
 internal sealed interface NodeVersion {
 
-    val rxUpdateDisp: FWDispenser<Node.RxUpdate>
+    val rxUpdateDisp: FWDispenser<Node.RxUpdt>
     val reapplyRoutingDisp: FWDispenser<Node.ReapplyRouting>
     val connectDisp: FWDispenser<Node.Connect>
     val disconnectDisp: FWDispenser<Node.Disconnect>

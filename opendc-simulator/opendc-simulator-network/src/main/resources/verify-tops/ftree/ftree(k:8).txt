@@ -1,3 +1,0 @@
-import ./resources/verify-tops/ftree/ftree(k:8).json
-net info
-q

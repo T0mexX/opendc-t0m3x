@@ -13,6 +13,7 @@ import org.opendc.common.units.Unit
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.repl.synthetic.SyntheticWl
+import org.opendc.simulator.network.utils.NETWORK_SERIALIZERS_MODULE
 
 private const val CMD_STR: String = "synthetic-wl"
 
@@ -24,7 +25,9 @@ internal class FlowSynthWlCmd: REPLCmd(name = CMD_STR) {
         help = "",
     ).convert { str ->
         // Wrap into JSON object to use built in polymorphic deserialization.
-        Json.decodeFromString("""{ "type": "$str" } """)
+        Json {
+            serializersModule = NETWORK_SERIALIZERS_MODULE
+        }.decodeFromString("""{ "type": "$str" } """)
     }
 
     private val demand: Unit<*> by argument(

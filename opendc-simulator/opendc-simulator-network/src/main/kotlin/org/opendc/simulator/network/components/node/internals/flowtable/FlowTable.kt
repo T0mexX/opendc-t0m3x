@@ -2,7 +2,6 @@ package org.opendc.simulator.network.components.node.internals.flowtable
 
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable.Companion.Consumed.shouldBeTracked
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.tracker.TrackablePropId
@@ -11,7 +10,7 @@ import org.opendc.simulator.network.utils.tracker.TrackerMode
 
 internal interface FlowTable : Tracker<NodeFlowEntry> {
     context(NetSimScope, Node<*>)
-    suspend fun rxUpdt(updt: Node.RxUpdate)
+    suspend fun rxUpdt(updt: Node.RxUpdt)
 
     context(NetSimScope, Node<*>)
     suspend fun reapplyRouting()

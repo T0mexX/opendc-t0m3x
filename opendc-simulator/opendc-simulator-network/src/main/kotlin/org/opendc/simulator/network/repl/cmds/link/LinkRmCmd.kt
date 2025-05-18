@@ -27,7 +27,6 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.unique
 import com.github.ajalt.clikt.parameters.types.long
-import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
@@ -54,7 +53,7 @@ internal class LinkRmCmd : REPLCmd("rm") {
             return@execREPLCmdCatching
         }
 
-        node1.disconnectFrom(node2)
+        node1.msgSyncDisconnect(node2)
         echo("Link removed successfully")
     }
 }

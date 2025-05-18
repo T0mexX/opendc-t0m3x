@@ -2,11 +2,17 @@ package org.opendc.simulator.network.utils.notifiable
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import org.opendc.simulator.network.utils.Idx
+import org.opendc.simulator.network.utils.flyweight.internals.FWPool
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
 
 /**
  * TODO
  */
-internal abstract class ReqMsgImpl<T: Msgable<T>, A, Self: ReqMsg<T, A, Self>> : ReqMsg<T, A, Self>, MsgImpl<T, Self>() {
+internal abstract class ReqMsgImpl<T: Msgable<T>, A, Self: ReqMsg<T, A, Self>>(
+    pool: FWPool<Self, FWId<Self>>,
+    poolIdx: Idx
+) : ReqMsg<T, A, Self>, MsgImpl<T, Self>(pool, poolIdx) {
     /**
      * TODO
      */

@@ -6,7 +6,6 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.GlobalSwitch
-import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
@@ -62,6 +61,6 @@ internal data class CoreSwitchSpecs(
                 ) + 1
         ).build().also {
             it.invalidate()
-            it.connectTo(internet)
+            it.msgSyncConnect(internet)
         }
 }

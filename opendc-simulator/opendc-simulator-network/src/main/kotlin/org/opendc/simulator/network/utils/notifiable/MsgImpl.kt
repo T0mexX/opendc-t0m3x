@@ -3,13 +3,19 @@ package org.opendc.simulator.network.utils.notifiable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
+import org.opendc.simulator.network.utils.Idx
+import org.opendc.simulator.network.utils.flyweight.internals.FWPool
+import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
 /**
  * TODO
  */
-internal abstract class MsgImpl<T, Self: Msg<T, Self>> : Msg<T, Self>
+internal abstract class MsgImpl<T, Self: Msg<T, Self>>(
+    override val pool: FWPool<Self, FWId<Self>>,
+    override val poolIdx: Idx,
+) : Msg<T, Self>
     where T : Msgable<T> {
     /**
      * TODO

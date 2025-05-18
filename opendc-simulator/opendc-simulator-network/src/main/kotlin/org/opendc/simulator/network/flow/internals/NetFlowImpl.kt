@@ -143,9 +143,7 @@ internal class NetFlowImpl private constructor(
         override suspend fun initDispensers() {
             _setDemandDisp = poolAggr.getOrAdd(INetFlow.SetDemand as FWId<INetFlow.SetDemand>) { pool, idx ->
                 val stab = barrier.stabilizer()
-                object : INetFlow.SetDemand, IInvalidatable, MsgImpl<INetFlow, INetFlow.SetDemand>() {
-                    override val pool: FWPool<INetFlow.SetDemand, FWId<INetFlow.SetDemand>> = pool
-                    override val poolIdx: Idx = idx
+                object : INetFlow.SetDemand, IInvalidatable, MsgImpl<INetFlow, INetFlow.SetDemand>(pool, idx) {
                     override val stabilizer: NetSimStabilizer = stab
                     override var newDemand: DataRate = DataRate.zero
 
@@ -210,10 +208,8 @@ internal class NetFlowImpl private constructor(
 
             _setTputDisp = poolAggr.getOrAdd(INetFlow.SetThroughput as FWId<INetFlow.SetThroughput>) { pool, idx ->
                     val stab = barrier.stabilizer()
-                    object : INetFlow.SetThroughput, IInvalidatable, MsgImpl<INetFlow, INetFlow.SetThroughput>() {
+                    object : INetFlow.SetThroughput, IInvalidatable, MsgImpl<INetFlow, INetFlow.SetThroughput>(pool, idx) {
                         override val stabilizer: NetSimStabilizer = stab
-                        override val pool: FWPool<INetFlow.SetThroughput, FWId<INetFlow.SetThroughput>> = pool
-                        override val poolIdx: Idx = idx
                         override var newThroughput: DataRate = DataRate.zero
 
                         context(NetFlow)
@@ -235,9 +231,7 @@ internal class NetFlowImpl private constructor(
 
             _increaseTputDisp = poolAggr.getOrAdd(INetFlow.IncreaseThroughput as FWId<INetFlow.IncreaseThroughput>) { pool, idx ->
                     val stab = barrier.stabilizer()
-                    object : INetFlow.IncreaseThroughput, IInvalidatable, MsgImpl<INetFlow, INetFlow.IncreaseThroughput>() {
-                        override val pool: FWPool<INetFlow.IncreaseThroughput, FWId<INetFlow.IncreaseThroughput>> = pool
-                        override val poolIdx: Idx = idx
+                    object : INetFlow.IncreaseThroughput, IInvalidatable, MsgImpl<INetFlow, INetFlow.IncreaseThroughput>(pool, idx) {
                         override val stabilizer: NetSimStabilizer = stab
                         override var amount: DataRate = DataRate.zero
 

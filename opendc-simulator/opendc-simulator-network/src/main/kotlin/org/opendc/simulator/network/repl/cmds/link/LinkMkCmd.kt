@@ -29,7 +29,6 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.options.unique
 import com.github.ajalt.clikt.parameters.types.long
-import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
@@ -60,7 +59,7 @@ internal class LinkMkCmd : REPLCmd("mk") {
             return@execREPLCmdCatching
         }
 
-        node1.connectTo(node2)
+        node1.msgSyncConnect(node2)
         barrier.awaitStability()
         echo("Successfully connected node $node1 with  node $node2")
     }
