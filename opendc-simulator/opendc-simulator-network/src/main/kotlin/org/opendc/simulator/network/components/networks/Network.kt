@@ -2,17 +2,13 @@ package org.opendc.simulator.network.components.networks
 
 import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.node.GlobalSwitch
-import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.components.node.Switch
-import org.opendc.simulator.network.components.specs.NetworkSpecs
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
-import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable

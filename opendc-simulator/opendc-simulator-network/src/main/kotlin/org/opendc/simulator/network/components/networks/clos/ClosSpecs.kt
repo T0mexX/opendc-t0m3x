@@ -1,4 +1,4 @@
-package org.opendc.simulator.network.components.specs
+package org.opendc.simulator.network.components.networks.clos
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -9,9 +9,9 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.serializer
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.networks.Clos
 import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.HostNode
+import org.opendc.simulator.network.components.networks.NetworkSpecs
 import org.opendc.simulator.network.simscope.NetSimDevConfig
 import org.opendc.simulator.network.simscope.NetSimScope
 

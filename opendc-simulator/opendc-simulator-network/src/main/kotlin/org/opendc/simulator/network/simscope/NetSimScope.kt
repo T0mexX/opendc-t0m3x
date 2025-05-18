@@ -15,7 +15,7 @@ import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.components.networks.CustomNetwork
+import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion

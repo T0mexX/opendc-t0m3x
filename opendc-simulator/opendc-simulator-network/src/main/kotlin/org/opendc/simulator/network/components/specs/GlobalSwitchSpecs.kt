@@ -12,8 +12,8 @@ import org.opendc.simulator.network.simscope.NetSimScope
  * TODO
  */
 @Serializable
-@SerialName("core-switch-specs")
-internal data class CoreSwitchSpecs(
+@SerialName("global-switch")
+internal data class GlobalSwitchSpecs(
     val id: NodeId? = null,
     private val portSpeed: DataRate? = null,
     private val nPorts: Int? = null,

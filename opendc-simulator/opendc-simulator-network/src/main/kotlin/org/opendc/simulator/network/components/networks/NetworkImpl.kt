@@ -71,9 +71,9 @@ internal abstract class NetworkImpl : Network {
     override suspend fun fmtFlows(mode: NetSimStabilityMode): String =
         barrier.whileStable(mode) {
             buildString {
-                appendLine("| ==== Flows ====")
+                appendLine("==== Flows ====")
                 appendLine(
-                    "| " +
+                    " | " +
                         "id".padEnd(5) +
                         "sender".padEnd(10) +
                         "dest".padEnd(10) +
@@ -82,7 +82,7 @@ internal abstract class NetworkImpl : Network {
                 )
                 flowsById.values.forEach { flow ->
                     appendLine(
-                        "| " +
+                        " | " +
                             flow.id.toString().padEnd(5) +
                             flow.senderId.toString().padEnd(10) +
                             flow.destId.toString().padEnd(10) +

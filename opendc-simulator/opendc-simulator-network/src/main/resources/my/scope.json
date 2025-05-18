@@ -3,6 +3,6 @@
         "routingPolicy": { "type": "ecmp" },
         "fairnessPolicy": { "type": "proportional" }
     },
-    "netPath": "./resources/verify-tops/clos/clos(n:3,a:8).json",
+    "netPath": "./resources/examples/topologies/dragonfly/df(a:12,g:11).json",
     "initialTmStamp": "1970-10-01T15:23:44Z"
 }

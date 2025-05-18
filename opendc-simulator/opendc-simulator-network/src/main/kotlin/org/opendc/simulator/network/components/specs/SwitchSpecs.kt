@@ -5,11 +5,10 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.Switch
-import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 
 @Serializable
-@SerialName("switch-specs")
+@SerialName("switch")
 internal data class SwitchSpecs(
     val id: NodeId? = null,
     private val portSpeed: DataRate? = null,
@@ -35,8 +34,8 @@ internal data class SwitchSpecs(
             nPorts = nPorts,
         )
 
-    fun toCoreSwitchSpecs(): CoreSwitchSpecs =
-        CoreSwitchSpecs(
+    fun toCoreSwitchSpecs(): GlobalSwitchSpecs =
+        GlobalSwitchSpecs(
             id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,

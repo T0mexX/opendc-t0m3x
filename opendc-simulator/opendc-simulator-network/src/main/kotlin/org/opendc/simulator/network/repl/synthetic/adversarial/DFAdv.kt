@@ -3,7 +3,7 @@ package org.opendc.simulator.network.repl.synthetic.adversarial
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.networks.DragonFly
+import org.opendc.simulator.network.components.networks.dragonfly.DragonFly
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.simscope.NetSimScope

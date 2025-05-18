@@ -28,7 +28,7 @@ import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.PrintHelpMessage
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.subcommands
-import org.opendc.simulator.network.components.networks.CustomNetwork
+import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.AdvTimeCmd
 import org.opendc.simulator.network.repl.cmds.EnRepCmd

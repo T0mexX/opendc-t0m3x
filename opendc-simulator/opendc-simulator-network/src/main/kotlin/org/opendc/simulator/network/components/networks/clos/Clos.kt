@@ -1,7 +1,9 @@
-package org.opendc.simulator.network.components.networks
+package org.opendc.simulator.network.components.networks.clos
 
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
+import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.Internet
@@ -9,7 +11,6 @@ import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.Switch
-import org.opendc.simulator.network.components.specs.ClosSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode

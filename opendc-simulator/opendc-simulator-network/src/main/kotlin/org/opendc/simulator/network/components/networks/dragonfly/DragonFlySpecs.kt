@@ -1,8 +1,10 @@
-package org.opendc.simulator.network.components.specs
+package org.opendc.simulator.network.components.networks.dragonfly
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.opendc.simulator.network.components.networks.DragonFly
+import org.opendc.simulator.network.components.specs.HostNodeSpecs
+import org.opendc.simulator.network.components.networks.NetworkSpecs
+import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**

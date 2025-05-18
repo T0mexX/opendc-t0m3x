@@ -2,9 +2,6 @@ import resources/my/scope.json
 net info
 f synth full 100%
 f info
-adv 5min
-net snap
-n snap inet
 q
 
 

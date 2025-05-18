@@ -33,8 +33,7 @@ import java.io.File
  * Type serializable from json, representing the specifics of concrete object of type `T`.
  * The object of type `T` can then be built with [build].
  */
-@Serializable
-public sealed interface Specs<out T : WithSpecs<in @UnsafeVariance T>> {
+public interface Specs<out T : WithSpecs<in @UnsafeVariance T>> {
     /**
      * Builds the corresponding [T] object.
      */

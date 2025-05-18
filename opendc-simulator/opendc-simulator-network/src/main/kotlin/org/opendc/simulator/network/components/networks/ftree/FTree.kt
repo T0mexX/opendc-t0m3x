@@ -1,17 +1,16 @@
-package org.opendc.simulator.network.components.networks
+package org.opendc.simulator.network.components.networks.ftree
 
 import kotlinx.serialization.Serializable
 import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
-import org.opendc.simulator.network.components.node.GlobalSwitch
+import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Switch
-import org.opendc.simulator.network.components.specs.FatTreeSpecs
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
@@ -98,7 +97,7 @@ internal class FTree private constructor(
                 buildMap {
                     putAll((leafs + torSwitches + aggregationSwitches + coreSwitches).associateBy { it.id })
                     check(inet.id !in this) {
-                        "unable to create network: one node has id ${NetworkImpl.INTERNET_ID}, " +
+                        "unable to create network: one node has id $INTERNET_ID, " +
                             "which is reserved for inet abstraction"
                     }
                     put(inet.id, inet)

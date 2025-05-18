@@ -1,12 +1,12 @@
-package org.opendc.simulator.network.components.networks
+package org.opendc.simulator.network.components.networks.custom
 
 import kotlinx.serialization.Serializable
+import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.Internet
-import org.opendc.simulator.network.components.specs.CustomNetworkSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NonSerializable
@@ -87,7 +87,7 @@ internal class CustomNetwork private constructor(
                 nodes.forEach { node ->
                     addAll(
                         node.ports.mapNotNull { it.txLink?.receiverPort?.owner?.id }
-                            .filterNot { it in doneNodes }
+                            .filterNot { it in doneNodes || it == INTERNET_ID }
                             .map { Pair(it, node.id) },
                     )
                     doneNodes.add(node.id)

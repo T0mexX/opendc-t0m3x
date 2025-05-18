@@ -1,4 +1,4 @@
-package org.opendc.simulator.network.components.specs
+package org.opendc.simulator.network.components.networks.custom
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -17,8 +17,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
-import org.opendc.simulator.network.components.networks.CustomNetwork
 import org.opendc.simulator.network.components.node.SerializableNode
+import org.opendc.simulator.network.components.specs.HostNodeSpecs
+import org.opendc.simulator.network.components.networks.NetworkSpecs
+import org.opendc.simulator.network.components.specs.Specs
+import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
@@ -26,12 +29,17 @@ import org.opendc.simulator.network.simscope.NetSimScope
  * From ***this*** the corresponding custom network can be built.
  */
 @Serializable
-@SerialName("custom-specs")
+@SerialName("custom")
 internal data class CustomNetworkSpecs(
     val nodesSpecs: List<Specs<SerializableNode>> = emptyList(),
     @Serializable(with = LinkListSerializer::class)
     val links: List<Pair<NodeId, NodeId>> = emptyList(),
-) : Specs<CustomNetwork> {
+) : NetworkSpecs<CustomNetwork> {
+    override val R_: Int = nodesSpecs.filterIsInstance<SwitchSpecs>().size
+    override val N_: Int = nodesSpecs.filterIsInstance<HostNodeSpecs>().size
+    override val V_: Int = nodesSpecs.size
+    override val E_: Int = links.size
+
     context(NetSimScope)
     override suspend fun build(): CustomNetwork {
         val nodes: List<Node<*>> = nodesSpecs.map { it.build().asNode() }

@@ -9,7 +9,7 @@ import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 
 @Serializable
-@SerialName("host-node-specs")
+@SerialName("host")
 internal data class HostNodeSpecs(
     val id: NodeId? = null,
     private val portSpeed: DataRate? = null,

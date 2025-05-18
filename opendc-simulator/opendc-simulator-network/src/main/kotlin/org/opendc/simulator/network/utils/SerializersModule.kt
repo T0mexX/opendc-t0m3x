@@ -4,6 +4,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
+import org.opendc.simulator.network.components.networks.clos.ClosSpecs
+import org.opendc.simulator.network.components.networks.custom.CustomNetworkSpecs
+import org.opendc.simulator.network.components.networks.dragonfly.DragonFlySpecs
+import org.opendc.simulator.network.components.networks.ftree.FatTreeSpecs
+import org.opendc.simulator.network.components.specs.GlobalSwitchSpecs
+import org.opendc.simulator.network.components.specs.HostNodeSpecs
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
 import org.opendc.simulator.network.policies.fairness.MaxMin
@@ -20,18 +26,60 @@ import org.opendc.simulator.network.repl.synthetic.SyntheticWl
 import org.opendc.simulator.network.repl.synthetic.adversarial.AdversarialWl
 import org.opendc.simulator.network.repl.synthetic.adversarial.DFAdv
 import org.opendc.simulator.network.repl.synthetic.adversarial.FTreeAdv
+import org.opendc.simulator.network.components.specs.Specs
+import org.opendc.simulator.network.components.specs.SwitchSpecs
 
+/**
+ * TODO
+ *
+ * Using a [SerializersModule] allows to avoid needing sealed interfaces in some cases,
+ * improving flexibility in package organization.
+ */
 public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Specs
+    ////// Intellisense may give stack overflow error
+    ////// in analyzing this code due to serialization of generic class,
+    ////// but should compile just fine.
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    polymorphic(Specs::class) {
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Network Specifications
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        subclass(FatTreeSpecs::class)
+        subclass(ClosSpecs::class)
+        subclass(DragonFlySpecs::class)
+        subclass(CustomNetworkSpecs::class)
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Node Specifications
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        subclass(SwitchSpecs::class)
+        subclass(GlobalSwitchSpecs::class)
+        subclass(HostNodeSpecs::class)
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Routing Policy
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     polymorphic(RoutPolicy::class) {
         subclass(ECMP::class)
         subclass(OSPF::class)
         subclass(UGALL::class)
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Fairness Policy
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     polymorphic(FairnessPolicy::class) {
         subclass(FirstComeFirstServed::class)
         subclass(MaxMin::class)
         subclass(Proportional::class)
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Synthetic Workload
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     polymorphic(SyntheticWl::class) {
         subclass(BitComplement::class)
         subclass(BitReversal::class)
@@ -44,6 +92,7 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
             subclass(DFAdv::class)
         }
     }
+
 }
 
 public val NETWORK_JSON: Json = Json {
