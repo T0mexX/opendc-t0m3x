@@ -44,7 +44,6 @@ internal class HostNode private constructor(
             id: NodeId? = null,
             portSpeed: DataRate? = null,
             nPorts: Int? = null,
-            fairnessPolicy: FairnessPolicy? = null,
             enModel: EnModel<HostNode>? = null,
         ): HostNode {
             val nodeConfig = devConfig.nodeConfig

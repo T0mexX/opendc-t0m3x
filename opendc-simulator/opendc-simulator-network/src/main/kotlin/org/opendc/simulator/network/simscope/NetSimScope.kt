@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.simscope
 
+import inet.ipaddr.ipv4.IPv4AddressNetwork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -23,6 +24,7 @@ import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.routing.RoutPolicy
+import org.opendc.simulator.network.routing.NetSimAddressManager
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NETWORK_JSON
@@ -49,6 +51,7 @@ internal class NetSimScope(
     val log by logger()
     val net: Network get() = _net
     private lateinit var _net: Network
+    val addrMngr: NetSimAddressManager
 
     val portVersion: PortVersion
     val nodeVersion: NodeVersion
@@ -75,6 +78,7 @@ internal class NetSimScope(
             tmpCtx[NetSimEnRecorder] ?: let { tmpCtx += NetSimEnRecorder(tmpCtx[NetSimTmSrc]!!) }
             tmpCtx[RoutPolicy] ?: let { tmpCtx += tmpCtx[NetSimConfig]!!.routPolicy }
             tmpCtx[FairnessPolicy] ?: let { tmpCtx += tmpCtx[NetSimConfig]!!.fairPolicy }
+            tmpCtx += NetSimAddressManager()
         }
         coroutineContext = tmpCtx
         config = tmpCtx[NetSimConfig]!!
@@ -86,6 +90,7 @@ internal class NetSimScope(
         enRecorder = tmpCtx[NetSimEnRecorder]!!
         routPolicy = tmpCtx[RoutPolicy]!!
         fairPolicy = tmpCtx[FairnessPolicy]!!
+        addrMngr = tmpCtx[NetSimAddressManager]!!
 
         portVersion = devConfig.portConfig.version
         nodeVersion = devConfig.nodeConfig.version

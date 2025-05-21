@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.node
 
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.internalstructs.RoutTbl
@@ -33,6 +34,14 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * ID of the node. Uniquely identifies the node in the [Network].
      */
     val id: NodeId
+
+//    /**
+//     * This can be either:
+//     * - A *prefix block* (subnet) if the node does not own a specific IP address, but is responsible
+//     *   for routing traffic destined for that subnet (e.g., a [Switch]).
+//     * - A single specific IP address if the node owns that exact address (e.g., a [HostNode]).
+//     */
+//    val ip: IPv4Address
 
     /**
      * Port speed in Kbps full duplex.
