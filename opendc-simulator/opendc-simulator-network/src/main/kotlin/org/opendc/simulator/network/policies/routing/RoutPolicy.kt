@@ -2,6 +2,7 @@ package org.opendc.simulator.network.policies.routing
 
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
+import org.opendc.simulator.network.components.internalstructs.RoutTbl
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
@@ -77,9 +78,9 @@ internal sealed class RoutPolicy: AbstractCoroutineContextElement(Key) {
          * Filters `this` collection of [RoutingTable.PossiblePath], keeping only those that are minimal.
          */
         @JvmStatic
-        protected fun Collection<RoutingTable.PossiblePath>.onlyMinimal(): Collection<RoutingTable.PossiblePath> {
-            val min: Int = this.minOfOrNull { it.numOfHops } ?: 0
-            return this.filter { it.numOfHops == min }
+        protected fun Collection<RoutTbl.RoutTblPath>.onlyMinimal(): Collection<RoutTbl.RoutTblPath> {
+            val min: Int = this.minOfOrNull { it.distance } ?: 0
+            return this.filter { it.distance == min }
         }
     }
 }

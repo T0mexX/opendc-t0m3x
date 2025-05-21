@@ -22,7 +22,7 @@ internal class ECMP : RoutPolicy() {
         nodeFlowEntry.txPorts.clear()
 
         // Ports the flow will be forwarded to.
-        val txPorts = this@Node.routingTable.getPossiblePathsTo(f.destId).onlyMinimal()
+        val txPorts = this@Node.routTbl.getPossiblePathsTo(f.destId).onlyMinimal()
 
         // Add the tx ports to the `NodeFlowEntry`, with the corresponding
         // percentage of this flow's data forwarded to those ports.

@@ -34,7 +34,7 @@ internal data class SwitchSpecs(
             nPorts = nPorts,
         )
 
-    fun toCoreSwitchSpecs(): GlobalSwitchSpecs =
+    fun toGlobalSwitchSpecs(): GlobalSwitchSpecs =
         GlobalSwitchSpecs(
             id = id,
             portSpeed = portSpeed,

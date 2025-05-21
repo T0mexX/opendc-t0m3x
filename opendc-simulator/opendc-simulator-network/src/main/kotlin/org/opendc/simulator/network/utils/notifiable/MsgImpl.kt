@@ -2,7 +2,6 @@ package org.opendc.simulator.network.utils.notifiable
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.job
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.flyweight.internals.FWPool
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
@@ -60,11 +59,16 @@ internal abstract class MsgImpl<T, Self: Msg<T, Self>>(
     /**
      * TODO
      */
-    override suspend fun reset(): Self {
+    override suspend fun reset(builderBlock: (suspend Self.() -> Unit)?): Self {
+        @Suppress("UNCHECKED_CAST")
+        this as Self
+
         state.emit(Msg.State.UNTRACKED)
         sender = null
-        @Suppress("UNCHECKED_CAST")
-        return this as Self
+
+        builderBlock?.invoke(this)
+
+        return this
     }
 
     /**

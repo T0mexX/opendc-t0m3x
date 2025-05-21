@@ -1,4 +1,40 @@
 import resources/my/scope.json
+net snap
+f synth bit-complement 100%
+f info
+q
+
+
+n mk -n 0 -b 1Gbps -p 2 gs
+n mk -n 1 -b 1Gbps -p 2 gs
+n mk -n 2 -b 1Gbps -p 2 h
+l mk -n 1 -n 2 -b 1Gbps
+l mk -n 0 -n 2 -b 1Gbps
+net snap
+q
+
+import resources/my/scope.json
+f mk -s 4 -d 5 -b 500Mbps
+f mk -s 4 -d 5 -b 1Gbps
+f mk -s 5 -d 4 -b 500Mbps
+f info
+q
+
+n mk -n 0 -b 1Gbps -p 2 gs
+n mk -n 1 -b 1Gbps -p 1 h
+l mk -n 1 -n 0 -b 1Gbps
+
+n mk -n 3 -b 1Gbps -p 2 gs
+n mk -n 4 -b 1Gbps -p 1 h
+l mk -n 3 -n 4 -b 1Gbps
+
+f mk -s 4 -d 1 -b 500Mbps
+f mk -s 4 -d 1 -b 1Gbps
+f mk -s 1 -d 4 -b 500Mbps
+f info
+q
+
+import resources/my/scope.json
 net info
 f synth full 100%
 f info
@@ -15,10 +51,7 @@ q
 
 
 
-import resources/verify-tops/ftree/ftree(k:4).json
-f synth bit-complement 100%
-f info
-q
+
 
 
 

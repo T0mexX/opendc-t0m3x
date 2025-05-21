@@ -27,11 +27,6 @@ internal interface SendLink: SendChannel<Msg<Node<*>, *>> {
     val receiverPort: Port
 
     /**
-     * The node that owns the [receiverPort], representing the destination of this link.
-     */
-    val receiverNode: Node<*> get() = receiverPort.owner
-
-    /**
      * The maximum bandwidth capacity of this link.
      */
     val maxBw: DataRate

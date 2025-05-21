@@ -40,6 +40,8 @@ internal class SimplexLink(
             if (bw > available) available
             else bw
 
+        if (deltaBw approx DataRate.zero) return DataRate.zero
+
         // Update the currently used bandwidth on the link, rounding to max if necessary.
         usedBw = (usedBw + deltaBw).roundToIfWithinEpsilon(maxBw, 1.0)
 

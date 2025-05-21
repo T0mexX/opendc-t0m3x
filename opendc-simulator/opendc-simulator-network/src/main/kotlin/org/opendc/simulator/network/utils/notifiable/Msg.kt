@@ -24,8 +24,9 @@ internal interface Msg<in T, Self: Msg<T, Self>>: IFW<Self>
 
     /**
      * TODO
+     * @param builderBlock
      */
-    suspend fun reset(): Self
+    suspend fun reset(builderBlock: (suspend Self.() -> Unit)? = null): Self
 
     enum class State {
         HANDLED,

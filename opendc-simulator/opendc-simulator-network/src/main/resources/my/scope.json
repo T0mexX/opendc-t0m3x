@@ -1,6 +1,6 @@
 {
     "netSimConfig": {
-        "routingPolicy": { "type": "ecmp" },
+        "routingPolicy": { "type": "ospf" },
         "fairnessPolicy": { "type": "proportional" }
     },
     "netPath": "./resources/examples/topologies/dragonfly/df(a:12,g:11).json",

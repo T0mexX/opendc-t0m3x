@@ -35,7 +35,7 @@ import org.opendc.simulator.network.repl.cmds.REPLCmd
 internal class NodeMkCmd : REPLCmd(name = "mk") {
     private val id: NodeId by option(
         help = "The id of the new node",
-        names = arrayOf("-N_", "--nodeid"),
+        names = arrayOf("-n", "--nodeid"),
     ).convert { decodeOrNull<NodeId>(it)!! }
         .required().check("node with id already exists") { !net.nodesById.keys.contains(it) }
 

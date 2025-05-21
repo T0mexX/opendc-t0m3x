@@ -39,6 +39,7 @@ val serializationVersion = "1.6.0"
 val kotlinxCoroutinesVersion = "1.8.1"
 val slf4j2Version = "2.23.0"
 val cliktVersion = "2.8.0"
+val ipAddressVersion = "5.5.1"
 
 dependencies {
     implementation(libs.progressbar)
@@ -49,6 +50,7 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$slf4j2Version")
     implementation(libs.clikt)
     implementation(projects.opendcTrace.opendcTraceParquet)
+    implementation("com.github.seancfoley:ipaddress:$ipAddressVersion")
     runtimeOnly("com.github.ajalt:clikt:$cliktVersion")
 //    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.7.3")
 

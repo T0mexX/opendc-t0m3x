@@ -8,10 +8,12 @@ import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 internal sealed interface NodeVersion {
 
     val rxUpdateDisp: FWDispenser<Node.RxUpdt>
-    val reapplyRoutingDisp: FWDispenser<Node.ReapplyRouting>
+    val applyRoutingDisp: FWDispenser<Node.ApplyRouting>
     val connectDisp: FWDispenser<Node.Connect>
     val disconnectDisp: FWDispenser<Node.Disconnect>
     val acceptConnectionDisp: FWDispenser<Node.AcceptConnection>
+    val routTblUpdtDisp: FWDispenser<Node.RoutTblUpdt>
+    val shareRoutVectDisp: FWDispenser<Node.ShareRoutVect>
 
     context(NetSimScope)
     suspend fun initDispensers()

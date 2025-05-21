@@ -27,7 +27,7 @@ internal class UGALL : RoutPolicy() {
         nodeFlowEntry.txPorts.clear()
 
         // Ports the flow will be forwarded to.
-        val paths = this@Node.routingTable.getPossiblePathsTo(f.destId).onlyMinimal()
+        val paths = this@Node.routTbl.getPossiblePathsTo(f.destId).onlyMinimal()
 
         // Choose path considering both path length and congestion at the port.
         val chosenPath = paths.minBy { path ->
@@ -35,7 +35,7 @@ internal class UGALL : RoutPolicy() {
             val port = path.associatedPort()
 
             // Score for the port, less is better.
-            path.numOfHops * port.txLink!!.util.value
+            path.distance * port.txLink!!.util.value
         }
 
         // Set the chosen port as the only one that will handle the outgoing flow.

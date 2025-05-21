@@ -2,6 +2,8 @@ package org.opendc.simulator.network.components.node
 
 import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
+import org.opendc.simulator.network.components.internalstructs.RoutTbl
+import org.opendc.simulator.network.components.internalstructs.RoutVect
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.networks.Network
@@ -66,7 +68,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * Contains network information about the routs
      * available to reach each node in the [Network].
      */
-    val routingTable: RoutingTable
+    val routTbl: RoutTbl
 
     /**
      * Contains information about the [NetFlow]s transiting through this node.
@@ -83,13 +85,22 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * Convenience method to send a [Connect] [Msg] to this node.
      * @see Connect
      */
-    suspend fun msgSyncConnect(other: Node<*>, linkBw: DataRate = this.portSpeed min other.portSpeed)
+    suspend fun msgSyncConnect(
+        other: Node<*>,
+        linkBw: DataRate = this.portSpeed min other.portSpeed,
+        updtRoutTbl: Boolean = true,
+    )
 
     /**
      * Convenience method to send a [Disconnect] [Msg] to this node.
      * @see RxUpdt
      */
     suspend fun msgSyncDisconnect(other: Node<*>)
+
+    /**
+     * TODO
+     */
+    suspend fun msgAsyncShareRoutVect()
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Messages
@@ -116,6 +127,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * A [Msg] instructing the receiving node to initiate a connection to [other]
      * using a link with the specified bandwidth capacity [linkBw].
      *
+     * TODO
      * This msg can be used for dynamic link establishment during simulation, especially in REPL environment.
      *
      * For details about inter-component communication using messages, see [Msg].
@@ -123,6 +135,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      */
     interface Connect: Msg<Node<*>, Connect> {
         var other: Node<*>
+        var updtRoutTbl: Boolean
         var linkBw: DataRate
 
         companion object : FWId<Connect>
@@ -143,6 +156,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     interface AcceptConnection: ReqMsg<Node<*>, Port, AcceptConnection> {
         var toBeAccepted: Port
         var linkBw: DataRate
+        var updtRoutTbl: Boolean
 
         companion object : FWId<AcceptConnection>
     }
@@ -165,9 +179,29 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * For details about inter-component communication using messages, see [Msg].
      * For an explanation of flyweight objects used during simulation, see [FW].
      */
-    interface ReapplyRouting: Msg<Node<*>, ReapplyRouting> {
+    interface ApplyRouting: Msg<Node<*>, ApplyRouting> {
 
-        companion object : FWId<ReapplyRouting>
+        companion object : FWId<ApplyRouting>
+    }
+
+    /**
+     * TODO
+     * @property from The adjacent node the routing update is coming from.
+     * @property routVect The routing vector of [from] node.
+     */
+    interface RoutTblUpdt: Msg<Node<*>, RoutTblUpdt> {
+        var from: Node<*>
+        var routVect: RoutVect
+
+        companion object : FWId<RoutTblUpdt>
+    }
+
+    /**
+     * TODO
+     */
+    interface ShareRoutVect: Msg<Node<*>, ShareRoutVect> {
+
+        companion object : FWId<ShareRoutVect>
     }
 
 

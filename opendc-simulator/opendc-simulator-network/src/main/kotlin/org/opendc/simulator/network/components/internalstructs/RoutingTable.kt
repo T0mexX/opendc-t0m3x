@@ -34,6 +34,11 @@ import org.opendc.simulator.network.utils.RWLock
 internal class RoutingTable(private val ownerId: NodeId) {
     private val rwLock = RWLock(2)
 
+    /**
+     * TODO
+     * handled by node
+     */
+    var toBeUpdt: Boolean = false
 //    /**
 //     * Maps the destination id to the cost (numOfHops) to that destination.
 //     * It is used to share routing information to other [Node]s

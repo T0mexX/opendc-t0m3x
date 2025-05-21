@@ -74,10 +74,10 @@ internal class DragonFly private constructor(
                 .setTaskName("Building DragonFly Network...")
                 .build()
 
-            val int = Internet()
+            val inet = Internet()
 
             // Build groups and their internal connections.
-            val groups = 0.rangeUntil(specs.g).map { DFGroup(specs, int, pb) }
+            val groups = 0.rangeUntil(specs.g).map { DFGroup(specs, inet, pb) }
 
             fun Switch.isConnectedTo(other: Switch): Boolean =
                 this.ports.any { it.txLink?.receiverPort?.owner == other }
@@ -122,7 +122,7 @@ internal class DragonFly private constructor(
                     val toSw = targetG.switches[toSwI]
                     assert(targetG !== g)
                     assert(fromSw.isConnectedTo(toSw).not())
-                    g.switches[fromSwI].msgSyncConnect(toSw)
+                    g.switches[fromSwI].msgSyncConnect(toSw, updtRoutTbl = false)
                 }
 
                 // Update progress bar.
@@ -133,6 +133,10 @@ internal class DragonFly private constructor(
                     toGDeltaI = 1
                 }
             } while (true)
+
+            // Trigger routing info propagation for intergroup links.
+            groups.first().switches.first().msgAsyncShareRoutVect()
+            barrier.awaitStability()
 
             // Assert all switches have exactly the number of expected connections.
             assert(groups.all { it.switches.all { sw -> sw.nMissingConnections() == 0 } })
@@ -159,7 +163,7 @@ internal class DragonFly private constructor(
             return DragonFly(
                 specs = specs,
                 groups = groups,
-                inet = int,
+                inet = inet,
             ).also {
                 // Setup global routing policy if needed.
                 this@NetSimScope.config.routPolicy.setUp()
@@ -191,13 +195,13 @@ internal class DragonFly private constructor(
              * Suspending constructor.
              */
             context(NetSimScope)
-            suspend operator fun invoke(specs: DragonFlySpecs, int: Internet, pb: ProgressBar): DFGroup {
+            suspend operator fun invoke(specs: DragonFlySpecs, inet: Internet, pb: ProgressBar): DFGroup {
                 // Remaining global switches to add to group.
                 var glSwNum = specs.globalSwitchesPerGroup
 
                 // Build switches in the group.
                 val switches = 0.rangeUntil(specs.a).map {
-                    if (--glSwNum >= 0) specs.switchSpecs.toCoreSwitchSpecs().buildAsCore(int)
+                    if (--glSwNum >= 0) specs.switchSpecs.toGlobalSwitchSpecs().buildAsCore(inet, updtRoutTbl = false)
                     else specs.switchSpecs.build()
                 }
                 pb.stepBy(switches.size.toLong())
@@ -205,7 +209,7 @@ internal class DragonFly private constructor(
                 // Establish connections between switches of the same group (pairwise connections).
                 switches.forEachIndexed { idx, sw1 ->
                     switches.drop(idx + 1).forEach { sw2 ->
-                        sw1.msgSyncConnect(sw2)
+                        sw1.msgSyncConnect(sw2, updtRoutTbl = false)
                     }
                     pb.stepBy(switches.size.toLong() - idx - 1)
                 }
@@ -217,12 +221,16 @@ internal class DragonFly private constructor(
                             pb.step()
                             specs.hostSpecs.build()
                         }.forEach { h ->
-                            h.msgSyncConnect(sw)
+                            h.msgSyncConnect(sw, updtRoutTbl = false)
                             add(h)
                             pb.step()
                         }
                     }
                 }
+
+                // Trigger routing table info propagation in this group.
+                switches.first().msgAsyncShareRoutVect()
+                barrier.awaitStability()
 
                 return DFGroup(hosts, switches)
             }

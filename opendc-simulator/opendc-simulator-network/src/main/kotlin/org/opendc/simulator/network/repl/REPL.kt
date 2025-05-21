@@ -49,7 +49,7 @@ import org.opendc.simulator.network.repl.cmds.network.NetInfoCmd
 import org.opendc.simulator.network.repl.cmds.network.NetSnapCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkCmd
-import org.opendc.simulator.network.repl.cmds.node.NodeMkCoreSwitchCmd
+import org.opendc.simulator.network.repl.cmds.node.NodeMkGlobalSwitchCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkHostCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkSwitchCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeRmCmd
@@ -80,7 +80,7 @@ public suspend fun main() {
                 LinkCmd().subcommands(LinkMkCmd(), LinkRmCmd()),
                 NodeCmd().subcommands(
                     NodeRmCmd(),
-                    NodeMkCmd().subcommands(NodeMkHostCmd(), NodeMkSwitchCmd(), NodeMkCoreSwitchCmd()),
+                    NodeMkCmd().subcommands(NodeMkHostCmd(), NodeMkSwitchCmd(), NodeMkGlobalSwitchCmd()),
                     NodeSnapCmd(),
                 ),
                 AdvTimeCmd(),

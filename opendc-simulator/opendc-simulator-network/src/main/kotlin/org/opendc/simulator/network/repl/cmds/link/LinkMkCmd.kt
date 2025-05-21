@@ -45,7 +45,7 @@ internal class LinkMkCmd : REPLCmd("mk") {
 
     private val nodeIds: Set<Long> by option(
         help = "The id of the first node",
-        names = arrayOf("-N_", "--nodes", "--nodeids"),
+        names = arrayOf("-n", "--nodes", "--nodeids"),
     ).long().multiple().unique().check("nodes must be 2.") { it.size == 2 }
 
     override fun run(): Unit = execREPLCmdCatching {

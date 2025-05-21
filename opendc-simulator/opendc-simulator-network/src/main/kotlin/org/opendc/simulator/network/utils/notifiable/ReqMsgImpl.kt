@@ -24,18 +24,23 @@ internal abstract class ReqMsgImpl<T: Msgable<T>, A, Self: ReqMsg<T, A, Self>>(
     override suspend fun awaitResponse(): A =
         resp.first {
             it != null
-        }!!
+        }!!.also { dispose() }
+
 
     /**
      * TODO
      */
-    final override suspend fun reset(): Self {
+    final override suspend fun reset(builderBlock: (suspend Self.() -> Unit)?): Self {
+        @Suppress("UNCHECKED_CAST")
+        this as Self
+
         state.emit(Msg.State.UNTRACKED)
         sender = null
         resp.emit(null)
 
-        @Suppress("UNCHECKED_CAST")
-        return this as Self
+        builderBlock?.invoke(this)
+
+        return this
     }
 
     /**

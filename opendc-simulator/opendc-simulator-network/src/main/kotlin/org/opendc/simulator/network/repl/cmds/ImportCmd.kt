@@ -53,6 +53,7 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
         scope.cancel()
         env.scope = newScope
         env.network = newScope.net
+        env.scope.barrier.awaitStability()
 
         echo("Network simulation scope imported successfully.")
     }

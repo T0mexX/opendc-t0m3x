@@ -15,12 +15,8 @@ import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
-import org.opendc.simulator.network.utils.Idx
-import org.opendc.simulator.network.utils.evntemitter.publics.Evnt
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
-import org.opendc.simulator.network.utils.flyweight.internals.FWPool
-import org.opendc.simulator.network.utils.flyweight.internals.IFW
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
 import org.opendc.simulator.network.utils.notifiable.Msg

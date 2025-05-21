@@ -21,7 +21,6 @@ import org.opendc.simulator.network.utils.IntId
 import org.opendc.simulator.network.utils.IntSz
 import org.opendc.simulator.network.utils.datastructures.IntArrayQueue
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
-import org.opendc.simulator.network.utils.flyweight.internals.FWPool
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl

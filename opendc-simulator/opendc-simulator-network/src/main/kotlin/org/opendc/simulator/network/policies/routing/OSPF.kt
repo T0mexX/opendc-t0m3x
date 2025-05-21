@@ -18,7 +18,7 @@ internal class OSPF: RoutPolicy() {
         val f = nodeFlowEntry.netFlow
         assert(nodeFlowEntry.txPorts.isEmpty())
 
-        this@Node.routingTable.getPossiblePathsTo(f.destId)
+        this@Node.routTbl.getPossiblePathsTo(f.destId)
             .onlyMinimal()
             .firstOrNull()
             ?.let { path ->
@@ -31,7 +31,7 @@ internal class OSPF: RoutPolicy() {
         context(NetSimScope, Node<*>)
         suspend fun selectPorts(to: Node<*>): Set<Port> =
             setOf(
-                this@Node.routingTable.getPossiblePathsTo(to.id)
+                this@Node.routTbl.getPossiblePathsTo(to.id)
                     .onlyMinimal()
                     .random()
                     .associatedPort()
@@ -48,7 +48,7 @@ internal class OSPF: RoutPolicy() {
 //    context(NetSimScope, Node<*>)
 //    override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
 //        val f = nodeFlowEntry.netFlow
-//        this@Node.routingTable.getPossiblePathsTo(f.destId)
+//        this@Node.routTbl.getPossiblePathsTo(f.destId)
 //            .onlyMinimal()
 //            .firstOrNull()
 //            ?.let { path ->
@@ -60,7 +60,7 @@ internal class OSPF: RoutPolicy() {
 //    context(NetSimScope, Node<*>)
 //    suspend fun selectPorts(f: NetFlow): Set<Port> =
 //        setOf(
-//            this@Node.routingTable.getPossiblePathsTo(f.destId)
+//            this@Node.routTbl.getPossiblePathsTo(f.destId)
 //                .onlyMinimal()
 //                .random()
 //                .associatedPort()
@@ -69,7 +69,7 @@ internal class OSPF: RoutPolicy() {
 //    context(NetSimScope, Node<*>)
 //    suspend fun selectPorts(to: Node<*>): Set<Port> =
 //        setOf(
-//            this@Node.routingTable.getPossiblePathsTo(to.id)
+//            this@Node.routTbl.getPossiblePathsTo(to.id)
 //                .onlyMinimal()
 //                .random()
 //                .associatedPort()

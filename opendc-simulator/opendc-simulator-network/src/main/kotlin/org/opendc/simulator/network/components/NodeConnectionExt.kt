@@ -48,8 +48,8 @@ import org.opendc.simulator.network.components.node.Node
 //
 //        freePort.connect(otherPort, linkBW = linkBW)
 //
-//        val otherVect: RoutingVect = other.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
-//        routingTable.mergeRoutingVector(otherVect, vectOwner = other)
+//        val otherVect: RoutingVect = other.exchangeRoutVect(routTbl.getVect(), vectOwner = this)
+//        routTbl.mergeRoutingVector(otherVect, vectOwner = other)
 //        shareRoutingVect(except = listOf(other))
 //
 //        with(flowHandler) { updtAllRouts() }
@@ -111,7 +111,7 @@ import org.opendc.simulator.network.components.node.Node
 //
 //        portToOther.disconnect()
 //
-//        routingTable.removeNextHop(other)
+//        routTbl.removeNextHop(other)
 //        portToNode.remove(other.id)
 //
 //        shareRoutingVect(exchange = true)
@@ -127,62 +127,63 @@ import org.opendc.simulator.network.components.node.Node
 // */
 //private fun Node.getFreePort(): Port? = ports.firstOrNull { !it.isConnected }
 
-/**
- * Merges [routVect] in the [this.routingTable], updating flowsById
- * and sharing its updated routing vector if needed.
- * @return its own routing vector.
- */
-internal suspend fun Node<*>.exchangeRoutVect(
-    routVect: RoutingVect,
-    vectOwner: Node<*>,
-): RoutingVect {
-    routingTable.mergeRoutingVector(routVect, vectOwner)
-
-    if (!routingTable.isTableChanged) return routingTable.getVect()
-//    with(flowHandler) { updtAllRouts() }
-
-//    updateAllFlows()
-//    TODO()
-
-    if (!routingTable.isVectChanged) return routingTable.getVect()
-    shareRoutingVect(except = listOf(vectOwner))
-
-    return routingTable.getVect()
-}
-
-/**
- * Shares ***this*** routing vector with all adjacent nodesById, except those in [except].
- * @param[except]       the list of nodesById to which not share the vector with.
- * @param[exchange]     determines if ***this*** should receive and merge other's vectors as well.
- * If so, the process continues until one iteration of the function is completed without that ***this*** routing vector changes.
- */
-internal tailrec suspend fun Node<*>.shareRoutingVect(
-    except: Collection<Node<*>> = listOf(),
-    exchange: Boolean = false,
-) {
-//    TODO()
-
-    ports.forEach { p ->
-        // If port not connected then skip.
-        p.txLink ?: return@forEach
-
-        val adjN = p.txLink!!.receiverPort.owner
-        // If the adjacent node is in the `except` list, then skip.
-        if (adjN in except) return@forEach
-
-        val otherVct = adjN.exchangeRoutVect(routingTable.getVect(), vectOwner = this)
-        if (exchange) {
-            routingTable.mergeRoutingVector(otherVct, vectOwner = adjN)
-
-            // If no changes to the routing table, then go to the next port.
-            if (routingTable.isTableChanged.not()) return@forEach
-
-            // TODO: remove old code.
-            // with(flowHandler) { updtAllRouts() }
-            // updateAllFlows()
-            if (routingTable.isVectChanged.not()) return@forEach
-            @Suppress("NON_TAIL_RECURSIVE_CALL")
-            shareRoutingVect(except = listOf(adjN), exchange = true)
-        }
-    }
-}
+///**
+// * Merges [routVect] in the [this.routingTable], updating flowsById
+// * and sharing its updated routing vector if needed.
+// * @return its own routing vector.
+// */
+//internal suspend fun Node<*>.exchangeRoutVect(
+//    routVect: RoutingVect,
+//    vectOwner: Node<*>,
+//    except: Set<Node<*>> = setOf(),
+//): RoutingVect {
+//    routTbl.mergeRoutingVector(routVect, vectOwner)
+//
+//    if (!routTbl.isTableChanged) return routTbl.getVect()
+////    with(flowHandler) { updtAllRouts() }
+//
+////    updateAllFlows()
+////    TODO()
+//
+//    if (!routTbl.isVectChanged) return routTbl.getVect()
+//    shareRoutingVect(except = setOf(vectOwner) + except)
+//
+//    return routTbl.getVect()
+//}
+//
+///**
+// * Shares ***this*** routing vector with all adjacent nodesById, except those in [except].
+// * @param[except]       the list of nodesById to which not share the vector with.
+// * @param[exchange]     determines if ***this*** should receive and merge other's vectors as well.
+// * If so, the process continues until one iteration of the function is completed without that ***this*** routing vector changes.
+// */
+//internal tailrec suspend fun Node<*>.shareRoutingVect(
+//    except: Set<Node<*>> = setOf(),
+//    exchange: Boolean = false,
+//) {
+////    TODO()
+//
+//    ports.forEach { p ->
+//        // If port not connected then skip.
+//        p.txLink ?: return@forEach
+//
+//        val adjN = p.txLink!!.receiverPort.owner
+//        // If the adjacent node is in the `except` list, then skip.
+//        if (adjN in except) return@forEach
+//
+//        val otherVct = adjN.exchangeRoutVect(routTbl.getVect(), vectOwner = this)
+//        if (exchange) {
+//            routTbl.mergeRoutingVector(otherVct, vectOwner = adjN)
+//
+//            // If no changes to the routing table, then go to the next port.
+//            if (routTbl.isTableChanged.not()) return@forEach
+//
+//            // TODO: remove old code.
+//            // with(flowHandler) { updtAllRouts() }
+//            // updateAllFlows()
+//            if (routTbl.isVectChanged.not()) return@forEach
+//            @Suppress("NON_TAIL_RECURSIVE_CALL")
+//            shareRoutingVect(except = setOf(adjN), exchange = true)
+//        }
+//    }
+//}

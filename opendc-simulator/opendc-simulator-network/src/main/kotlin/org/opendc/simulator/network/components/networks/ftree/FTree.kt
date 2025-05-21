@@ -75,7 +75,7 @@ internal class FTree private constructor(
                 buildList {
                     repeat(k * k / 4) {
                         add(
-                            specs.crSwSpecs.toCoreSwitchSpecs().buildAsCore(inet)
+                            specs.crSwSpecs.toGlobalSwitchSpecs().buildAsCore(inet)
                         )
                     }
                 }.chunked(k / 2)
@@ -109,6 +109,12 @@ internal class FTree private constructor(
             assert(nodesById.values.filterIsInstance<Switch>().size == specs.R_)
             assert(nodesById.values.filterIsInstance<HostNode>().size == specs.N_)
             assert(pb.current == specs.E_.toLong() + specs.V_)
+
+            // After all nodes and links have been established,
+            // compute the routing table of the nodes.
+            // If all nodes are connected, a single call to `shareRoutTbl`
+            // propagates updates to all the network.
+            inet.msgAsyncShareRoutVect()
 
             return FTree(
                 specs = specs,

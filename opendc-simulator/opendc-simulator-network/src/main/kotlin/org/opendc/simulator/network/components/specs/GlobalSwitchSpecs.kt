@@ -52,7 +52,7 @@ internal data class GlobalSwitchSpecs(
      * TODO
      */
     context(NetSimScope)
-    suspend fun buildAsCore(internet: Internet): GlobalSwitch =
+    suspend fun buildAsCore(internet: Internet, updtRoutTbl: Boolean = true): GlobalSwitch =
         this.copy(
             nPorts = (
                 nPorts
@@ -61,6 +61,6 @@ internal data class GlobalSwitchSpecs(
                 ) + 1
         ).build().also {
             it.invalidate()
-            it.msgSyncConnect(internet)
+            it.msgSyncConnect(internet, updtRoutTbl = updtRoutTbl)
         }
 }

@@ -31,7 +31,7 @@ import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 private const val CMD_STR: String = "core-switch"
 
-internal class NodeMkCoreSwitchCmd : REPLCmd(name = CMD_STR) {
+internal class NodeMkGlobalSwitchCmd : REPLCmd(name = CMD_STR) {
     private val nodeMkCtx: NodeMkCmd.NodeMkCtx by requireObject<NodeMkCmd.NodeMkCtx>()
     private val id: NodeId by lazy { nodeMkCtx.id }
     private val speed: DataRate by lazy { nodeMkCtx.portSpeed }
@@ -43,6 +43,11 @@ internal class NodeMkCoreSwitchCmd : REPLCmd(name = CMD_STR) {
             "core-s" to listOf(CMD_STR),
             "c-switch" to listOf(CMD_STR),
             "core" to listOf(CMD_STR),
+            "gs" to listOf(CMD_STR),
+            "gsw" to listOf(CMD_STR),
+            "gswitch" to listOf(CMD_STR),
+            "global-switch" to listOf(CMD_STR),
+            "globalswitch" to listOf(CMD_STR),
         ) + super.aliases()
 
     override fun run(): Unit = execREPLCmdCatching {
