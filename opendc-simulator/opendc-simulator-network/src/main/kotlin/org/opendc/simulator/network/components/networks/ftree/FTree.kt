@@ -55,7 +55,7 @@ internal class FTree private constructor(
                 // Each step is building a node or adding a link.
                 .setInitialMax(specs.E_.toLong() + specs.V_)
                 .setStyle(ProgressBarStyle.ASCII)
-                .setTaskName("Building DragonFly Network...")
+                .setTaskName("Building FatTree Network...")
                 .build()
 
             val inet = Internet()

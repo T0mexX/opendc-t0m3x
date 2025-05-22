@@ -107,7 +107,15 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
      * TODO
      */
     internal suspend fun claimIp(ip: IPv4Address) {
-        TODO()
+        assert(ip.isPrefixBlock.not())
+
+        val n = trie.addNode(ip)
+        val subnet = n.addedParent().key
+
+        assert(
+            subnet.prefixLength == 0 && ip.prefixLength == null
+                || subnet.prefixLength == ip.prefixLength
+        )
     }
 
     internal suspend fun getMyRoutTrie(addr: IPv4Address): IPv4AddressTrie = mtx.withLock {

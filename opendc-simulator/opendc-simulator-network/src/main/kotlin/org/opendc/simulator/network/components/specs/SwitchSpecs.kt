@@ -5,15 +5,13 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.node.HostNode
-import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.simscope.NetSimScope
 
 @Serializable
 @SerialName("switch")
 internal data class SwitchSpecs(
-//    @Contextual val ip: IPv4Address? = null,
+    @Contextual val ip: IPv4Address? = null,
     private val portSpeed: DataRate? = null,
     private val nPorts: Int? = null,
 ): NodeSpecs<Switch> {
@@ -30,25 +28,34 @@ internal data class SwitchSpecs(
             ?: devConfig.nodeConfig.defaultPortSpeed!!
 
     context(NetSimScope)
-    override suspend fun build(): Switch =
-        Switch(
-//            addr = ip,
+    override suspend fun build(): Switch {
+        // If ip is specified in specs, then claim it.
+        ip?.let { addrMngr.claimIp(it) }
+
+        return Switch(
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
         )
+    }
 
     fun toGlobalSwitchSpecs(): GlobalSwitchSpecs =
         GlobalSwitchSpecs(
-//            addr = ip,
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
         )
 
     context(NetSimScope)
-    suspend fun build(subnet: IPv4Address): Switch =
-        Switch(
+    suspend fun build(subnet: IPv4Address): Switch {
+        // If ip is specified in specs, then claim it.
+        ip?.let { addrMngr.claimIp(it) }
+
+        return Switch(
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
             subnet = subnet,
         )
+    }
 }

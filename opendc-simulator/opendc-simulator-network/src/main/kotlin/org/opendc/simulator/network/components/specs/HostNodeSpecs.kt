@@ -13,7 +13,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("host")
 internal data class HostNodeSpecs(
-//    @Contextual val ip: IPv4Address? = null,
+    @Contextual val ip: IPv4Address? = null,
     private val portSpeed: DataRate? = null,
     private val nPorts: Int? = null,
 ) : NodeSpecs<HostNode> {
@@ -39,11 +39,16 @@ internal data class HostNodeSpecs(
         )
 
     context(NetSimScope)
-    suspend fun build(subnet: IPv4Address): HostNode =
-        HostNode(
+    suspend fun build(subnet: IPv4Address): HostNode {
+        // If ip is specified in specs, then claim it.
+        ip?.let { addrMngr.claimIp(it) }
+
+        return HostNode(
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
             subnet = subnet,
         )
+    }
 }
 

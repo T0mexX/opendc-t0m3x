@@ -1,6 +1,9 @@
 import resources/my/scope.json
+net prefix-trie
+net info
 f synth full 100%
-f export resources/ignored/test.parquet
+f info
+f export resources/ignored/test.parquet --columns [demand_Kbps,tput_Kbps]
 q
 
 f mk -s 4 -d 5 -b 1Gbps

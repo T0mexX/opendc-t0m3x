@@ -1,7 +1,9 @@
 package org.opendc.simulator.network.utils
 
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.contextual
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.opendc.simulator.network.components.networks.clos.ClosSpecs
@@ -28,6 +30,7 @@ import org.opendc.simulator.network.repl.synthetic.adversarial.DFAdv
 import org.opendc.simulator.network.repl.synthetic.adversarial.FTreeAdv
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
+import org.opendc.simulator.network.routing.IPv4AddressSerializer
 
 /**
  * TODO
@@ -93,6 +96,10 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
         }
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // IPv4Address
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    contextual(IPv4Address::class, IPv4AddressSerializer())
 }
 
 public val NETWORK_JSON: Json = Json {

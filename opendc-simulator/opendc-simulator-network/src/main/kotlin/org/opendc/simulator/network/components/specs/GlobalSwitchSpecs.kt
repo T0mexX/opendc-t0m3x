@@ -17,7 +17,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("global-switch")
 internal data class GlobalSwitchSpecs(
-//    @Contextual val ip: IPv4Address? = null,
+    @Contextual val ip: IPv4Address? = null,
     private val portSpeed: DataRate? = null,
     private val nPorts: Int? = null,
 ): NodeSpecs<GlobalSwitch> {
@@ -37,16 +37,20 @@ internal data class GlobalSwitchSpecs(
             ?: devConfig.nodeConfig.defaultPortSpeed!!
 
     context(NetSimScope)
-    override suspend fun build(): GlobalSwitch =
-        GlobalSwitch(
-//            addr = ip,
+    override suspend fun build(): GlobalSwitch {
+        // If ip is specified in specs, then claim it.
+        ip?.let { addrMngr.claimIp(it) }
+
+        return GlobalSwitch(
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
         )
+    }
 
     fun toSwitchSpecs(): SwitchSpecs =
         SwitchSpecs(
-//            ip = ip,
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
         )
@@ -68,12 +72,17 @@ internal data class GlobalSwitchSpecs(
         }
 
     context(NetSimScope)
-    suspend fun build(subnet: IPv4Address? = null): GlobalSwitch =
-        GlobalSwitch(
+    suspend fun build(subnet: IPv4Address? = null): GlobalSwitch {
+        // If ip is specified in specs, then claim it.
+        ip?.let { addrMngr.claimIp(it) }
+
+        return GlobalSwitch(
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
             subnet = subnet,
         )
+    }
 
     context(NetSimScope)
     suspend fun buildAsCore(internet: Internet, updtRoutTbl: Boolean = true, subnet: IPv4Address? = null): GlobalSwitch =
