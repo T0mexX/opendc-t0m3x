@@ -3,6 +3,6 @@
         "routingPolicy": { "type": "ospf" },
         "fairnessPolicy": { "type": "proportional" }
     },
-    "netPath": "./resources/examples/topologies/dragonfly/df(a:12,g:11).json",
+    "netPath": "./resources/examples/topologies/custom/custom1.json",
     "initialTmStamp": "1970-10-01T15:23:44Z"
 }

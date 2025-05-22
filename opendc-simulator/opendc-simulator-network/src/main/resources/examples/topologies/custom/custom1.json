@@ -4,7 +4,7 @@
         {
             "type": "global-switch",
             "nPorts": 10,
-            "portSpeed": "1Gbps",
+            "portSpeed": "2Gbps",
             "id": 1
         },{
             "type": "switch",

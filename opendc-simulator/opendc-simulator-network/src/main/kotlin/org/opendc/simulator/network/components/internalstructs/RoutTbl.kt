@@ -13,6 +13,13 @@ internal typealias RoutVect = Map<NodeId, Int>
  * TODO
  */
 internal class RoutTbl(val owner: Node<*>) {
+
+    /**
+     * TODO
+     * Handled externally to decide whether a new version of the table has been shared.
+     */
+    internal var shared: Boolean = true
+
     /**
      * TODO
      * only minimal path for every possible next hop -> Rout table entry max xontains nPorts entries
@@ -70,7 +77,7 @@ internal class RoutTbl(val owner: Node<*>) {
     /**
      * TODO
      */
-    internal fun registerAdjacentNode(n: Node<*>) {
+    private fun registerAdjacentNode(n: Node<*>) {
         // The entry corresponding to the possible paths to destination node `n`.
         val e = dest2Entry.getOrPut(n.id) { RoutTblEntry(destId = n.id) }
 

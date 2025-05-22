@@ -18,6 +18,7 @@ internal class FWPool<out T: FW<T>, out O: FWId<T>>(
 
     // TODO remove
     private var bo = 0
+    private var bo2 = 0
     private val mtx = Mutex()
 
     private suspend fun nextIdx(): Idx = nextIdxMtx.withLock {
@@ -29,15 +30,20 @@ internal class FWPool<out T: FW<T>, out O: FWId<T>>(
         return FWDispenser {
             subPools[idx]
                 .tryReceive()
-                .getOrNull()
+                .getOrNull()?.also {
+                    // TODO: remove
+//                    mtx.withLock {
+//                        bo2++
+//                    }
+                }
                 ?: objConstructor(this, idx)
                     // TODO: remove
-//                    .also {
+                    .also {
 //                        mtx.withLock {
 //                            bo++
-//                            println(it::class.java.interfaces.toList().toString() + " N_=$bo")
+//                            println(it::class.java.interfaces.toList().toString() + " requested:$bo2, created:$bo")
 //                        }
-//                    }
+                    }
         }
     }
 

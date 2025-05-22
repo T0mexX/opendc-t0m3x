@@ -236,9 +236,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                                 other = otherP
                             }.sendTo(freePort, dispose = false).awaitHandling().dispose()
 
-                            // Register the newly connected node in the routing table,
-                            // so that the next sharing will share this information.
-                            routTbl.registerAdjacentNode(otherN)
+                            // Mark the routing table as to be shared.
+                            routTbl.shared = false
 
                             // Update routing table.
                             if (updtRoutTbl) {
@@ -290,9 +289,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             linkBw = thisMsg.linkBw
                         }.sendTo(freeP, dispose = false).awaitHandling().dispose()
 
-                        // Register the newly connected node in the routing table,
-                        // so that the next sharing will share this information.
-                        routTbl.registerAdjacentNode(otherN)
+                        // Mark the routing table as to be shared.
+                        routTbl.shared = false
 
                         if (updtRoutTbl) {
                             // Send this node's routing vector to the newly connected node.
@@ -369,8 +367,16 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                         override suspend fun handle() {
                             val n = this@Node as NodeImpl
 
+                            //
+                            // Update the routing table with new routing vector.
                             n.routTbl.updtWithInfoFrom(routVect, from).let { tblChanged ->
-                                if (tblChanged) shareRoutVectDisp.acquire().reset().handle()
+                                if (tblChanged) {
+                                    // Mark the table as to be shared.
+                                    routTbl.shared = false
+
+                                    // Enqueue a `ShareRoutVect` msg.
+                                    shareRoutVectDisp.acquire().reset().sendTo(this@Node)
+                                }
                             }
 
                             handled()
@@ -392,6 +398,11 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 
                         context(Node<*>)
                         override suspend fun handle() {
+                            // A previous `ShareRoutVect` has already shared the current version of the routing table.
+                            if (routTbl.shared) return handled()
+
+                            //
+                            // Share the new version of the routing table to all adjacent nodes.
                             coroutineScope {
                                 ports.asFlow().onEach { p ->
                                     // Adjacent node to share the routing vector with.
@@ -402,6 +413,9 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                                     }.sendTo(adjN)
                                 }.launchIn(this@coroutineScope)
                             }
+
+                            // Mark the current version of the routing table as been shared.
+                            routTbl.shared = true
 
                             handled()
                         }
