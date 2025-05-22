@@ -62,7 +62,7 @@ internal class NodeFlowEntry private constructor(
                     txPorts = mutableMapOf(),
                     portFlowEntryIds = IntArray(10) { -1 },
                 )
-            }.dispenser()
+            }
 
         object RxProp : TrackablePropId<NodeFlowEntry>
     }

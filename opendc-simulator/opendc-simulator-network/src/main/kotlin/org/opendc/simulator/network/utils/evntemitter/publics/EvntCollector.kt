@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.CoroutineID
 import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.invalidatable.internals.Invalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
@@ -34,7 +35,7 @@ public class EvntCollector<T: EvntEmitter<T>> private constructor(
      * TODO
      */
     context(NetSimScope)
-    override fun netLaunch(scope: CoroutineScope): Job = scope.launch {
+    override suspend fun netLaunch(scope: CoroutineScope): Job = scope.launch(CoroutineID.new()) {
         evntFlow.collect { evnt ->
             // Retrieve from `EvntFlow` and send it to the `EvntCollector` channel.
             send(evnt)
@@ -57,7 +58,7 @@ public class EvntCollector<T: EvntEmitter<T>> private constructor(
          * else it will be launched in [NetSimScope] context parameter.
          */
         context(NetSimScope)
-        operator fun <T: EvntEmitter<T>> invoke(
+        suspend operator fun <T: EvntEmitter<T>> invoke(
             scope: CoroutineScope = this@NetSimScope,
             evntFlow: EvntFlow<T>
         ) =

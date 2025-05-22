@@ -16,5 +16,5 @@ public interface EvntEmitter<T: EvntEmitter<T>> {
      * from multiple [EvntEmitter] at the same time, using [select] clause.
      */
     context(NetSimScope)
-    public fun evntCollector(scope: CoroutineScope = this@NetSimScope): EvntCollector<T>
+    public suspend fun evntCollector(scope: CoroutineScope = this@NetSimScope): EvntCollector<T>
 }

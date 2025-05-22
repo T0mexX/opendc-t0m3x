@@ -19,6 +19,7 @@ import org.opendc.simulator.network.components.internalstructs.RoutVect
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.CoroutineID
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
@@ -110,10 +111,10 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     context(NetSimScope)
-    override fun netLaunch(scope: CoroutineScope): Job {
+    override suspend fun netLaunch(scope: CoroutineScope): Job {
         assert(::job.isInitialized.not())
 
-        job = scope.launch {
+        job = scope.launch(CoroutineID.new()) {
             // Launch all ports coroutines.
             ports.forEach { it.netLaunch() }
 
@@ -197,7 +198,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
 
 
 
@@ -256,7 +257,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             handled()
                         }
                     }
-            }.dispenser()
+            }
 
 
 
@@ -309,7 +310,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                         respond(freeP)
                     }
                 }
-            }.dispenser()
+            }
 
 
 
@@ -327,7 +328,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             TODO()
                         }
                     }
-                }.dispenser()
+                }
 
 
 
@@ -349,7 +350,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
 
 
 
@@ -382,7 +383,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
 
 
 
@@ -420,7 +421,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
         }
     }
 }

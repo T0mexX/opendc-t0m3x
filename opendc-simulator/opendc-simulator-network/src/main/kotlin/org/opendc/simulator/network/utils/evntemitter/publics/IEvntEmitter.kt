@@ -14,6 +14,6 @@ internal interface IEvntEmitter<T: IEvntEmitter<T>>: EvntEmitter<T> {
      */
     val evntFlow: EvntFlow<T>
 
-    context(NetSimScope) override fun evntCollector(scope: CoroutineScope): EvntCollector<T> =
+    context(NetSimScope) override suspend fun evntCollector(scope: CoroutineScope): EvntCollector<T> =
         EvntCollector(evntFlow = evntFlow)
 }

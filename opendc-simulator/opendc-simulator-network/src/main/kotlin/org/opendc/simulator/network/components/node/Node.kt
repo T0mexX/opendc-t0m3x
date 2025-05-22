@@ -36,10 +36,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     val id: NodeId
 
 //    /**
-//     * This can be either:
-//     * - A *prefix block* (subnet) if the node does not own a specific IP address, but is responsible
-//     *   for routing traffic destined for that subnet (e.g., a [Switch]).
-//     * - A single specific IP address if the node owns that exact address (e.g., a [HostNode]).
+//     * The ip address associated with this node. All nodes have a unique ip address, including switches.
 //     */
 //    val ip: IPv4Address
 

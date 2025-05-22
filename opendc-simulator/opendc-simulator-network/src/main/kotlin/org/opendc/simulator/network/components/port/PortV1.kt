@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.link.ReceiveLink
 import org.opendc.simulator.network.components.link.SendLink
@@ -15,6 +16,7 @@ import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
+import org.opendc.simulator.network.utils.CoroutineID
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.IntId
@@ -66,7 +68,8 @@ internal class PortV1 private constructor(
     // Launchable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    context(NetSimScope) override fun netLaunch(scope: CoroutineScope): Job = launch {
+    context(NetSimScope)
+    override suspend fun netLaunch(scope: CoroutineScope): Job = scope.launch(CoroutineID.new()) {
         while (isActive) {
             _msgChl.receive().also {
                 assert(stabilizer.isValidated.not())
@@ -177,7 +180,7 @@ internal class PortV1 private constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
 
 
 
@@ -203,7 +206,7 @@ internal class PortV1 private constructor(
                         handled()
                     }
                 }
-            }.dispenser()
+            }
 
 
             _connectDisp =
@@ -235,7 +238,7 @@ internal class PortV1 private constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
 
 
 
@@ -263,7 +266,7 @@ internal class PortV1 private constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
         }
     }
 }

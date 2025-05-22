@@ -15,6 +15,7 @@ import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
+import org.opendc.simulator.network.utils.CoroutineID
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
@@ -65,7 +66,7 @@ internal class NetFlowImpl private constructor(
     // Launchable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    context(NetSimScope) override fun netLaunch(scope: CoroutineScope): Job = scope.launch {
+    context(NetSimScope) override suspend fun netLaunch(scope: CoroutineScope): Job = scope.launch(CoroutineID.new()) {
         while (isActive) {
             _notificationChl.receive().handle()
         }
@@ -164,7 +165,7 @@ internal class NetFlowImpl private constructor(
                         handled()
                     }
                 }
-            }.dispenser()
+            }
 
 
 
@@ -221,7 +222,7 @@ internal class NetFlowImpl private constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
 
 
 
@@ -244,7 +245,7 @@ internal class NetFlowImpl private constructor(
                             handled()
                         }
                     }
-                }.dispenser()
+                }
         }
     }
 }

@@ -27,6 +27,7 @@ import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.routing.NetSimAddressManager
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import org.opendc.simulator.network.utils.CoroutineID
 import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
 import kotlin.coroutines.CoroutineContext
@@ -60,6 +61,8 @@ internal class NetSimScope(
     init {
         var tmpCtx = coroutineContext
         runBlocking {
+            // Should be at the head of the linked list of the context if added first, and needs to be accessed fast.
+            tmpCtx += CoroutineID.new()
             tmpCtx[Job] ?: let { tmpCtx += Job() }
             tmpCtx[NetSimConfig] ?: let { tmpCtx += NetSimConfig() }
             tmpCtx[NetSimBarrier] ?: let {
