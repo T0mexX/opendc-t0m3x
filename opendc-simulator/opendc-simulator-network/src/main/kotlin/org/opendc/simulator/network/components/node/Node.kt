@@ -34,11 +34,12 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * ID of the node. Uniquely identifies the node in the [Network].
      */
     val id: NodeId
+        get() = NodeId(ip.intValue().toLong())
 
-//    /**
-//     * The ip address associated with this node. All nodes have a unique ip address, including switches.
-//     */
-//    val ip: IPv4Address
+    /**
+     * The ip address associated with this node. All nodes have a unique ip address, including switches.
+     */
+    val ip: IPv4Address
 
     /**
      * Port speed in Kbps full duplex.

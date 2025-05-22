@@ -55,7 +55,7 @@ internal class NodeMkGlobalSwitchCmd : REPLCmd(name = CMD_STR) {
 
         val newSwitch =
             GlobalSwitch(
-                id = id,
+//                id = id,
                 portSpeed = speed,
                 nPorts = nPorts,
             )

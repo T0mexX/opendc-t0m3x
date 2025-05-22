@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.node
 
+import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Power
 import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
@@ -20,7 +21,8 @@ internal class Internet(
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
     override val routPolicy: RoutPolicy,
-): SenderNode<Internet>(INTERNET_ID), SerializableNode {
+    inetIp: IPv4Address,
+): SenderNode<Internet>(inetIp), SerializableNode {
 
     override val portSpeed: DataRate = DataRate.max
     override var nPorts: Int = 0
@@ -57,7 +59,8 @@ internal class Internet(
             Internet(
                 flowTable = devConfig.nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer(),
-                routPolicy = config.routPolicy.internetRoutPolicy
+                routPolicy = config.routPolicy.internetRoutPolicy,
+                inetIp = addrMngr.getNewIp(),
             ).also {
                 it.invalidate()
                 it.netLaunch()

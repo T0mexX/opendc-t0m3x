@@ -1,5 +1,7 @@
 package org.opendc.simulator.network.components.node
 
+import inet.ipaddr.IPAddress
+import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.specs.GlobalSwitchSpecs
@@ -11,7 +13,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
 internal class GlobalSwitch private constructor(
-    id: NodeId,
+    ip: IPv4Address,
     portSpeed: DataRate,
     nPorts: Int,
     fairnessPolicy: FairnessPolicy,
@@ -19,11 +21,11 @@ internal class GlobalSwitch private constructor(
     enModel: EnModel<Switch>,
     flowTable: FlowTable,
     stabilizer: NetSimStabilizer,
-) : Switch(id, portSpeed, nPorts, fairnessPolicy, routPolicy, enModel, flowTable, stabilizer), SerializableNode {
+) : Switch(ip, portSpeed, nPorts, fairnessPolicy, routPolicy, enModel, flowTable, stabilizer), SerializableNode {
 
     override fun toSpecs(): Specs<GlobalSwitch> =
         GlobalSwitchSpecs(
-            id = id,
+//            id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
         )
@@ -32,7 +34,8 @@ internal class GlobalSwitch private constructor(
     companion object {
         context(NetSimScope)
         internal suspend operator fun invoke(
-            id: NodeId? = null,
+            ip: IPv4Address? = null,
+            subnet: IPv4Address? = addrMngr.globalPrefix,
             portSpeed: DataRate? = null,
             nPorts: Int? = null,
             enModel: EnModel<Switch>? = null,
@@ -41,7 +44,15 @@ internal class GlobalSwitch private constructor(
             val switchConfig = devConfig.nodeConfig.switchConfig
             val coreSwitchConfig = nodeConfig.coreSwitchConfig
             return GlobalSwitch(
-                id = id ?: idDispenser.getNodeId(),
+                ip = ip?.let {
+                    // Assert `ip` was registered with the `addrMngr`.
+                    assert(addrMngr.isAddrClaimed(ip))
+                    // Assert `subnet` is the most specific subnet `ip` is in.
+                    assert(addrMngr.getSubnetOf(ip) == subnet)
+                    it
+
+                // Retrieve new unused ip address in subnet (subnet can also be 0.0.0.0/0)
+                } ?: addrMngr.getNewIp(subNet = subnet),
                 portSpeed = portSpeed
                     ?: coreSwitchConfig.defaultPortSpeed
                     ?: switchConfig.defaultPortSpeed

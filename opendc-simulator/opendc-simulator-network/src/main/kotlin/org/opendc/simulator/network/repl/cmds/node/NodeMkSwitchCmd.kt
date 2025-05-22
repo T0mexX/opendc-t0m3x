@@ -47,7 +47,7 @@ internal class NodeMkSwitchCmd : REPLCmd(name = CMD_STR) {
 
         val newSwitch =
             Switch(
-                id = id,
+//                id = id,
                 portSpeed = speed,
                 nPorts = nPorts,
             )

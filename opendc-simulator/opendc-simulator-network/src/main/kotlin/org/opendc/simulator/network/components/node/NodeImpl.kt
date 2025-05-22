@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.node
 
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
@@ -28,7 +29,7 @@ import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
 internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
-    final override val id: NodeId,
+    final override val ip: IPv4Address,
 ) : Node<Self> {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Node

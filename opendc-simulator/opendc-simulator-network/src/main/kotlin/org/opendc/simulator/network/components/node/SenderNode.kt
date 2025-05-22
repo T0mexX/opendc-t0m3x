@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.node
 
+import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -7,7 +8,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 /**
  * TODO
  */
-internal abstract class SenderNode<Self: SenderNode<Self>>(id: NodeId): NodeImpl<Self>(id) {
+internal abstract class SenderNode<Self: SenderNode<Self>>(ip: IPv4Address): NodeImpl<Self>(ip) {
     /**
      * TODO
      */

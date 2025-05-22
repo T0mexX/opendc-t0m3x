@@ -46,6 +46,7 @@ import org.opendc.simulator.network.repl.cmds.link.LinkMkCmd
 import org.opendc.simulator.network.repl.cmds.link.LinkRmCmd
 import org.opendc.simulator.network.repl.cmds.network.NetCmd
 import org.opendc.simulator.network.repl.cmds.network.NetInfoCmd
+import org.opendc.simulator.network.repl.cmds.network.NetPrefixTrieCmd
 import org.opendc.simulator.network.repl.cmds.network.NetSnapCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkCmd
@@ -96,6 +97,7 @@ public suspend fun main() {
                 NetCmd().subcommands(
                     NetSnapCmd(),
                     NetInfoCmd(),
+                    NetPrefixTrieCmd(),
                 ),
                 ImportCmd(),
                 QuitCmd(),

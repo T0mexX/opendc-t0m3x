@@ -143,16 +143,20 @@ internal class FTree private constructor(
             pb: ProgressBar,
         ): FTreePod {
             val k: Int = listOf(aggrSpecs,torSpecs).minOf { it.nPorts() }
+            val nodesPerPod: Int = (k.toDouble().pow(2) / 4 + k).toInt()
+
+            // Create a new subnet in the global scope which contains at least `nodesPerPod` ips.
+            val podSubnet = addrMngr.getNewSubNet(nIps =  nodesPerPod)
 
             val hostNodes =
                 buildList {
-                    repeat((k / 2).toDouble().pow(2.0).toInt()) { add(hostNodeSpecs.build()) }
+                    repeat((k / 2).toDouble().pow(2.0).toInt()) { add(hostNodeSpecs.build(subnet = podSubnet)) }
                 }
             pb.stepBy(hostNodes.size.toLong())
 
             val torSwitches =
                 buildList {
-                    repeat(k / 2) { add(torSpecs.build()) }
+                    repeat(k / 2) { add(torSpecs.build(subnet = podSubnet)) }
                 }
             pb.stepBy(torSwitches.size.toLong())
 
@@ -164,7 +168,7 @@ internal class FTree private constructor(
             val aggrSwitches =
                 torSwitches
                     .map { _ ->
-                        val newSwitch = aggrSpecs.build()
+                        val newSwitch = aggrSpecs.build(subnet = podSubnet)
                         torSwitches.forEach { newSwitch.msgSyncConnect(it) }
                         pb.stepBy(torSwitches.size.toLong() + 1)
                         newSwitch

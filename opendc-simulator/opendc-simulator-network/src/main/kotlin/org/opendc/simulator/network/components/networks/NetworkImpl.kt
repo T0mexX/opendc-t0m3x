@@ -74,18 +74,18 @@ internal abstract class NetworkImpl : Network {
                 appendLine("==== Flows ====")
                 appendLine(
                     " | " +
-                        "id".padEnd(5) +
-                        "sender".padEnd(10) +
-                        "dest".padEnd(10) +
+                        "id".padEnd(10) +
+                        "senderIp".padEnd(20) +
+                        "destIp".padEnd(20) +
                         "demand".padEnd(20) +
                         "throughput".padEnd(20),
                 )
                 flowsById.values.forEach { flow ->
                     appendLine(
                         " | " +
-                            flow.id.toString().padEnd(5) +
-                            flow.senderId.toString().padEnd(10) +
-                            flow.destId.toString().padEnd(10) +
+                            flow.id.toString().padEnd(10) +
+                            flow.senderId.toIp().toString().padEnd(20) +
+                            flow.destId.toIp().toString().padEnd(20) +
                             flow.demand.fmtValue("%.3f").padEnd(20) +
                             flow.throughput.fmtValue("%.3f").padEnd(20),
                     )

@@ -22,7 +22,6 @@
 
 package org.opendc.simulator.network.repl.cmds.network
 
-import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snapshot
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode

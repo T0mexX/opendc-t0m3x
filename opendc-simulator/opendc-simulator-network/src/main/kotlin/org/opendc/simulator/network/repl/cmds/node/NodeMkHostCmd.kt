@@ -47,7 +47,7 @@ internal class NodeMkHostCmd : REPLCmd(name = CMD_STR) {
 
         val newHost =
             HostNode(
-                id = id,
+//                id = id,
                 portSpeed = speed,
                 nPorts = nPorts,
             )

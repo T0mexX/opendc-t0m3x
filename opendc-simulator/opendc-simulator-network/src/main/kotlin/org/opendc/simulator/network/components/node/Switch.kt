@@ -1,5 +1,6 @@
 package org.opendc.simulator.network.components.node
 
+import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.port.Port
@@ -13,7 +14,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
 internal open class Switch protected constructor(
-    id: NodeId,
+    ip: IPv4Address,
     override val portSpeed: DataRate,
     override val nPorts: Int,
     override var fairnessPolicy: FairnessPolicy,
@@ -21,13 +22,13 @@ internal open class Switch protected constructor(
     override val enModel: EnModel<Switch>,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-): NodeImpl<Switch>(id), EnConsumer<Switch>, SerializableNode {
+): NodeImpl<Switch>(ip), EnConsumer<Switch>, SerializableNode {
 
     override lateinit var  ports: List<Port>
 
     override fun toSpecs(): Specs<Switch> =
         SwitchSpecs(
-            id = id,
+//            id = id,
             portSpeed = portSpeed,
             nPorts = nPorts,
         )
@@ -35,7 +36,8 @@ internal open class Switch protected constructor(
     companion object {
         context(NetSimScope)
         internal suspend operator fun invoke(
-            id: NodeId? = null,
+            ip: IPv4Address? = null,
+            subnet: IPv4Address? = addrMngr.globalPrefix,
             portSpeed: DataRate? = null,
             nPorts: Int? = null,
             enModel: EnModel<Switch>? = null,
@@ -43,7 +45,15 @@ internal open class Switch protected constructor(
             val nodeConfig = devConfig.nodeConfig
             val switchConfig = nodeConfig.switchConfig
             return Switch(
-                id = id ?: idDispenser.getNodeId(),
+                ip = ip?.let {
+                    // Assert `ip` was registered with the `addrMngr`.
+                    assert(addrMngr.isAddrClaimed(ip))
+                    // Assert `subnet` is the most specific subnet `ip` is in.
+                    assert(addrMngr.getSubnetOf(ip) == subnet)
+                    it
+
+                // Retrieve new unused ip address in subnet (subnet can also be 0.0.0.0/0)
+                } ?: addrMngr.getNewIp(subNet = subnet),
                 portSpeed = portSpeed
                     ?: switchConfig.defaultPortSpeed
                     ?: nodeConfig.defaultPortSpeed!!,

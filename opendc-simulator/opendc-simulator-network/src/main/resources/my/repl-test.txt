@@ -1,6 +1,6 @@
 import resources/my/scope.json
-f synth bit-complement 100%
-f info
+net info
+net prefix-trie
 q
 
 f mk -s 4 -d 5 -b 1Gbps

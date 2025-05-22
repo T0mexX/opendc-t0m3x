@@ -25,6 +25,7 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
     private val creator: IPv4AddressCreator = net.addressCreator
 
     private val trie = IPv4AddressTrie()
+    internal val globalPrefix = creator.createAddress(trie.root.key.bytes, 0)
 
     internal fun fmt(): String = trie.toString()
 
@@ -58,7 +59,12 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
 
             // The new prefix block (subnet).
             val newBlk = creator.createAddress(blk.bytes, targetPrefixLength).toPrefixBlock()
-            assert(trie.add(newBlk))
+            assert(trie.add(newBlk)) {
+                println(trie)
+                println(newBlk)
+                println(of)
+                println(ofN)
+            }
 
             return newBlk
         }
@@ -97,6 +103,13 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
         trie.getAddedNode(addr).addedParent().key
     }
 
+    /**
+     * TODO
+     */
+    internal suspend fun claimIp(ip: IPv4Address) {
+        TODO()
+    }
+
     internal suspend fun getMyRoutTrie(addr: IPv4Address): IPv4AddressTrie = mtx.withLock {
         assert(addr in trie)
         val myTrie = trie.clone()
@@ -128,6 +141,11 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
         return myTrie
     }
 
+    internal fun isAddrClaimed(addr: IPv4Address): Boolean =
+        runCatching {
+            addr == trie.root || trie.getAddedNode(addr) != null
+        }.isSuccess
+
 
     /**
      * TODO
@@ -153,6 +171,7 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
             // The collection of prefix blocks (subnets) that span the gap.
             val span = expectedStart.spanWithPrefixBlocks(gapEnd)
             yieldAll(span.toList())
+            expectedStart = creator.createAddress(IPv4Address(child.key.upper.intValue() + 1).bytes)
         }
 
         // If there is a remaining gap at the end.
