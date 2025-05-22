@@ -17,12 +17,25 @@ internal suspend fun main() {
     println(sub1)
 
     val sub2 = mngr.getNewSubNet(nIps = 16)
+    val sub3 = mngr.getNewSubNet(nIps = 4, of = sub1)
 
-    val sub3 = mngr.getNewSubNet(sub1, nIps = 4)
-    val sub4 = mngr.getNewSubNet(sub3, nIps = 2)
-    mngr.getNewIp(sub4)
-    mngr.getNewIp(sub4)
-    mngr.getNewIp(sub4)
+    val ip1 = mngr.getNewIp(subNet = sub3)
+    mngr.getNewIp(subNet = sub1)
+    mngr.getNewIp(subNet = sub2)
+    mngr.getNewIp(subNet = sub2)
+    mngr.getNewIp(subNet = sub3)
+    mngr.getNewIp(subNet = sub3)
+
+    println(mngr.fmt())
+
+
+    println(mngr.getMyRoutTrie(ip1))
+
+//    val sub3 = mngr.getNewSubNet(sub1, nIps = 4)
+//    val sub4 = mngr.getNewSubNet(sub3, nIps = 2)
+//    mngr.getNewIp(sub4)
+//    mngr.getNewIp(sub4)
+//    mngr.getNewIp(sub4)
 //
 //    mngr.getNewIp(subNet = sub1)
 //    mngr.getNewIp(subNet = sub1)

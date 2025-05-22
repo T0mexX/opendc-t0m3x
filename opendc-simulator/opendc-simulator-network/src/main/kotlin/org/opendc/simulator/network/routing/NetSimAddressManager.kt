@@ -4,6 +4,7 @@ import inet.ipaddr.ipv4.IPv4Address
 import inet.ipaddr.ipv4.IPv4AddressNetwork
 import inet.ipaddr.ipv4.IPv4AddressNetwork.IPv4AddressCreator
 import inet.ipaddr.ipv4.IPv4AddressTrie
+import inet.ipaddr.ipv4.IPv4AddressTrie.IPv4TrieNode
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -12,7 +13,10 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.math.ceil
 import kotlin.math.log2
 
+private typealias TNode = IPv4TrieNode
+
 internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
+
     private val mtx = Mutex()
     private val net = IPv4AddressNetwork()
     // TODO: if normal `IPv4Address` constructors can be used without fucking up
@@ -21,6 +25,8 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
     private val creator: IPv4AddressCreator = net.addressCreator
 
     private val trie = IPv4AddressTrie()
+
+    internal fun fmt(): String = trie.toString()
 
     /**
      * @param of The parent subnet (if any) the new subnet needs to be part of. It defaults to "0.0.0.0/0".
@@ -46,7 +52,6 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
 
         // The trie node corresponding to prefix block (subnet) `of`.
         val ofN = of?.let { trie.getAddedNode(of) } ?: trie.root
-//        assert(ofN.isAdded || ofN.isRoot)
 
         ofN.gaps().forEach { blk ->
             if (blk.prefixLength > targetPrefixLength) return@forEach
@@ -54,32 +59,11 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
             // The new prefix block (subnet).
             val newBlk = creator.createAddress(blk.bytes, targetPrefixLength).toPrefixBlock()
             assert(trie.add(newBlk))
-            println(trie)
 
             return newBlk
         }
 
         error("Unable to allocate subnet")
-
-//        ofN.allNodeIterator(true).forEach { subNode ->
-//            // The subnet is taken.
-//            if (subNode.isAdded && subNode.isRoot.not()) return@forEach
-//
-//            if (subNode.parent !== ofN && subNode !== ) return@forEach
-//
-//            // The subnet cannot contain enough IPs.
-//            if (subNode.key.prefixLength > targetPrefixLength) return@forEach
-//
-//            val newSubNetBlk = creator.createAddress(subNode.key.bytes, targetPrefixLength).toPrefixBlock()
-//
-//            // Add the new prefix block to the trie.
-//            assert(trie.add(newSubNetBlk))
-//
-//            trie.getNode(newSubNetBlk)
-//            println(trie)
-//            return newSubNetBlk
-//        }
-
     }
 
     // TODO: maybe change to used a counter for improved performance.
@@ -96,58 +80,59 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
         n.gaps().forEach { blk ->
             val newIp = creator.createAddress(blk.bytes)
             assert(newIp !in trie)
-            assert(trie.contains(newIp).not())
             assert(trie.add(newIp))
-            println(newIp)
-            println(trie)
 
             return newIp
         }
 
         error("Unable to allocate ip")
-//        var expectedStart: IPv4Address = n.key.lower
-//        n.nodeIterator(true).forEach { child ->
-//            // There is no gap between the children.
-//            if (child.key.lower != expectedStart) {
-//                val upperIntValue = child.key.upper.intValue()
-//                expectedStart = creator.createAddress(IPv4Address(upperIntValue + 1).bytes, child.key.prefixLength)
-//                return@forEach
-//            }
-//            // The new unclaimed ip address part of subnet `n` but not any subnets of `n`.
-//            trie.addNode(expectedStart)
-//
-//            return expectedStart
-//        }
-
     }
 
-//
-//    inner class NetSimTrieNode(
-//        internal val ipDispenser: SubNetIpDispenser,
-//    ) : IPv4AddressTrie.IPv4TrieNode() {
-//
-//        inner class SubNetIpDispenser(
-//            private val subnet: IPv4Address,
-//        ) {
-//            internal var next: Int = 0
-//                private set
-//                get() {
-//                    // Require that the
-//                    require(field < subnet.count.toInt())
-//
-//                    return field++
-//                }
-//
-//            init {
-//                assert(subnet.isIPv4 && subnet.isPrefixBlock)
-//            }
+    /**
+     * @param addr The addr whose most specific subnet is to be found.
+     * The outer subnet is returned even if the parameter is a subnet itself.
+     * @return The longest matching subnet larger than [addr].
+     */
+    internal suspend fun getSubnetOf(addr: IPv4Address): IPv4Address = mtx.withLock {
+        trie.getAddedNode(addr).addedParent().key
+    }
+
+    internal suspend fun getMyRoutTrie(addr: IPv4Address): IPv4AddressTrie = mtx.withLock {
+        assert(addr in trie)
+        val myTrie = trie.clone()
+        val myN = myTrie.getAddedNode(addr)
+
+//        // The node corresponding to the most specific subnet `addr` is in or `addr` itself if it is a subnet.
+//        val mySubnetN = let {
+//            if (addr.isPrefixBlock) myN
+//            else myN.addedParent()
 //        }
-//    }
+
+        //
+        // Remove all subnets that are not direct children of any of the nodes traversed to reach the root.
+        var prev = myN
+        do {
+            val curr = prev.addedParent()
+            curr.addedDirectChildren().forEach { child ->
+                if (child == prev) return@forEach
+                // Removes also child.key.
+                curr.removeElementsContainedBy(child.key)
+                // Re-add child.key.
+                myTrie.add(child.key)
+            }
+
+            prev = curr
+        } while (prev != myTrie.root)
+
+
+        return myTrie
+    }
+
 
     /**
      * TODO
      */
-    private fun IPv4AddressTrie.IPv4TrieNode.gaps(): Sequence<IPv4Address> = sequence {
+    private fun TNode.gaps(): Sequence<IPv4Address> = sequence {
         val n = this@gaps
 
 
@@ -178,14 +163,32 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
         }
     }
 
-    private fun IPv4AddressTrie.IPv4TrieNode.addedParent(): IPv4AddressTrie.IPv4TrieNode {
+    /**
+     * TODO
+     */
+    private fun TNode.addedParent(): TNode {
         var curr = this
 
         do {
             curr = curr.parent
-        } while (curr.isAdded.not() && curr !== trie.root)
+        } while (curr.isAdded.not() && curr != trie.root)
 
         return curr
+    }
+
+    /**
+     * TODO
+     */
+    private fun TNode.addedDirectChildren(): Collection<TNode>  {
+        val n = this@addedDirectChildren
+        return buildList {
+            n.allNodeIterator(true).forEach { child ->
+                if (child.isAdded.not()) return@forEach
+                if (child.addedParent() !== n) return@forEach
+
+                add(child)
+            }
+        }
     }
 
     companion object Key : CoroutineContext.Key<NetSimAddressManager>
