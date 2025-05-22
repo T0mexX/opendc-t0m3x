@@ -3,6 +3,6 @@
         "routingPolicy": { "type": "ecmp" },
         "fairnessPolicy": { "type": "proportional" }
     },
-    "netPath": "./resources/examples/topologies/ftree/ftree(k:16).json",
+    "netPath": "./resources/examples/topologies/ftree/ftree(k:4).json",
     "initialTmStamp": "1970-10-01T15:23:44Z"
 }

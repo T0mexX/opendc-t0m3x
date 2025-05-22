@@ -1,6 +1,6 @@
 import resources/my/scope.json
-net info
-net prefix-trie
+f synth full 100%
+f export resources/ignored/test.parquet
 q
 
 f mk -s 4 -d 5 -b 1Gbps
