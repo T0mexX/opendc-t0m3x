@@ -33,6 +33,8 @@ internal open class Switch protected constructor(
             nPorts = nPorts,
         )
 
+    override fun toString(): String = "Switch(ip=$ip)"
+
     companion object {
         context(NetSimScope)
         internal suspend operator fun invoke(
@@ -44,10 +46,17 @@ internal open class Switch protected constructor(
         ): Switch {
             val nodeConfig = devConfig.nodeConfig
             val switchConfig = nodeConfig.switchConfig
+
+            // Assert both subnet has been claimed.
+            subnet?.let { assert(addrMngr.isAddrClaimed(it)) }
+
+            // Assert `ip` is not a subnet.
+            ip?.let { assert(it.isPrefixBlock.not()) }
+
             return Switch(
                 ip = ip?.let {
-                    // Assert `ip` was registered with the `addrMngr`.
-                    assert(addrMngr.isAddrClaimed(ip))
+                    // Claim ip.
+                    addrMngr.claimIp(ip)
                     // Assert `subnet` is the most specific subnet `ip` is in.
                     assert(addrMngr.getSubnetOf(ip) == subnet)
                     it

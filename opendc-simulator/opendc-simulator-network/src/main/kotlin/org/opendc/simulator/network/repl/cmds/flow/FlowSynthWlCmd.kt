@@ -7,10 +7,13 @@ import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import me.tongfei.progressbar.ProgressBarBuilder
+import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Unit
 import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.components.networks.NetworkSpecs
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.repl.synthetic.SyntheticWl
 import org.opendc.simulator.network.utils.NETWORK_SERIALIZERS_MODULE
@@ -53,14 +56,22 @@ internal class FlowSynthWlCmd: REPLCmd(name = CMD_STR) {
         )
 
     override fun run() = execREPLCmdCatching {
+        val pb = ProgressBarBuilder()
+            // May be changed by the specific wl.
+            .setStyle(ProgressBarStyle.ASCII)
+            .setTaskName("Executing Synthetic Workload...")
+            .build()
+
         (demand as? DataRate)?.let { dr ->
-            synthWl.startSyntheticFlows(net) { dr }
+            synthWl.startSyntheticFlows(net, pb) { dr }
         }
 
         (demand as? Percentage)?.let { perc ->
-            synthWl.startSyntheticFlows(net) { h ->
+            synthWl.startSyntheticFlows(net, pb) { h ->
                 h.portSpeed * h.nPorts * perc
             }
         }
+
+        pb.close()
     }
 }

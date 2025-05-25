@@ -23,6 +23,7 @@
 package org.opendc.simulator.network.repl.cmds.node
 
 import com.github.ajalt.clikt.core.requireObject
+import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.node.NodeId
@@ -33,7 +34,7 @@ private const val CMD_STR: String = "core-switch"
 
 internal class NodeMkGlobalSwitchCmd : REPLCmd(name = CMD_STR) {
     private val nodeMkCtx: NodeMkCmd.NodeMkCtx by requireObject<NodeMkCmd.NodeMkCtx>()
-    private val id: NodeId by lazy { nodeMkCtx.id }
+    private val ip: IPv4Address by lazy { nodeMkCtx.ip }
     private val speed: DataRate by lazy { nodeMkCtx.portSpeed }
     private val nPorts: Int by lazy { nodeMkCtx.nPort }
 
@@ -53,9 +54,11 @@ internal class NodeMkGlobalSwitchCmd : REPLCmd(name = CMD_STR) {
     override fun run(): Unit = execREPLCmdCatching {
         barrier.awaitStability()
 
+        addrMngr.claimIp(ip)
+
         val newSwitch =
             GlobalSwitch(
-//                id = id,
+                ip = ip,
                 portSpeed = speed,
                 nPorts = nPorts,
             )

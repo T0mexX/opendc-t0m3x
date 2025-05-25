@@ -22,7 +22,7 @@ import kotlin.math.pow
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal class FTree private constructor(
-    private val specs: FatTreeSpecs,
+    val specs: FatTreeSpecs,
     nodesById: Map<NodeId, Node<*>>,
     override val inet: Internet,
     val pods: List<FTreePod>,
@@ -50,6 +50,7 @@ internal class FTree private constructor(
         suspend operator fun invoke(
             specs: FatTreeSpecs,
         ): FTree {
+            val fTreeConfig = devConfig.netConfig as FTreeConfig
             // Progress bar used while building network.
             val pb = ProgressBarBuilder()
                 // Each step is building a node or adding a link.
@@ -60,6 +61,10 @@ internal class FTree private constructor(
 
             val inet = Internet()
 
+            // Determines if routing table should be updated progressively
+            // while the network is being built or at the end.
+            val updtRout = (devConfig.netConfig as FTreeConfig).buildSteps == 1
+
             /**
              * Parameter that determines the topology which is defined as
              * equal to the minimum number of ports of all switches rounded down to even number.
@@ -69,13 +74,22 @@ internal class FTree private constructor(
             val k: Int = listOf(specs.crSwSpecs, specs.aggrSwSpecs, specs.accessSwSpecs).minOf { it.nPorts() } / 2 * 2
             require(k % 2 == 0 && k > 2) { "Fat tree can only be built with even-port-number (>2) switches" }
 
-            val pods = buildList { repeat(k) { add(getPod(specs.aggrSwSpecs, specs.accessSwSpecs, specs.hostSpecs, pb)) } }
+            // The `k` pods.
+            val pods = buildList { repeat(k) {
+                add(getPod(
+                    specs.aggrSwSpecs,
+                    specs.accessSwSpecs,
+                    specs.hostSpecs,
+                    pb,
+                    fTreeConfig
+                ))
+            } }
 
             val coreSwitchesChunked =
                 buildList {
                     repeat(k * k / 4) {
                         add(
-                            specs.crSwSpecs.toGlobalSwitchSpecs().buildAsCore(inet)
+                            specs.crSwSpecs.toGlobalSwitchSpecs().buildAsCore(inet, updtRoutTbl = updtRout)
                         )
                     }
                 }.chunked(k / 2)
@@ -83,7 +97,7 @@ internal class FTree private constructor(
 
             pods.forEach { pod ->
                 pod.aggrSwitches.forEachIndexed { switchIdx, switch ->
-                    coreSwitchesChunked[switchIdx].forEach { it.msgSyncConnect(switch) }
+                    coreSwitchesChunked[switchIdx].forEach { it.msgSyncConnect(switch, updtRoutTbl = updtRout) }
                     pb.stepBy(coreSwitchesChunked[switchIdx].size.toLong())
                 }
             }
@@ -110,11 +124,7 @@ internal class FTree private constructor(
             assert(nodesById.values.filterIsInstance<HostNode>().size == specs.N_)
             assert(pb.current == specs.E_.toLong() + specs.V_)
 
-            // After all nodes and links have been established,
-            // compute the routing table of the nodes.
-            // If all nodes are connected, a single call to `shareRoutTbl`
-            // propagates updates to all the network.
-            inet.msgAsyncShareRoutVect()
+            if (fTreeConfig.buildSteps > 1) inet.msgAsyncShareRoutVect()
 
             return FTree(
                 specs = specs,
@@ -141,38 +151,50 @@ internal class FTree private constructor(
             torSpecs: SwitchSpecs,
             hostNodeSpecs: HostNodeSpecs,
             pb: ProgressBar,
+            fTreeConfig: FTreeConfig,
         ): FTreePod {
+            val updtRoutOnConnect = fTreeConfig.buildSteps == 1
+            val updtRoutOnPodBuilt = fTreeConfig.buildSteps == 3
+
             val k: Int = listOf(aggrSpecs,torSpecs).minOf { it.nPorts() }
             val nodesPerPod: Int = (k.toDouble().pow(2) / 4 + k).toInt()
 
-            // Create a new subnet in the global scope which contains at least `nodesPerPod` ips.
-            val podSubnet = addrMngr.getNewSubNet(nIps =  nodesPerPod)
+
+            val subnet =
+                // Create a new subnet in the global scope which contains at least `nodesPerPod` ips.
+                if (fTreeConfig.subnets) addrMngr.getNewSubNet(nIps = nodesPerPod)
+                else addrMngr.globalPrefix
 
             val hostNodes =
                 buildList {
-                    repeat((k / 2).toDouble().pow(2.0).toInt()) { add(hostNodeSpecs.build(subnet = podSubnet)) }
+                    repeat((k / 2).toDouble().pow(2.0).toInt()) { add(hostNodeSpecs.build(subnet = subnet)) }
                 }
             pb.stepBy(hostNodes.size.toLong())
 
             val torSwitches =
                 buildList {
-                    repeat(k / 2) { add(torSpecs.build(subnet = podSubnet)) }
+                    repeat(k / 2) { add(torSpecs.build(subnet = subnet)) }
                 }
             pb.stepBy(torSwitches.size.toLong())
 
             hostNodes.forEachIndexed { index, server ->
-                server.msgSyncConnect(torSwitches[index / (k / 2)])
+                server.msgSyncConnect(torSwitches[index / (k / 2)], updtRoutTbl = updtRoutOnConnect)
             }
             pb.stepBy(hostNodes.size.toLong())
 
             val aggrSwitches =
                 torSwitches
                     .map { _ ->
-                        val newSwitch = aggrSpecs.build(subnet = podSubnet)
-                        torSwitches.forEach { newSwitch.msgSyncConnect(it) }
+                        val newSwitch = aggrSpecs.build(subnet = subnet)
+                        torSwitches.forEach { newSwitch.msgSyncConnect(it, updtRoutTbl = updtRoutOnConnect) }
                         pb.stepBy(torSwitches.size.toLong() + 1)
                         newSwitch
                     }.toList()
+
+            if (updtRoutOnPodBuilt) {
+                hostNodes.first().msgAsyncShareRoutVect()
+                barrier.awaitStability()
+            }
 
             return FTreePod(hosts = hostNodes, aggrSwitches = aggrSwitches, torSwitches = torSwitches)
         }

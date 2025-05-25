@@ -1,6 +1,7 @@
 package org.opendc.simulator.network.repl.synthetic
 
 import kotlinx.serialization.Serializable
+import me.tongfei.progressbar.ProgressBar
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.networks.Network
@@ -16,5 +17,5 @@ internal interface SyntheticWl<in T: Network> {
      * @param demandMapping Maps each [HostNode] to their new flow demand.
      */
     context(NetSimScope)
-    suspend fun startSyntheticFlows(net: Network, demandMapping: (HostNode) -> DataRate)
+    suspend fun startSyntheticFlows(net: Network, pb: ProgressBar? = null, demandMapping: (HostNode) -> DataRate)
 }

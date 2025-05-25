@@ -2,6 +2,7 @@ package org.opendc.simulator.network.repl.synthetic
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import me.tongfei.progressbar.ProgressBar
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
@@ -33,8 +34,9 @@ import kotlin.math.log2
 @SerialName("bit-shuffle")
 internal data object BitShuffle: SyntheticWl<Network> {
     context(NetSimScope)
-    override suspend fun startSyntheticFlows(net: Network, demandMapping: (HostNode) -> DataRate) {
+    override suspend fun startSyntheticFlows(net: Network, pb: ProgressBar?, demandMapping: (HostNode) -> DataRate) {
         val hosts = net.getNodesById<HostNode>()
+        pb?.maxHint(hosts.size.toLong())
 
         // Maps temporary ids 0 to nHosts to the corresponding hosts.
         // Temporary ids are used for bit complement operation.
@@ -82,6 +84,7 @@ internal data object BitShuffle: SyntheticWl<Network> {
             )
 
             net.startFlow(f)
+            pb?.step()
         }
     }
 

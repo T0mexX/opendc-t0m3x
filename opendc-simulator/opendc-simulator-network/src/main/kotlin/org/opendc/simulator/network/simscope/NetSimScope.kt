@@ -18,6 +18,7 @@ import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.components.networks.NetworkSpecs
 import org.opendc.simulator.network.components.node.NodeVersion
 import org.opendc.simulator.network.components.port.PortVersion
 import org.opendc.simulator.network.components.specs.Specs
@@ -69,12 +70,7 @@ internal class NetSimScope(
                 tmpCtx +=  NetSimBarrier(tmpCtx[NetSimConfig]!!)
             }
             tmpCtx[NetSimPoolAggregator] ?: let {
-                tmpCtx += NetSimPoolAggregator(
-                    tmpCtx[NetSimConfig]!!
-                        .netSimDevConfig
-                        .flyWeightConfig
-                        .nSubPools
-                )
+                tmpCtx += NetSimPoolAggregator()
             }
             tmpCtx[NetSimIdDispenser] ?: let { tmpCtx += NetSimIdDispenser() }
             tmpCtx[NetSimTmSrc] ?: let { tmpCtx += NetSimTmSrc.Internal() }
@@ -182,7 +178,7 @@ internal class NetSimScope(
                     runBlocking(scope.ctx) {
                         // If a path to a network topology defined then try to build it.
                         netPath?.let {
-                            NETWORK_JSON.decodeFromStream<Specs<Network>>(File(netPath).inputStream()).build()
+                            NETWORK_JSON.decodeFromStream<NetworkSpecs<Network>>(File(netPath).inputStream()).build()
 
                         // Else build an empty modifiable `CustomNetwork` in the scope.
                         } ?: CustomNetwork()

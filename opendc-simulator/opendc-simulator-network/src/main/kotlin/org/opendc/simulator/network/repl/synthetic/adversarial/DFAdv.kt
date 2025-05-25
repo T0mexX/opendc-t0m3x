@@ -2,6 +2,7 @@ package org.opendc.simulator.network.repl.synthetic.adversarial
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import me.tongfei.progressbar.ProgressBar
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.dragonfly.DragonFly
 import org.opendc.simulator.network.components.networks.Network
@@ -21,8 +22,13 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("df-adversarial")
 internal object DFAdv: AdversarialWl<DragonFly> {
-    context(NetSimScope) override suspend fun startSyntheticFlows(net: Network, demandMapping: (HostNode) -> DataRate) {
+    context(NetSimScope) override suspend fun startSyntheticFlows(
+        net: Network,
+        pb: ProgressBar?,
+        demandMapping: (HostNode) -> DataRate
+    ) {
         require(net is DragonFly)
+        pb?.maxHint(net.specs.N_.toLong())
 
         // The randomization seed of the simulation scope.
         val rndm = config.random
@@ -42,6 +48,8 @@ internal object DFAdv: AdversarialWl<DragonFly> {
                         demand = demandMapping(h),
                     )
                 )
+
+                pb?.step()
             }
         }
     }

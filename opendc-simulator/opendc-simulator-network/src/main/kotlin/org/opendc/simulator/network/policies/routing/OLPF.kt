@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.internalstructs.RoutTbl
+import org.opendc.simulator.network.components.internalstructs.RoutTbl2
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
@@ -29,8 +30,8 @@ internal data object OLPF: RoutPolicy() {
             }
     }
 
-    private fun Collection<RoutTbl.RoutTblPath>.onlyMaximal(): Collection<RoutTbl.RoutTblPath> {
-        val max = this.maxOfOrNull() { it.distance }
+    private fun Collection<RoutTbl2.RoutTblPath>.onlyMaximal(): Collection<RoutTbl2.RoutTblPath> {
+        val max = this.maxOfOrNull { it.distance }
         return this.filter { it.distance == max }
     }
 }

@@ -1,78 +1,177 @@
 package org.opendc.simulator.network.utils.flyweight.internals
 
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.CoroutineID
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.flyweight.publics.FW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import kotlin.coroutines.coroutineContext
+import kotlin.math.max
+import kotlin.math.min
 
 
-internal class FWPool<out T: FW<T>, out O: FWId<T>>(
-    private val nSubPools: Int = 10,
+/**
+ * TODO
+ */
+internal class FWPool<out T: FW<T>, out O: FWId<T>> private constructor(
+    private val fwConfig: FWConfig,
     private val objConstructor: suspend (FWPool<T, O>, Idx) -> T
 ) : FWDispenser<T> {
-    private var nextIdx: Int = 0
-    private val nextIdxMtx = Mutex()
-    private val subPools: List<Channel<T>> = 0.rangeTo(nSubPools).map { Channel(Channel.UNLIMITED) }
+    private val nSubPools = fwConfig.nSubPools
+    private val subPoolMaxSz = fwConfig.subPoolMaxSize
+    private val poolMaxSz = fwConfig.poolMaxSize
+    private val subPoolMaxIdle = fwConfig.subPoolMaxIdle
 
-    // TODO remove
-    private var bo = 0
-    private var bo2 = 0
-    private val mtx = Mutex()
+    /**
+     * TODO
+     */
+    private val subPools: List<Channel<T>> = (0..<nSubPools).map { Channel(Channel.UNLIMITED) }
 
-    private suspend fun nextIdx(): Idx = nextIdxMtx.withLock {
-        nextIdx++ % nSubPools
-    }
+    /**
+     * TODO
+     */
+    private val subPoolSzCounters by lazy { IntArray(nSubPools) }
+
+    /**
+     * TODO
+     */
+    private val szCountersMtxs by lazy { (0..<nSubPools).map { Mutex() } }
+
+    /**
+     * TODO
+     */
+    private val subPoolIdleCounters by lazy { IntArray(nSubPools) }
+
+    /**
+     * TODO
+     */
+    private val idleCountersMtxs by lazy { (0..<nSubPools).map { Mutex() } }
 
 
+    /**
+     * TODO
+     */
+    private var poolSzCounter = 0
+
+    /**
+     * TODO
+     */
+    private val poolSzCounterMtx by lazy { Mutex() }
+
+//    /**
+//     * TODO
+//     */
+//    private suspend fun idleCleaner() {
+//        requireNotNull(subPoolMaxIdle)
+//
+//        while (coroutineContext.job.isActive) {
+//            // Cleanup every second.
+//            delay(1000)
+//
+//            subPools.forEachIndexed { idx, subP ->
+//                idleCountersMtxs[idx].lock()
+//
+//                // Number of idle objects in the pool.
+//                val nIdle = subPoolIdleCounters[idx]
+//                // Number of idle objects in the pool that exceeds the max allowed.
+//                val exceeded = max(nIdle - subPoolMaxIdle, 0)
+//
+//                szCountersMtxs[idx].lock()
+//                poolSzCounterMtx.lock()
+//
+//                // Remove up to `exceeded` objects from the pool, and let the garbage collector collect them.
+//                repeat(exceeded) {
+//                    subP.tryReceive().getOrNull()?.let {
+//                        poolSzCounter--
+//                        subPoolSzCounters[idx]--
+//                        subPoolIdleCounters[idx]--
+//                    }
+//                }
+//
+//                poolSzCounterMtx.unlock()
+//                szCountersMtxs[idx].unlock()
+//                idleCountersMtxs[idx].unlock()
+//            }
+//        }
+//    }
+
+    /**
+     * TODO
+     */
     override suspend fun acquire(): T {
         val poolIdx = coroutineContext[CoroutineID]!!.value % nSubPools
 
         return subPools[poolIdx]
             .tryReceive()
-            .getOrNull()?.also {
-                    // TODO: remove
-//                    mtx.withLock {
-//                        bo2++
-//                    }
+            .getOrNull()
+            ?.also {
+                // If a maximum number of unused objects is defined, then keep track of unused number,
+                // so that the cleaner coroutine can free up space.
+                subPoolMaxIdle?.let {
+                    idleCountersMtxs[poolIdx].withLock {
+                        subPoolIdleCounters[poolIdx]--
+                    }
                 }
-                ?: objConstructor(this, poolIdx)
-                    // TODO: remove
-                    .also {
-//                        mtx.withLock {
-//                            bo++
-//                            println(it::class.java.interfaces.toList().toString() + " requested:$bo2, created:$bo")
-//                        }
+            }
+            // If all objects in the pool are currently in use, then create a new one.
+            ?: objConstructor(this, poolIdx)
+                    .also { obj ->
+                        subPoolMaxSz?.let {
+                            szCountersMtxs[poolIdx].withLock {
+                                // If the maximum is exceeded, throw `IllegalStateException`.
+                                check(subPoolSzCounters[poolIdx]++ <= subPoolMaxSz) {
+                                    "netSimConfig.netSimDevConfig.flyWeightConfig.subPoolMaxSz ($subPoolMaxSz) " +
+                                        "exceeded for ${obj::class.java.interfaces.toList().first().simpleName}"
+                                }
+                            }
+                        }
+
+                        // If maximum pool size is defined.
+                        poolMaxSz?.let {
+                            poolSzCounterMtx.withLock {
+                                // If the maximum is exceeded, throw `IllegalStateException`.
+                                check(poolSzCounter++ <= poolMaxSz) {
+                                    "netSimConfig.netSimDevConfig.flyWeightConfig.poolMaxSz ($poolMaxSz) " +
+                                        "exceeded for ${obj::class.java.interfaces.toList().first().simpleName}"
+                                }
+                            }
+                        }
                     }
     }
 
-//    suspend fun dispenser(): FWDispenser<T> {
-//        val idx = nextIdx()
-//        return FWDispenser {
-//            subPools[idx]
-//                .tryReceive()
-//                .getOrNull()?.also {
-//                    // TODO: remove
-////                    mtx.withLock {
-////                        bo2++
-////                    }
-//                }
-//                ?: objConstructor(this, idx)
-//                    // TODO: remove
-//                    .also {
-////                        mtx.withLock {
-////                            bo++
-////                            println(it::class.java.interfaces.toList().toString() + " requested:$bo2, created:$bo")
-////                        }
-//                    }
-//        }
-//    }
-
     suspend fun dispose(obj: @UnsafeVariance T) {
-        subPools[(obj as IFW<*>).poolIdx].send(obj)
+        obj as IFW<*>
+        val idx = obj.poolIdx
+
+        // If a maximum number of unused objects is defined.
+        if (subPoolMaxIdle != null) idleCountersMtxs[idx].withLock {
+            // If the maximum is being exceeded, then do not refill the pool with the obj.
+            if (subPoolIdleCounters[idx] >= subPoolMaxIdle) return@withLock
+
+            subPools[(obj as IFW<*>).poolIdx].send(obj)
+            subPoolIdleCounters[idx]++
+
+        } else subPools[(obj as IFW<*>).poolIdx].send(obj)
+    }
+
+    companion object {
+        /**
+         * TODO
+            // TODO: make coroutine that cleans the pool when few obejcts are used.
+         */
+        context(NetSimScope)
+        operator fun <T: FW<T>, O: FWId<T>> invoke(
+            objConstructor: suspend (FWPool<T, O>, Idx) -> T
+        ): FWPool<T, O> =
+            FWPool(
+                fwConfig = this@NetSimScope.devConfig.flyWeightConfig,
+                objConstructor = objConstructor,
+            )
     }
 }
 

@@ -27,13 +27,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.NonSerializable
 import java.io.File
 
 /**
  * Type serializable from json, representing the specifics of concrete object of type `T`.
  * The object of type `T` can then be built with [build].
  */
-public interface Specs<out T : WithSpecs<in @UnsafeVariance T>> {
+public fun interface Specs<out T : WithSpecs<in @UnsafeVariance T>> {
     /**
      * Builds the corresponding [T] object.
      */

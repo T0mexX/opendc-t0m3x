@@ -99,8 +99,34 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
      * The outer subnet is returned even if the parameter is a subnet itself.
      * @return The longest matching subnet larger than [addr].
      */
-    internal suspend fun getSubnetOf(addr: IPv4Address): IPv4Address = mtx.withLock {
-        trie.getAddedNode(addr).addedParent().key
+    internal suspend fun getSubnetOf(addr: IPv4Address): IPv4Address? = mtx.withLock {
+        trie.getAddedNode(addr).addedParent()?.key
+    }
+
+    /**
+     * TODO
+     * innermost to outermost
+     */
+    internal  fun getNestedSubnetsOfIp(ip: IPv4Address): Sequence<IPv4Address> = sequence {
+        assert(ip.isPrefixBlock.not())
+        var curr: TNode? = trie.getAddedNode(ip)!!
+        while (true) {
+            curr = curr?.addedParent() ?: break
+            yield(curr.key)
+        }
+    }
+
+    internal fun isInSubnetRecursive(addr: IPv4Address, inSubnet: IPv4Address): Boolean {
+        assert(inSubnet.isPrefixBlock)
+        val subnetN = trie.getAddedNode(inSubnet).also { assert(it != null) }
+
+        var currN = trie.getAddedNode(addr)
+
+        do {
+            currN = currN.addedParent()
+        } while (currN !== trie.root && currN !== subnetN)
+
+        return currN === subnetN
     }
 
     /**
@@ -110,7 +136,7 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
         assert(ip.isPrefixBlock.not())
 
         val n = trie.addNode(ip)
-        val subnet = n.addedParent().key
+        val subnet = n.addedParent()!!.key
 
         assert(
             subnet.prefixLength == 0 && ip.prefixLength == null
@@ -134,7 +160,7 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
         var prev = myN
         do {
             val curr = prev.addedParent()
-            curr.addedDirectChildren().forEach { child ->
+            curr!!.addedDirectChildren().forEach { child ->
                 if (child == prev) return@forEach
                 // Removes also child.key.
                 curr.removeElementsContainedBy(child.key)
@@ -193,8 +219,9 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
     /**
      * TODO
      */
-    private fun TNode.addedParent(): TNode {
+    private fun TNode.addedParent(): TNode? {
         var curr = this
+        if (curr == trie.root) return null
 
         do {
             curr = curr.parent

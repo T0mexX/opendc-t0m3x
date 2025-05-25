@@ -63,6 +63,7 @@ internal class FlowMkCmd : REPLCmd("mk") {
         )
 
         net.startFlow(newFlow)
+        barrier.awaitStability()
         echo("| Started flow $newFlow")
     }
 }

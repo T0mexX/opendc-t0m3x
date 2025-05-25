@@ -2,6 +2,7 @@ package org.opendc.simulator.network.repl.synthetic.adversarial
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import me.tongfei.progressbar.ProgressBar
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.ftree.FTree
 import org.opendc.simulator.network.components.networks.Network
@@ -17,8 +18,13 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("ftree-adversarial")
 internal object FTreeAdv: AdversarialWl<FTree> {
-    context(NetSimScope) override suspend fun startSyntheticFlows(net: Network, demandMapping: (HostNode) -> DataRate) {
+    context(NetSimScope) override suspend fun startSyntheticFlows(
+        net: Network,
+        pb: ProgressBar?,
+        demandMapping: (HostNode) -> DataRate
+    ) {
         require(net is FTree)
+        pb?.maxHint(net.specs.N_.toLong())
 
         // The randomization seed of the simulation scope.
         val rndm = config.random
@@ -33,6 +39,8 @@ internal object FTreeAdv: AdversarialWl<FTree> {
                         demand = demandMapping(h),
                     )
                 )
+
+                pb?.step()
             }
         }
     }

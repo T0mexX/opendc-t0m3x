@@ -28,7 +28,7 @@ internal class FlowExportCmd : REPLCmd(CMD_STR) {
         names = arrayOf("-c", "--columns","--cols"),
     ).convert { str ->
         DfltFlowExportColumns
-        str.trim('[', ']')
+        str.trim('[', ']', '"')
             .split(",")
             .map {
                 Json.decodeFromString(columnSerializer(), "\"$it\"")

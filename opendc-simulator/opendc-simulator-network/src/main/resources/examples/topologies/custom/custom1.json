@@ -5,23 +5,27 @@
             "type": "global-switch",
             "nPorts": 10,
             "portSpeed": "2Gbps",
-            "ip": "10.11.12.13"
+            "ip": 1
         },{
             "type": "switch",
             "nPorts": 10,
-            "portSpeed": "1Gbps"
+            "portSpeed": "1Gbps",
+            "ip": 2
         },{
             "type": "switch",
             "nPorts": 10,
-            "portSpeed": "1Gbps"
+            "portSpeed": "1Gbps",
+            "ip": 3
         },{
             "type": "host",
             "nPorts": 10,
-            "portSpeed": "1Gbps"
+            "portSpeed": "1Gbps",
+            "ip": 4
         },{
             "type": "host",
             "nPorts": 10,
-            "portSpeed": "1Gbps"
+            "portSpeed": "1Gbps",
+            "ip": 5
         }
     ],
     "links": [

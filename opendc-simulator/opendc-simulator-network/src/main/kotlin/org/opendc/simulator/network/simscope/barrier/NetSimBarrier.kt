@@ -204,7 +204,7 @@ internal class NetSimBarrier internal constructor(
 
         private lateinit var childBarrier: ChildBarrier
         private var invalidatorCount: Int = 0
-        private val invalidatorMax = 50
+        private val invalidatorMax = netSimConfig.netSimDevConfig.barrierConfig.barrierNodeSize
         private val newInvalidatorMtx = Mutex()
 
         // Methods

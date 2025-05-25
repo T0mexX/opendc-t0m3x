@@ -31,6 +31,7 @@ import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.REPLEnv
 import org.opendc.simulator.network.repl.REPLTmSrc
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.NETWORK_JSON
 import kotlin.coroutines.CoroutineContext
 
 internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
@@ -70,7 +71,7 @@ internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
     companion object {
         inline fun <reified T> decodeOrNull(str: String): T? {
             try {
-                return Json.decodeFromString<T>(str)
+                return NETWORK_JSON.decodeFromString<T>(str)
             } catch (_: Exception) {
                 return null
             }

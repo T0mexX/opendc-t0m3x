@@ -6,12 +6,15 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
+import org.opendc.simulator.network.components.networks.NetworkSpecs
 import org.opendc.simulator.network.components.networks.clos.ClosSpecs
 import org.opendc.simulator.network.components.networks.custom.CustomNetworkSpecs
 import org.opendc.simulator.network.components.networks.dragonfly.DragonFlySpecs
+import org.opendc.simulator.network.components.networks.ftree.FTreeConfig
 import org.opendc.simulator.network.components.networks.ftree.FatTreeSpecs
 import org.opendc.simulator.network.components.specs.GlobalSwitchSpecs
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
+import org.opendc.simulator.network.components.specs.NodeSpecs
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
 import org.opendc.simulator.network.policies.fairness.MaxMin
@@ -31,6 +34,7 @@ import org.opendc.simulator.network.repl.synthetic.adversarial.FTreeAdv
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.routing.IPv4AddressSerializer
+import org.opendc.simulator.network.simscope.NetConfig
 
 /**
  * TODO
@@ -45,21 +49,34 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
     ////// in analyzing this code due to serialization of generic class,
     ////// but should compile just fine.
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    polymorphic(Specs::class) {
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Network Specifications
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//    polymorphic(Specs::class) {
+//        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//        // Network Specifications
+//        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//        subclass(FatTreeSpecs::class)
+//        subclass(ClosSpecs::class)
+//        subclass(DragonFlySpecs::class)
+//        subclass(CustomNetworkSpecs::class)
+//
+//        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//        // Node Specifications
+//        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//        subclass(SwitchSpecs::class)
+//        subclass(GlobalSwitchSpecs::class)
+//        subclass(HostNodeSpecs::class)
+//    }
+
+    polymorphic(NodeSpecs::class) {
+        subclass(SwitchSpecs::class)
+        subclass(GlobalSwitchSpecs::class)
+        subclass(HostNodeSpecs::class)
+    }
+
+    polymorphic(NetworkSpecs::class) {
         subclass(FatTreeSpecs::class)
         subclass(ClosSpecs::class)
         subclass(DragonFlySpecs::class)
         subclass(CustomNetworkSpecs::class)
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // Node Specifications
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        subclass(SwitchSpecs::class)
-        subclass(GlobalSwitchSpecs::class)
-        subclass(HostNodeSpecs::class)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,6 +117,10 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
     // IPv4Address
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     contextual(IPv4Address::class, IPv4AddressSerializer())
+
+    polymorphic(NetConfig::class) {
+        subclass(FTreeConfig::class)
+    }
 }
 
 public val NETWORK_JSON: Json = Json {

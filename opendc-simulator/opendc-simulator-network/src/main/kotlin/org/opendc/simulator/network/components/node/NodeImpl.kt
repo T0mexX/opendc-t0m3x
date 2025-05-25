@@ -16,6 +16,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.internalstructs.RoutTbl
+import org.opendc.simulator.network.components.internalstructs.RoutTbl2
 import org.opendc.simulator.network.components.internalstructs.RoutVect
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.flow.internals.INetFlow
@@ -36,7 +37,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Suppress("LeakingThis")
-    override val routTbl: RoutTbl = RoutTbl(owner = this)
+    override val routTbl: RoutTbl2 = RoutTbl2(owner = this)
     override lateinit var job: Job
 
     override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {
@@ -246,8 +247,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                                 // Send this node's routing vector to the newly connected node.
                                 routTblUpdtDisp.acquire().reset {
                                     from = this@Node
-                                    routVect = routTbl.routVectFor(otherN)
-                                    updtRoutTbl = thisMsg.updtRoutTbl
+                                    routVect = routTbl.routVect
+                                    updtRoutTbl = true
                                 }.sendTo(otherN)
 
                                 // The other node will be sending its routing vector to this.
@@ -298,8 +299,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             // Send this node's routing vector to the newly connected node.
                             routTblUpdtDisp.acquire().reset {
                                 from = this@Node
-                                routVect = routTbl.routVectFor(otherN)
-                                updtRoutTbl = thisMsg.updtRoutTbl
+                                routVect = routTbl.routVect
+                                updtRoutTbl = true
                             }.sendTo(otherN)
 
                             // The other node will be sending its routing vector to this.
@@ -362,7 +363,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                 poolAggr.getOrAdd(Node.RoutTblUpdt as FWId<Node.RoutTblUpdt>) { pool, idx ->
                     object : Node.RoutTblUpdt, MsgImpl<Node<*>, Node.RoutTblUpdt>(pool, idx) {
                         override lateinit var from: Node<*>
-                        override lateinit var routVect: RoutVect
+                        override lateinit var routVect: RoutTbl2.RoutVect
 
 
                         context(Node<*>)
@@ -371,7 +372,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 
                             //
                             // Update the routing table with new routing vector.
-                            n.routTbl.updtWithInfoFrom(routVect, from).let { tblChanged ->
+                            n.routTbl.updtWithInfoFrom(routVect).let { tblChanged ->
                                 if (tblChanged) {
                                     // Mark the table as to be shared.
                                     routTbl.shared = false
@@ -393,9 +394,6 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _shareRoutVectDisp =
                 poolAggr.getOrAdd(Node.ShareRoutVect as FWId<Node.ShareRoutVect>) { pool, idx ->
-                    /**
-                     * Anonymous implementation of [Node.Connect].
-                     */
                     object : Node.ShareRoutVect, MsgImpl<Node<*>, Node.ShareRoutVect>(pool, idx) {
 
                         context(Node<*>)
@@ -411,7 +409,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                                     val adjN = p.connectedNode() ?: return@onEach
                                     routTblUpdtDisp.acquire().reset {
                                         from = this@Node
-                                        routVect = this@Node.routTbl.routVectFor(adjN)
+                                        routVect = this@Node.routTbl.routVect
                                     }.sendTo(adjN)
                                 }.launchIn(this@coroutineScope)
                             }

@@ -4,6 +4,7 @@ import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.internalstructs.RoutTbl
+import org.opendc.simulator.network.components.internalstructs.RoutTbl2
 import org.opendc.simulator.network.components.internalstructs.RoutVect
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
@@ -31,15 +32,15 @@ import org.opendc.simulator.network.utils.notifiable.Msgable
  */
 internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvalidatable, Msgable<Node<*>>, Launchable, EnConsumer<Self> {
     /**
+     * The ip address associated with this node. All nodes have a unique ip address, including switches.
+     */
+    val ip: IPv4Address
+
+    /**
      * ID of the node. Uniquely identifies the node in the [Network].
      */
     val id: NodeId
         get() = NodeId(ip.intValue().toLong())
-
-    /**
-     * The ip address associated with this node. All nodes have a unique ip address, including switches.
-     */
-    val ip: IPv4Address
 
     /**
      * Port speed in Kbps full duplex.
@@ -75,7 +76,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * Contains network information about the routs
      * available to reach each node in the [Network].
      */
-    val routTbl: RoutTbl
+    val routTbl: RoutTbl2
 
     /**
      * Contains information about the [NetFlow]s transiting through this node.
@@ -198,7 +199,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      */
     interface RoutTblUpdt: Msg<Node<*>, RoutTblUpdt> {
         var from: Node<*>
-        var routVect: RoutVect
+        var routVect: RoutTbl2.RoutVect
 
         companion object : FWId<RoutTblUpdt>
     }

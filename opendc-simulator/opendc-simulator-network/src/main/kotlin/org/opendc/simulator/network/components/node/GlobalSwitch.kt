@@ -1,6 +1,5 @@
 package org.opendc.simulator.network.components.node
 
-import inet.ipaddr.IPAddress
 import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
@@ -30,6 +29,7 @@ internal class GlobalSwitch private constructor(
             nPorts = nPorts,
         )
 
+    override fun toString(): String = "GlobalSwitch(ip=$ip)"
 
     companion object {
         context(NetSimScope)
@@ -43,10 +43,17 @@ internal class GlobalSwitch private constructor(
             val nodeConfig = devConfig.nodeConfig
             val switchConfig = devConfig.nodeConfig.switchConfig
             val coreSwitchConfig = nodeConfig.coreSwitchConfig
+
+            // Assert both subnet has been claimed.
+            subnet?.let { assert(addrMngr.isAddrClaimed(it)) }
+
+            // Assert `ip` is not a subnet.
+            ip?.let { assert(it.isPrefixBlock.not()) }
+
             return GlobalSwitch(
                 ip = ip?.let {
-                    // Assert `ip` was registered with the `addrMngr`.
-                    assert(addrMngr.isAddrClaimed(ip))
+                    // Claim ip.
+                    addrMngr.claimIp(ip)
                     // Assert `subnet` is the most specific subnet `ip` is in.
                     assert(addrMngr.getSubnetOf(ip) == subnet)
                     it
@@ -69,10 +76,10 @@ internal class GlobalSwitch private constructor(
                     ?: nodeConfig.defaultEnModel,
                 flowTable = nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer()
-            ).also { cs ->
-                cs.ports = 0.rangeUntil(cs.nPorts).map { idx -> nodeConfig.portConfig.version(cs, idx) }
-                cs.invalidate()
-                cs.netLaunch()
+            ).also { gs ->
+                gs.ports = 0.rangeUntil(gs.nPorts).map { idx -> nodeConfig.portConfig.version(gs, idx) }
+                gs.invalidate()
+                gs.netLaunch()
             }
         }
     }

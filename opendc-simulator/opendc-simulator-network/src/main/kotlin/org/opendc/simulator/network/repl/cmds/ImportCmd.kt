@@ -37,6 +37,7 @@ import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
 import java.time.Instant
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.time.measureTime
 
 private const val CMD_STR: String = "import"
 
@@ -47,14 +48,17 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run(): Unit = execREPLCmdCatching(EmptyCoroutineContext) {
-        val newScope = NETWORK_JSON.decodeFromStream<NetSimScope>(targetFile.inputStream())
 
+        //
         // Create a new simulation scope.
-        scope.cancel()
-        env.scope = newScope
-        env.network = newScope.net
-        env.scope.barrier.awaitStability()
+        val tm = measureTime {
+            val newScope = NETWORK_JSON.decodeFromStream<NetSimScope>(targetFile.inputStream())
+            scope.cancel()
+            env.scope = newScope
+            env.network = newScope.net
+            env.scope.barrier.awaitStability()
+        }
 
-        echo("Network simulation scope imported successfully.")
+        echo("Network simulation scope imported successfully in $tm.")
     }
 }

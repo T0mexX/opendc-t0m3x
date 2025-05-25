@@ -1,8 +1,25 @@
 {
     "netSimConfig": {
         "routingPolicy": { "type": "ecmp" },
-        "fairnessPolicy": { "type": "proportional" }
+        "fairnessPolicy": { "type": "proportional" },
+        "netSimDevConfig": {
+            "netConfig": {
+                "type": "ftree",
+                "buildSteps": 3,
+                "subnets": true
+            },
+            "barrierConfig": {
+                "barrierNodeSize": 500
+            },
+            "flyWeightConfig": {
+                "nSubPools": 10,
+                "initialCapacity": 100,
+                "subPoolMaxIdle": null,
+                "subPoolMaxSize": null,
+                "poolMaxSize": null
+            }
+        }
     },
-    "netPath": "./resources/examples/topologies/ftree/ftree(k:4).json",
+    "netPath": "./resources/examples/topologies/ftree/ftree(k:32).json",
     "initialTmStamp": "1970-10-01T15:23:44Z"
 }

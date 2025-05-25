@@ -24,6 +24,8 @@ package org.opendc.simulator.network.utils
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReadWriteLock
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -32,7 +34,7 @@ import kotlin.coroutines.coroutineContext
  * other attempts (read or write) are negated until the resource is
  * acquired for write (all semaphore permits are acquired by the same entity).
  */
-internal class RWLock(private val readPermits: Int = 5) {
+internal open class RWLock(private val readPermits: Int = 5) {
     /**
      * Semaphore used internally for the lock implementation.
      * A write lock is acquired when all semaphore permits are acquired by the same caller.

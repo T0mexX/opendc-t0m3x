@@ -2,6 +2,7 @@ package org.opendc.simulator.network.repl.synthetic
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import me.tongfei.progressbar.ProgressBar
 import org.apache.hadoop.net.TableMapping
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.Network
@@ -28,8 +29,13 @@ import kotlin.math.log2
 @SerialName("bit-complement")
 internal data object BitComplement: SyntheticWl<Network> {
     context(NetSimScope)
-    override suspend fun startSyntheticFlows(net: Network, demandMapping: (HostNode) -> DataRate) {
+    override suspend fun startSyntheticFlows(
+        net: Network,
+        pb: ProgressBar?,
+        demandMapping: (HostNode) -> DataRate
+    ) {
         val hosts = net.getNodesById<HostNode>()
+        pb?.maxHint(hosts.size.toLong())
 
         // Maps temporary ids 0 to nHosts to the corresponding hosts.
         // Temporary ids are used for bit complement operation.
@@ -72,6 +78,7 @@ internal data object BitComplement: SyntheticWl<Network> {
             )
 
             net.startFlow(f)
+            pb?.step()
         }
     }
 

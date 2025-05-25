@@ -2,6 +2,7 @@ package org.opendc.simulator.network.repl.synthetic
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import me.tongfei.progressbar.ProgressBar
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
@@ -15,8 +16,9 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @SerialName("full")
 internal data object Full: SyntheticWl<Network> {
     context(NetSimScope)
-    override suspend fun startSyntheticFlows(net: Network, demandMapping: (HostNode) -> DataRate) {
+    override suspend fun startSyntheticFlows(net: Network, pb: ProgressBar?, demandMapping: (HostNode) -> DataRate) {
         val hosts = net.getNodesById<HostNode>().values
+        pb?.maxHint(hosts.size.toLong() * (hosts.size - 1))
 
         // Start flows so that each host sends and receives to/from any other host.
         hosts.forEach { h1 ->
@@ -29,6 +31,7 @@ internal data object Full: SyntheticWl<Network> {
                         demand = demandMapping(h1) / (hosts.size - 1)
                     )
                 )
+                pb?.step()
             }
         }
     }

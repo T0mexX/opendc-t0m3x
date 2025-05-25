@@ -15,5 +15,7 @@ public value class NodeId(public val value: Long) {
 
     public companion object {
         public val INVALID: NodeId = NodeId(-1)
+
+        public fun IPv4Address.toNId(): NodeId = NodeId(this.longValue())
     }
 }

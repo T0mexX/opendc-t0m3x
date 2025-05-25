@@ -39,6 +39,8 @@ internal class HostNode private constructor(
             nPorts = nPorts,
         )
 
+    override fun toString(): String = "HostNode(ip=$ip)"
+
     companion object {
         context(NetSimScope)
         suspend operator fun invoke(
@@ -51,18 +53,16 @@ internal class HostNode private constructor(
             val nodeConfig = devConfig.nodeConfig
             val hostConfig = nodeConfig.hostNodeConfig
 
-            //
-            // Assert both subnet and ip have already been claimed through the `addrMngr` if defined.
+            // Assert both subnet has been claimed.
             subnet?.let { assert(addrMngr.isAddrClaimed(it)) }
-            ip?.let { assert(addrMngr.isAddrClaimed(it)) }
 
             // Assert `ip` is not a subnet.
             ip?.let { assert(it.isPrefixBlock.not()) }
 
             return HostNode(
                 ip = ip?.let {
-                    // Assert `ip` was registered with the `addrMngr`.
-                    assert(addrMngr.isAddrClaimed(ip))
+                    // Claim ip.
+                    addrMngr.claimIp(ip)
                     // Assert `subnet` is the most specific subnet `ip` is in.
                     assert(addrMngr.getSubnetOf(ip) == subnet)
                     it

@@ -27,17 +27,20 @@ import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
+import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class NodeMkCmd : REPLCmd(name = "mk") {
-    private val id: NodeId by option(
+    private val ip: IPv4Address by option(
         help = "The id of the new node",
         names = arrayOf("-n", "--nodeid"),
-    ).convert { decodeOrNull<NodeId>(it)!! }
-        .required().check("node with id already exists") { !net.nodesById.keys.contains(it) }
+    ).convert { str ->
+        decodeOrNull<IPv4Address>(str)!!
+    }.required().check("node with id already exists") { !net.nodesById.keys.contains(it.toNId()) }
 
     private val portSpeed: DataRate by option(
         help = "Speed of the ports on the node",
@@ -54,8 +57,8 @@ internal class NodeMkCmd : REPLCmd(name = "mk") {
         .check { net is CustomNetwork }
 
     override fun run() {
-        currentContext.findOrSetObject { NodeMkCtx(id, nPorts, portSpeed) }
+        currentContext.findOrSetObject { NodeMkCtx(ip, nPorts, portSpeed) }
     }
 
-    data class NodeMkCtx(val id: NodeId, val nPort: Int, val portSpeed: DataRate)
+    data class NodeMkCtx(val ip: IPv4Address, val nPort: Int, val portSpeed: DataRate)
 }

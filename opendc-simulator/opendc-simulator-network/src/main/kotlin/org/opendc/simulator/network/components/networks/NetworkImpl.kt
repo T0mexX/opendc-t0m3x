@@ -41,6 +41,7 @@ internal abstract class NetworkImpl : Network {
     override suspend fun startFlow(f: INetFlow) {
         ctx[RoutPolicy]?.onFlowStart(f)
 
+        assert(f.destId in _nodesById)
         sendNodesById[f.senderId]!!.startFlow(f)
         _flows += f.id to f
     }
@@ -101,6 +102,6 @@ internal abstract class NetworkImpl : Network {
         /**
          * [NodeId] reserved for inet representation (for inter-datacenter communication).
          */
-        val INTERNET_ID: NodeId = NodeId(Long.MIN_VALUE)
+        val INTERNET_ID: NodeId = NodeId(0)
     }
 }

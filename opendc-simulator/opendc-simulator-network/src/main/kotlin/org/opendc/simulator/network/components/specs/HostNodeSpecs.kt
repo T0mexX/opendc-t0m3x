@@ -31,12 +31,16 @@ internal data class HostNodeSpecs(
             ?: devConfig.nodeConfig.defaultPortSpeed!!
 
     context(NetSimScope)
-    override suspend fun build(): HostNode =
-        HostNode(
-//            addr = ip,
+    override suspend fun build(): HostNode {
+        // If ip is specified in specs, then claim it.
+        ip?.let { addrMngr.claimIp(it) }
+
+        return HostNode(
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
         )
+    }
 
     context(NetSimScope)
     suspend fun build(subnet: IPv4Address): HostNode {
