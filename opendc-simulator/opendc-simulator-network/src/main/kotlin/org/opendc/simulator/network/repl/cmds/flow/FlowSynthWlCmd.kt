@@ -13,10 +13,15 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Unit
 import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
 import org.opendc.simulator.network.components.networks.NetworkSpecs
+import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
+import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.repl.synthetic.SyntheticWl
 import org.opendc.simulator.network.utils.NETWORK_SERIALIZERS_MODULE
+import org.opendc.simulator.network.utils.withProgressBar
+import java.lang.System.exit
 
 private const val CMD_STR: String = "synthetic-wl"
 
@@ -56,22 +61,22 @@ internal class FlowSynthWlCmd: REPLCmd(name = CMD_STR) {
         )
 
     override fun run() = execREPLCmdCatching {
-        val pb = ProgressBarBuilder()
-            // May be changed by the specific wl.
-            .setStyle(ProgressBarStyle.ASCII)
-            .setTaskName("Executing Synthetic Workload...")
-            .build()
+//        val pb = ProgressBarBuilder()
+//            // May be changed by the specific wl.
+//            .setStyle(ProgressBarStyle.ASCII)
+//            .setTaskName("Executing Synthetic Workload...")
+//            .build()
+        withProgressBar("Executing Synthetic WL...") {
+            (demand as? DataRate)?.let { dr ->
+                synthWl.startSyntheticFlows(net) { dr }
+            }
 
-        (demand as? DataRate)?.let { dr ->
-            synthWl.startSyntheticFlows(net, pb) { dr }
-        }
-
-        (demand as? Percentage)?.let { perc ->
-            synthWl.startSyntheticFlows(net, pb) { h ->
-                h.portSpeed * h.nPorts * perc
+            (demand as? Percentage)?.let { perc ->
+                synthWl.startSyntheticFlows(net) { h ->
+                    h.portSpeed * h.ports.count { it.txLink != null } * perc
+                }
             }
         }
 
-        pb.close()
     }
 }

@@ -27,6 +27,12 @@ internal class NodeFlowEntry private constructor(
 ): IFW<NodeFlowEntry>, Trackable<NodeFlowEntry> {
     lateinit var node: Node<*>
     lateinit var netFlow: INetFlow
+
+    /**
+     * TODO
+     */
+    var toIntermediate: Boolean = false
+
     override var tracker: Tracker<NodeFlowEntry>? = null
     var rx: DataRate = DataRate.zero
         set(value) {

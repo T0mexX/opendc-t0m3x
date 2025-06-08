@@ -18,7 +18,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 /**
  * Specifications of a [Clos] network.
  *
- * @param N_ Number of switch layers of the Clos network.
+ * @param n Number of switch layers of the Clos network.
  * @param nodesPerLayer Number of nodes per layer.
  * This map has `N_ + 1` entries, 1 for each switch layer + the host layer.
  * Each node in a layer is fully connected with the layers above/below.
@@ -26,6 +26,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
  * the last layer is [N_] and will be filled with [HostNode]s.
  * @param portSpeedPerLayer Port speed of nodes for each layer.
  * Same mapping as [nodesPerLayer] applies.
+ * @property k Network radix (number of ports per node).
  *
  * @see ClosSpecsSerializer for deserialization.
  */
@@ -33,21 +34,28 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @SerialName("clos")
 internal class ClosSpecs(
     val n: Int,
+    val k: Int,
     val nodesPerLayer: Map<Int, Int>,
     val portSpeedPerLayer: Map<Int, DataRate>,
 ) : NetworkSpecs<Clos> {
-    override val V_: Int =
-        nodesPerLayer.values.sum()
+    init {
+        require(k % 2 == 0) { "k (network radix) must be even" }
+        // TODO: change impl.
+        // Only same size layers supported now.
+        require(nodesPerLayer.values.all { it == nodesPerLayer.values.first() })
+    }
 
-    override val N_: Int =
-        nodesPerLayer.maxBy { it.key }.value
+    override val V_: Int = nodesPerLayer.values.sum()
+
+    override val N_: Int = nodesPerLayer.maxBy { it.key }.value
 
     override val R_: Int = V_ - N_
 
+    // TODO: change if differnet number of nodes per layers support is added.
     override val E_: Int =
-        (0 until n).sumOf { layerIdx ->
-            nodesPerLayer[layerIdx]!! * nodesPerLayer[layerIdx + 1]!!
-        }
+        nodesPerLayer.values.toList().dropLast(1).sumOf { it * k / 2 }
+
+
 
     context(NetSimScope) override suspend fun build(): Clos = Clos(this)
 }
@@ -61,6 +69,7 @@ internal class ClosSpecs(
 private class ClosSpecsSerializer : KSerializer<ClosSpecs> {
     /**
      * @param n Number of switch layers.
+     * @param k Network radix (number of ports per node).
      * @param nodesPerLayer Maps the layers (0 to N_) to the number of nodes in those layers.
      * Layer 0 is the uppermost, built of global switches. The lowest layer is [n], built of host nodes.
      * Missing values will be replaced by [dfltNodesPerLayer] if defined.
@@ -75,6 +84,7 @@ private class ClosSpecsSerializer : KSerializer<ClosSpecs> {
     @SerialName("clos")
     private data class Surr(
         val n: Int,
+        val k: Int,
         val nodesPerLayer: Map<Int, Int>? = null,
         val dfltNodesPerLayer: Int? = null,
         val portSpeedPerLayer: Map<Int, DataRate>? = null,
@@ -102,6 +112,7 @@ private class ClosSpecsSerializer : KSerializer<ClosSpecs> {
 
         return ClosSpecs(
             n = surr.n,
+            k = surr.k,
             nodesPerLayer = nPerL,
             portSpeedPerLayer = drPerL,
         )
@@ -130,6 +141,7 @@ private class ClosSpecsSerializer : KSerializer<ClosSpecs> {
             serializer(),
             Surr(
                 n = value.N_,
+                k = value.k,
                 nodesPerLayer = nPerL,
                 dfltNodesPerLayer = nPerLMode,
                 portSpeedPerLayer = drPerL,

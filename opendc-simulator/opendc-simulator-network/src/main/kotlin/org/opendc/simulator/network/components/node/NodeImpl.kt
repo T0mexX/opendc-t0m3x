@@ -192,6 +192,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                     object : Node.RxUpdt, MsgImpl<Node<*>, Node.RxUpdt>(pool, idx) {
                         override lateinit var netF: INetFlow
                         override var deltaRate: DataRate = DataRate.zero
+                        override var toIntermediate: Boolean = false
 
                         context(Node<*>)
                         override suspend fun handle() {

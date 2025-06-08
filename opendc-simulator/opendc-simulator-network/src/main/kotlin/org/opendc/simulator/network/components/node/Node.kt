@@ -127,6 +127,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     interface RxUpdt: Msg<Node<*>, RxUpdt> {
         var netF: INetFlow
         var deltaRate: DataRate
+        var toIntermediate: Boolean
 
         companion object : FWId<RxUpdt>
     }

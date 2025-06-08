@@ -4,9 +4,17 @@
         "fairnessPolicy": { "type": "proportional" },
         "netSimDevConfig": {
             "netConfig": {
-                "type": "ftree",
-                "buildSteps": 3,
-                "subnets": true
+                "includeRoutInfo2Switches": true,
+                "ftreeConfig": {
+                    "buildSteps": 3,
+                    "subnets": true
+                },
+                "dfConfig": {
+                    "subnets": true
+                },
+                "closConfig": {
+                    "updtRoutingOnEachConnect": false
+                }
             },
             "barrierConfig": {
                 "barrierNodeSize": 500
@@ -20,6 +28,6 @@
             }
         }
     },
-    "netPath": "./resources/examples/topologies/ftree/ftree(k:32).json",
+    "netPath": "./resources/examples/topologies/ftree/ftree(k:4).json",
     "initialTmStamp": "1970-10-01T15:23:44Z"
 }

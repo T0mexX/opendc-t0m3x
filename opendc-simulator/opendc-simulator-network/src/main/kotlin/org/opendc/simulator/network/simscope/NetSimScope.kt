@@ -97,6 +97,10 @@ internal class NetSimScope(
         runBlocking { initDispensers() }
     }
 
+    private suspend fun checkRequirements() = with(this) {
+        routPolicy.checkRequirements()
+    }
+
     private suspend fun initDispensers() {
         portVersion.initDispensers()
         nodeVersion.initDispensers()
@@ -182,6 +186,8 @@ internal class NetSimScope(
 
                         // Else build an empty modifiable `CustomNetwork` in the scope.
                         } ?: CustomNetwork()
+
+                        scope.checkRequirements()
                     }
                 }
             }

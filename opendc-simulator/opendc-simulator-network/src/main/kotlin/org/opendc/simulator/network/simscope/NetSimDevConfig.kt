@@ -14,6 +14,6 @@ internal data class NetSimDevConfig(
     val netFlowConfig: NetFlowConfig = NetFlowConfig(),
     val portConfig: PortConfig = PortConfig(),
     val nodeConfig: NodeConfig = NodeConfig(),
-    val netConfig: NetConfig<Network>? = null,
+    val netConfig: NetConfig = NetConfig(),
     val barrierConfig: BarrierConfig = BarrierConfig(),
 )

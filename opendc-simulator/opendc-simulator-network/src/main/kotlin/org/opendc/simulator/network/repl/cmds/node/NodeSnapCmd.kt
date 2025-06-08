@@ -28,26 +28,26 @@ import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.arguments.default
 import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.types.long
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
 import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 
 private const val CMD_STR: String = "snapshot"
 
 internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
-    private val nId: NodeId by argument(
+    private val ip: IPv4Address by argument(
         help = "The id of the node whose snapshot is to be displayed",
     ).convert { str ->
-        if (str == "inet") return@convert NetworkImpl.INTERNET_ID
-
-        val long = Json.decodeFromString<Long>(str)
-        val nId = NodeId(long)
-        if (nId !in net.nodesById) fail("node not found")
-        else nId
+        decodeOrNull<IPv4Address>(str)!!
+    }.check("node does not exist") {
+        println(it.toNId())
+        it.toNId() in net.nodesById
     }
 
     override fun aliases(): Map<String, List<String>> =
@@ -58,7 +58,7 @@ internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
     override fun run(): Unit = execREPLCmdCatching {
         barrier.whileStable(NetSimStabilityMode.ENFORCED) {
             sync(forceUpdt = true)
-            echo(net.nodesById[nId]!!.snapshot().fmt())
+            echo(net.nodesById[ip.toNId()]!!.snapshot().fmt())
         }
     }
 }

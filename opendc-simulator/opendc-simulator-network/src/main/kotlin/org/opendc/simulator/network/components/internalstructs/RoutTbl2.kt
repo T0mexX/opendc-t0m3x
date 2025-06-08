@@ -2,16 +2,14 @@ package org.opendc.simulator.network.components.internalstructs
 
 import inet.ipaddr.ipv4.IPv4Address
 import inet.ipaddr.ipv4.IPv4AddressTrie
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.node.connectedNode
-import org.opendc.simulator.network.components.node.isConnectedTo
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.RWLock
-import java.lang.System.exit
 
 internal class RoutTbl2(private val owner: Node<*>) {
     /**
@@ -46,6 +44,9 @@ internal class RoutTbl2(private val owner: Node<*>) {
      */
     private val trie: IPv4AddressTrie = IPv4AddressTrie()
 
+    /**
+     * TODO
+     */
     internal fun getPossiblePathsTo(nId: NodeId): Collection<RoutTblPath> {
         val destAddr = trie.longestPrefixMatch(IPv4Address(nId.value.toInt()))
         return addrRout[destAddr]?.values ?: emptyList()
@@ -56,7 +57,9 @@ internal class RoutTbl2(private val owner: Node<*>) {
      * @param n Adjacent node whose ip (or subnet) is to be registered.
      */
     context(NetSimScope)
-    internal suspend fun registerAdjN(n: Node<*>, destAddr: IPv4Address) {
+    internal suspend fun registerAdjN(n: Node<*>, destAddr: IPv4Address): Boolean {
+        // If configured to only hold routing information towards hosts, then ignore adjacent switches.
+        if (this@NetSimScope.devConfig.netConfig.includeRoutInfo2Switches.not() && n is Switch && destAddr.isPrefixBlock.not()) return false
 
         val e: RoutTblEntry
         val p: RoutTblPath
@@ -75,7 +78,12 @@ internal class RoutTbl2(private val owner: Node<*>) {
 
         // Add the direct path of length 1 among the possible paths
         // to `destAddr` (either ip or subnet) with `n` as the next hop.
-        e[n.ip] = RoutTblPath(destAddr = destAddr, nextHop = n, distance = 1).also { p = it }
+        e[n.ip] = RoutTblPath(
+            destAddr = destAddr,
+            nextHop = n,
+            distance = 1,
+            addrHops = listOf(destAddr)
+        ).also { p = it }
 
         routVect.withWLock {
             // Independently of the previous available path, the new direct path of
@@ -84,6 +92,8 @@ internal class RoutTbl2(private val owner: Node<*>) {
             // Register the new path as the shortest to ip `ip`.
             routVect[destAddr] = p
         }
+
+        return true
     }
 
     context(NetSimScope)
@@ -105,9 +115,12 @@ internal class RoutTbl2(private val owner: Node<*>) {
         // If a path of length 1 to address `b` (subnet or ip) with
         // `v.owner` as next node was not already present then add.
         if (addrRout[b]?.get(v.owner.ip)?.distance != 1) {
-            changed = true
-            registerAdjN(v.owner, b)
+            changed = changed or registerAdjN(v.owner, b)
         }
+
+        // Ignore paths with internet as next hop if the internet itself is not the destination.
+        // If the destination is inside the network, an intra-network option is used.
+        if (v.owner is Internet) return changed
 
         v.withRLock {
             v.forEach { (destAddr, otherP) ->
@@ -119,8 +132,18 @@ internal class RoutTbl2(private val owner: Node<*>) {
                 // If the destination address is a subnet containing this node.
                 if (destAddr == a) return@forEach
 
+
                 // If the next hop for the path to `destAddr` from `v.owner` is this node, then ignore.
-                if (otherP?.nextHop == this.owner) return@forEach
+//                if (otherP?.nextHop == this.owner) return@forEach
+
+                // If the path already passes through `a` (subnet or specific ip),
+                // then ignore (avoid circular paths)
+//                if (otherP != null && otherP.addrHops[0].isPrefixed) {
+//                    println("${otherP.addrHops}  to destination ${destAddr}, received by ${v.owner.ip} ${owner.ip} (a:${a}, b:${b})")
+//                }
+                if (otherP != null && otherP.addrHops.any { a in it }) {
+                    return@forEach
+                }
 
                 //
                 // At this point `destAddr` (either ip or subnet)
@@ -140,7 +163,17 @@ internal class RoutTbl2(private val owner: Node<*>) {
                 // New path to `destAddr` with `v.owner` as next hop.
                 if (oldP == null) {
                     e[v.owner.ip] =
-                        RoutTblPath(destAddr = destAddr, nextHop = v.owner, distance = otherP!!.distance + 1)
+                        RoutTblPath(
+                            destAddr = destAddr,
+                            nextHop = v.owner,
+                            addrHops = buildList {
+                                // Add `b` subnet.
+                                add(b)
+                                // Keep traversed subnets that are not within `b`.
+                                addAll(otherP!!.addrHops.filterNot { it in b })
+                            },
+                            distance = otherP!!.distance + 1,
+                        )
 
                     // Old path to `destAddr` with `v.owner` as next hop is not available anymore.
                 } else if (otherP == null) {
@@ -151,7 +184,18 @@ internal class RoutTbl2(private val owner: Node<*>) {
                     // No changes.
                     if (otherP.distance + 1 == oldP.distance) return@forEach
 
-                    oldP.distance = otherP.distance + 1
+                    e.replace(
+                        destAddr,
+                        oldP.copy(
+                            addrHops = buildList {
+                                // Add `b` subnet.
+                                add(b)
+                                // Keep traversed subnets that are not within `b`.
+                                addAll(otherP.addrHops.filterNot { it in b })
+                            },
+                            distance = otherP.distance + 1,
+                        ),
+                    )
                 }
 
                 // Update routing vector of this node.
@@ -168,9 +212,9 @@ internal class RoutTbl2(private val owner: Node<*>) {
             routVect.putAll(updts)
         }
 
-
         return changed
     }
+
 //
 //    context(NetSimScope)
 //    private suspend fun registerAdjInSubnetAddr(addr: IPv4Address, owner: Node<*>) {
@@ -254,7 +298,8 @@ internal class RoutTbl2(private val owner: Node<*>) {
     data class RoutTblPath(
         val destAddr: IPv4Address,
         val nextHop: Node<*>,
-        var distance: Int,
+        val addrHops: List<IPv4Address>,
+        val distance: Int,
     ) : Comparable<RoutTblPath> {
         override fun compareTo(other: RoutTblPath): Int = this.distance - other.distance
 
@@ -309,13 +354,13 @@ internal class RoutTbl2(private val owner: Node<*>) {
      * TODO
      */
     context(NetSimScope)
-    private fun IPv4Address.outerMostSubnetNotIncludingIp(other: IPv4Address): IPv4Address {
+    private fun IPv4Address.outerMostSubnetNotIncludingIp(ip: IPv4Address): IPv4Address {
         // Assert `other` is in fact a specific ip.
-        assert(other.isPrefixBlock.not())
+        assert(ip.isPrefixBlock.not())
 
         var prev: IPv4Address = this@IPv4Address
-    addrMngr.getNestedSubnetsOfIp(this@IPv4Address).forEach { subnet ->
-            if (other in subnet) return prev
+        addrMngr.getNestedSubnetsOfIp(this@IPv4Address).forEach { subnet ->
+            if (ip in subnet) return prev
             prev = subnet
         }
         return prev

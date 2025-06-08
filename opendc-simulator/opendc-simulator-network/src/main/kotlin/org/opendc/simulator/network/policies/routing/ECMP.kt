@@ -17,9 +17,10 @@ internal class ECMP : RoutPolicy() {
     override val internetRoutPolicy: RoutPolicy = this
 
     context(NetSimScope, Node<*>)
-    override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
-        val f = nodeFlowEntry.netFlow
-        nodeFlowEntry.txPorts.clear()
+    override suspend fun selectPorts(nodeFEntry: NodeFlowEntry) {
+        val f = nodeFEntry.netFlow
+        nodeFEntry.txPorts.clear()
+        assert(f.intermediate == null)
 
         // Ports the flow will be forwarded to.
         val txPorts = this@Node.routTbl.getPossiblePathsTo(f.destId).onlyMinimal()
@@ -28,7 +29,7 @@ internal class ECMP : RoutPolicy() {
         // percentage of this flow's data forwarded to those ports.
         // Each port is assigned an equal share of the total data to send
         txPorts.forEach {
-            nodeFlowEntry.txPorts[it.associatedPort()] = Percentage.ofRatio(1.0 / txPorts.size)
+            nodeFEntry.txPorts[it.associatedPort()] = Percentage.ofRatio(1.0 / txPorts.size)
         }
     }
 }

@@ -18,7 +18,7 @@ import kotlin.math.min
 /**
  * TODO
  */
-internal class FWPool<out T: FW<T>, out O: FWId<T>> private constructor(
+internal class FWPool<T: FW<T>, out O: FWId<T>> private constructor(
     private val fwConfig: FWConfig,
     private val objConstructor: suspend (FWPool<T, O>, Idx) -> T
 ) : FWDispenser<T> {
@@ -103,7 +103,7 @@ internal class FWPool<out T: FW<T>, out O: FWId<T>> private constructor(
     /**
      * TODO
      */
-    override suspend fun acquire(): T {
+    override suspend fun acquire(block: (suspend T.() -> Unit)?): T {
         val poolIdx = coroutineContext[CoroutineID]!!.value % nSubPools
 
         return subPools[poolIdx]
@@ -120,28 +120,31 @@ internal class FWPool<out T: FW<T>, out O: FWId<T>> private constructor(
             }
             // If all objects in the pool are currently in use, then create a new one.
             ?: objConstructor(this, poolIdx)
-                    .also { obj ->
-                        subPoolMaxSz?.let {
-                            szCountersMtxs[poolIdx].withLock {
-                                // If the maximum is exceeded, throw `IllegalStateException`.
-                                check(subPoolSzCounters[poolIdx]++ <= subPoolMaxSz) {
-                                    "netSimConfig.netSimDevConfig.flyWeightConfig.subPoolMaxSz ($subPoolMaxSz) " +
-                                        "exceeded for ${obj::class.java.interfaces.toList().first().simpleName}"
-                                }
-                            }
-                        }
-
-                        // If maximum pool size is defined.
-                        poolMaxSz?.let {
-                            poolSzCounterMtx.withLock {
-                                // If the maximum is exceeded, throw `IllegalStateException`.
-                                check(poolSzCounter++ <= poolMaxSz) {
-                                    "netSimConfig.netSimDevConfig.flyWeightConfig.poolMaxSz ($poolMaxSz) " +
-                                        "exceeded for ${obj::class.java.interfaces.toList().first().simpleName}"
-                                }
-                            }
+            .also { obj ->
+                subPoolMaxSz?.let {
+                    szCountersMtxs[poolIdx].withLock {
+                        // If the maximum is exceeded, throw `IllegalStateException`.
+                        check(subPoolSzCounters[poolIdx]++ <= subPoolMaxSz) {
+                            "netSimConfig.netSimDevConfig.flyWeightConfig.subPoolMaxSz ($subPoolMaxSz) " +
+                                "exceeded for ${obj::class.java.interfaces.toList().first().simpleName}"
                         }
                     }
+                }
+
+                // If maximum pool size is defined.
+                poolMaxSz?.let {
+                    poolSzCounterMtx.withLock {
+                        // If the maximum is exceeded, throw `IllegalStateException`.
+                        check(poolSzCounter++ <= poolMaxSz) {
+                            "netSimConfig.netSimDevConfig.flyWeightConfig.poolMaxSz ($poolMaxSz) " +
+                                "exceeded for ${obj::class.java.interfaces.toList().first().simpleName}"
+                        }
+                    }
+                }
+
+                // Execute initializer block for the flyweight object if any.
+                block?.invoke(obj)
+            }
     }
 
     suspend fun dispose(obj: @UnsafeVariance T) {

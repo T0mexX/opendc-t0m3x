@@ -7,7 +7,9 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.dragonfly.DragonFly
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.HostNode
+import org.opendc.simulator.network.repl.synthetic.SyntheticWl
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.increaseMax
 
 /**
  * Adversarial synthetic traffic pattern for dragon-fly topology.
@@ -21,14 +23,14 @@ import org.opendc.simulator.network.simscope.NetSimScope
  */
 @Serializable
 @SerialName("df-adversarial")
-internal object DFAdv: AdversarialWl<DragonFly> {
-    context(NetSimScope) override suspend fun startSyntheticFlows(
+internal object SWLDFAdv: SyntheticWl<DragonFly> {
+    context(NetSimScope, ProgressBar)
+    override suspend fun startSyntheticFlows(
         net: Network,
-        pb: ProgressBar?,
         demandMapping: (HostNode) -> DataRate
     ) {
         require(net is DragonFly)
-        pb?.maxHint(net.specs.N_.toLong())
+        this@ProgressBar.increaseMax(net.specs.N_.toLong())
 
         // The randomization seed of the simulation scope.
         val rndm = config.random
@@ -49,7 +51,7 @@ internal object DFAdv: AdversarialWl<DragonFly> {
                     )
                 )
 
-                pb?.step()
+                this@ProgressBar.step()
             }
         }
     }

@@ -3,39 +3,44 @@ package org.opendc.simulator.network.repl.synthetic
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import me.tongfei.progressbar.ProgressBar
-import org.apache.hadoop.net.TableMapping
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.increaseMax
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.log2
 
+
 /**
- * Bit-complement synthetic traffic pattern.
- * It allows starting flows according to bit-complement of host ids.
+ * Bit-shuffle synthetic traffic pattern.
+ * It creates communication flows by cyclically rotating host ID bits to the left.
  *
- * - The `N_` hosts are mapped to temporary ids 0 to N_-1,
- * - Each host will start a flow directed to the bit-complement of its own id,
- *   considering only the least significant `log(N_)` bits.
+ * - The `N_` hosts are assigned temporary IDs from `0` to `N_ - 1`,
+ * - Each host sends to the host whose ID is a left rotation (bitwise shuffle)
+ *   of its own ID by one position, considering only the least significant `log2(N_)` bits.
+ *
+ * This pattern is used to evaluate traffic dispersion in network topologies,
+ * as it introduces structured, non-local communication similar to that
+ * observed in FFT and butterfly computation stages.
  *
  * Example:
- * For `N_ = 8` (3-bit addresses), host `0b010` (2) will send to `0b101` (5).
+ * For `N_ = 8` (3-bit addresses), host `0b101` (5) will send to `0b011` (3),
+ * since rotating `101` left by 1 gives `011`.
  */
 @Serializable
-@SerialName("bit-complement")
-internal data object BitComplement: SyntheticWl<Network> {
-    context(NetSimScope)
-    override suspend fun startSyntheticFlows(
-        net: Network,
-        pb: ProgressBar?,
-        demandMapping: (HostNode) -> DataRate
-    ) {
+@SerialName("bit-shuffle")
+internal data object SWLBitShuffle: SyntheticWl<Network> {
+    context(NetSimScope, ProgressBar)
+    override suspend fun startSyntheticFlows(net: Network, demandMapping: (HostNode) -> DataRate) {
         val hosts = net.getNodesById<HostNode>()
-        pb?.maxHint(hosts.size.toLong())
+
+        // Increase the number of actions to be taken to complete the current context
+        // progress bar by the number of flows that will need to be started.
+        this@ProgressBar.increaseMax(hosts.size.toLong())
 
         // Maps temporary ids 0 to nHosts to the corresponding hosts.
         // Temporary ids are used for bit complement operation.
@@ -57,7 +62,12 @@ internal data object BitComplement: SyntheticWl<Network> {
         val mask = (1L shl nBits) - 1
 
         map.forEach { (tmpId, h) ->
-            var destIdInt = tmpId.value xor mask
+            var destIdInt = when (tmpId.value) {
+                // Reversal of `0` and `mask` are themselves, hence we make them send to each other.
+                0L -> mask
+                mask -> 0L
+                else -> tmpId.value.rotateNBits(nBits)
+            }
 
             while (NodeId(destIdInt) !in map || destIdInt == tmpId.value) {
                 assert(pwr2.not())
@@ -78,7 +88,7 @@ internal data object BitComplement: SyntheticWl<Network> {
             )
 
             net.startFlow(f)
-            pb?.step()
+            this@ProgressBar.step()
         }
     }
 
@@ -86,4 +96,11 @@ internal data object BitComplement: SyntheticWl<Network> {
 
     private fun Long.clearLeftMostBit(): Long =
         this - (floor(log2(this.toDouble())).toLong())
+
+    private fun Long.rotateNBits(n: Int): Long {
+        val mask = (1L shl n) - 1
+        val lsb = this and mask
+        val rotated = ((lsb shl 1) or (lsb ushr (n - 1))) and mask
+        return (this and mask.inv()) or rotated
+    }
 }

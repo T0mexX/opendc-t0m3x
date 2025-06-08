@@ -2,7 +2,6 @@ package org.opendc.simulator.network.policies.routing
 
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
-import org.opendc.simulator.network.components.internalstructs.RoutTbl
 import org.opendc.simulator.network.components.internalstructs.RoutTbl2
 import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.Internet
@@ -27,12 +26,15 @@ internal sealed class RoutPolicy: AbstractCoroutineContextElement(Key) {
      */
     abstract val internetRoutPolicy: RoutPolicy
 
+    context(NetSimScope)
+    open suspend fun checkRequirements() { /* NoOps */ }
+
     /**
-     * Selects the ports to forward [nodeFlowEntry]'s [NetFlow] to,
+     * Selects the ports to forward [nodeFEntry]'s [NetFlow] to,
      * updating the entry related fields.
      */
     context(NetSimScope, Node<*>)
-    abstract suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry)
+    abstract suspend fun selectPorts(nodeFEntry: NodeFlowEntry)
 
     /**
      * Invoked after network construction.

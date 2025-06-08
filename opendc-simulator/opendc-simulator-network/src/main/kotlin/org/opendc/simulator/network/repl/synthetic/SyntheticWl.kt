@@ -16,6 +16,9 @@ internal interface SyntheticWl<in T: Network> {
      * TODO
      * @param demandMapping Maps each [HostNode] to their new flow demand.
      */
-    context(NetSimScope)
-    suspend fun startSyntheticFlows(net: Network, pb: ProgressBar? = null, demandMapping: (HostNode) -> DataRate)
+    context(NetSimScope, ProgressBar)
+    suspend fun startSyntheticFlows(
+        net: Network,
+        demandMapping: (HostNode) -> DataRate
+    )
 }

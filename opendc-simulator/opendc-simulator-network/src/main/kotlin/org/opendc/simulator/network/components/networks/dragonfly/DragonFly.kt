@@ -15,14 +15,15 @@ import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import org.opendc.simulator.network.utils.withProgressBar
 
 /**
- * @see DragonFlySpecs for network parameters.
+ * @see DFSpecs for network parameters.
  *
  * source: https://dl.acm.org/doi/abs/10.1145/1394608.1382129
  */
 internal class DragonFly private constructor(
-    val specs: DragonFlySpecs,
+    val specs: DFSpecs,
     val groups: List<DFGroup>,
     override val inet: Internet,
 ): NetworkImpl() {
@@ -64,20 +65,12 @@ internal class DragonFly private constructor(
          */
         context(NetSimScope)
         suspend operator fun invoke(
-            specs: DragonFlySpecs,
-        ): DragonFly {
-            // Progress bar used while building network.
-            val pb = ProgressBarBuilder()
-                // Each step is building a node or adding a link.
-                .setInitialMax(specs.E_.toLong() + specs.V_)
-                .setStyle(ProgressBarStyle.ASCII)
-                .setTaskName("Building DragonFly Network...")
-                .build()
-
+            specs: DFSpecs,
+        ): DragonFly = withProgressBar(task = "Building DragonFly...", max = specs.E_.toLong() + specs.V_) pb@ {
             val inet = Internet()
 
             // Build groups and their internal connections.
-            val groups = 0.rangeUntil(specs.g).map { DFGroup(specs, inet, pb) }
+            val groups = 0.rangeUntil(specs.g).map { DFGroup(specs, inet) }
 
             fun Switch.isConnectedTo(other: Switch): Boolean =
                 this.ports.any { it.txLink?.receiverPort?.owner == other }
@@ -126,7 +119,7 @@ internal class DragonFly private constructor(
                 }
 
                 // Update progress bar.
-                pb.stepBy(groups.size.toLong())
+                this@pb.stepBy(groups.size.toLong())
 
                 toGDeltaI = (toGDeltaI + 1) % specs.g
                 if (toGDeltaI == 0) {
@@ -158,9 +151,9 @@ internal class DragonFly private constructor(
             assert(specs.V_ == groups.sumOf { it.switches.size + it.hosts.size }) {"${specs.V_} ${groups.sumOf { it.switches.size + it.hosts.size }}"}
 
             // Assert progress bar consistency.
-            assert(pb.current == specs.E_.toLong() + specs.V_) {"${pb.current} ${specs.E_.toLong() + specs.V_}"}
+            assert(this@pb.current == specs.E_.toLong() + specs.V_) {"${this@pb.current} ${specs.E_.toLong() + specs.V_}"}
 
-            return DragonFly(
+            DragonFly(
                 specs = specs,
                 groups = groups,
                 inet = inet,
@@ -173,16 +166,14 @@ internal class DragonFly private constructor(
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)
-
-                pb.close()
             }
         }
     }
 
     /**
      * A group consists of a routers connected via an intra-group interconnection
-     * network formed from local channels. Each group has [DragonFlySpecs.a] * [DragonFlySpecs.p]
-     * connections to terminals and [DragonFlySpecs.a] * [DragonFlySpecs.h]
+     * network formed from local channels. Each group has [DFSpecs.a] * [DFSpecs.p]
+     * connections to terminals and [DFSpecs.a] * [DFSpecs.h]
      * connections to global channels.
      */
     internal class DFGroup private constructor(
@@ -194,36 +185,44 @@ internal class DragonFly private constructor(
             /**
              * Suspending constructor.
              */
-            context(NetSimScope)
-            suspend operator fun invoke(specs: DragonFlySpecs, inet: Internet, pb: ProgressBar): DFGroup {
+            context(NetSimScope, ProgressBar)
+            suspend operator fun invoke(specs: DFSpecs, inet: Internet): DFGroup {
+                val dfConfig = this@NetSimScope.devConfig.netConfig.dfConfig
+
                 // Remaining global switches to add to group.
                 var glSwNum = specs.globalSwitchesPerGroup
 
+                val subnet =
+                    // Create a new subnet in the global scope that can contain all the nodes in the group.
+                    if (dfConfig.subnets) addrMngr.getNewSubNet(nIps = specs.a * specs.p + specs.a)
+                    // Else use "0.0.0.0/0" as a subnet (equivalent to no subnet)
+                    else addrMngr.globalPrefix
+
                 // Build switches in the group.
                 val switches = 0.rangeUntil(specs.a).map {
-                    if (--glSwNum >= 0) specs.switchSpecs.toGlobalSwitchSpecs().buildAsCore(inet, updtRoutTbl = false)
-                    else specs.switchSpecs.build()
+                    if (--glSwNum >= 0) specs.switchSpecs.toGlobalSwitchSpecs().buildAsCore(inet, updtRoutTbl = false, subnet = subnet)
+                    else specs.switchSpecs.build(subnet = subnet)
                 }
-                pb.stepBy(switches.size.toLong())
+                this@ProgressBar.stepBy(switches.size.toLong())
 
                 // Establish connections between switches of the same group (pairwise connections).
                 switches.forEachIndexed { idx, sw1 ->
                     switches.drop(idx + 1).forEach { sw2 ->
                         sw1.msgSyncConnect(sw2, updtRoutTbl = false)
                     }
-                    pb.stepBy(switches.size.toLong() - idx - 1)
+                    this@ProgressBar.stepBy(switches.size.toLong() - idx - 1)
                 }
 
                 // Establish connection between each switch and terminals (hosts).
                 val hosts = buildList {
                     switches.forEach { sw ->
                         0.rangeUntil(specs.p).map {
-                            pb.step()
-                            specs.hostSpecs.build()
+                            this@ProgressBar.step()
+                            specs.hostSpecs.build(subnet = subnet)
                         }.forEach { h ->
                             h.msgSyncConnect(sw, updtRoutTbl = false)
                             add(h)
-                            pb.step()
+                            this@ProgressBar.step()
                         }
                     }
                 }

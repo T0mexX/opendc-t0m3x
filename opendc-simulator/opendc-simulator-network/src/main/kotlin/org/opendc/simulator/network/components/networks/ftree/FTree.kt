@@ -17,6 +17,7 @@ import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
+import org.opendc.simulator.network.utils.withProgressBar
 import kotlin.math.pow
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
@@ -49,21 +50,14 @@ internal class FTree private constructor(
         context(NetSimScope)
         suspend operator fun invoke(
             specs: FatTreeSpecs,
-        ): FTree {
-            val fTreeConfig = devConfig.netConfig as FTreeConfig
-            // Progress bar used while building network.
-            val pb = ProgressBarBuilder()
-                // Each step is building a node or adding a link.
-                .setInitialMax(specs.E_.toLong() + specs.V_)
-                .setStyle(ProgressBarStyle.ASCII)
-                .setTaskName("Building FatTree Network...")
-                .build()
+        ): FTree = withProgressBar(task = "Building FatTree Network...", max = specs.E_.toLong() + specs.V_) pb@ {
+            val fTreeConfig = devConfig.netConfig.ftreeConfig
 
             val inet = Internet()
 
             // Determines if routing table should be updated progressively
             // while the network is being built or at the end.
-            val updtRout = (devConfig.netConfig as FTreeConfig).buildSteps == 1
+            val updtRout = fTreeConfig.buildSteps == 1
 
             /**
              * Parameter that determines the topology which is defined as
@@ -80,7 +74,6 @@ internal class FTree private constructor(
                     specs.aggrSwSpecs,
                     specs.accessSwSpecs,
                     specs.hostSpecs,
-                    pb,
                     fTreeConfig
                 ))
             } }
@@ -93,12 +86,12 @@ internal class FTree private constructor(
                         )
                     }
                 }.chunked(k / 2)
-            pb.stepBy(k.toLong() * k / 4)
+            this@pb.stepBy(k.toLong() * k / 4)
 
             pods.forEach { pod ->
                 pod.aggrSwitches.forEachIndexed { switchIdx, switch ->
                     coreSwitchesChunked[switchIdx].forEach { it.msgSyncConnect(switch, updtRoutTbl = updtRout) }
-                    pb.stepBy(coreSwitchesChunked[switchIdx].size.toLong())
+                    this@pb.stepBy(coreSwitchesChunked[switchIdx].size.toLong())
                 }
             }
 
@@ -122,11 +115,11 @@ internal class FTree private constructor(
             assert(nodesById.size - 1 == specs.V_)
             assert(nodesById.values.filterIsInstance<Switch>().size == specs.R_)
             assert(nodesById.values.filterIsInstance<HostNode>().size == specs.N_)
-            assert(pb.current == specs.E_.toLong() + specs.V_)
+            assert(this@pb.current == specs.E_.toLong() + specs.V_)
 
             if (fTreeConfig.buildSteps > 1) inet.msgAsyncShareRoutVect()
 
-            return FTree(
+            FTree(
                 specs = specs,
                 nodesById = nodesById,
                 inet = inet,
@@ -140,17 +133,14 @@ internal class FTree private constructor(
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)
-
-                pb.close()
             }
         }
 
-        context(NetSimScope)
+        context(NetSimScope, ProgressBar)
         private suspend fun getPod(
             aggrSpecs: SwitchSpecs,
             torSpecs: SwitchSpecs,
             hostNodeSpecs: HostNodeSpecs,
-            pb: ProgressBar,
             fTreeConfig: FTreeConfig,
         ): FTreePod {
             val updtRoutOnConnect = fTreeConfig.buildSteps == 1
@@ -163,31 +153,32 @@ internal class FTree private constructor(
             val subnet =
                 // Create a new subnet in the global scope which contains at least `nodesPerPod` ips.
                 if (fTreeConfig.subnets) addrMngr.getNewSubNet(nIps = nodesPerPod)
+                // Else use "0.0.0.0/0" as a subnet (equivalent to no subnet)
                 else addrMngr.globalPrefix
 
             val hostNodes =
                 buildList {
                     repeat((k / 2).toDouble().pow(2.0).toInt()) { add(hostNodeSpecs.build(subnet = subnet)) }
                 }
-            pb.stepBy(hostNodes.size.toLong())
+            this@ProgressBar.stepBy(hostNodes.size.toLong())
 
             val torSwitches =
                 buildList {
                     repeat(k / 2) { add(torSpecs.build(subnet = subnet)) }
                 }
-            pb.stepBy(torSwitches.size.toLong())
+            this@ProgressBar.stepBy(torSwitches.size.toLong())
 
             hostNodes.forEachIndexed { index, server ->
                 server.msgSyncConnect(torSwitches[index / (k / 2)], updtRoutTbl = updtRoutOnConnect)
             }
-            pb.stepBy(hostNodes.size.toLong())
+            this@ProgressBar.stepBy(hostNodes.size.toLong())
 
             val aggrSwitches =
                 torSwitches
                     .map { _ ->
                         val newSwitch = aggrSpecs.build(subnet = subnet)
                         torSwitches.forEach { newSwitch.msgSyncConnect(it, updtRoutTbl = updtRoutOnConnect) }
-                        pb.stepBy(torSwitches.size.toLong() + 1)
+                        this@ProgressBar.stepBy(torSwitches.size.toLong() + 1)
                         newSwitch
                     }.toList()
 

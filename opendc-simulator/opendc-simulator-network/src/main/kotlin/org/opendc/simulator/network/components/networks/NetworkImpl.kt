@@ -1,6 +1,10 @@
 package org.opendc.simulator.network.components.networks
 
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.serialization.Serializable
+import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
+import org.opendc.common.units.Unit.Companion.sumOfUnit
+import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snapshot
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
@@ -39,10 +43,13 @@ internal abstract class NetworkImpl : Network {
 
     context(NetSimScope)
     override suspend fun startFlow(f: INetFlow) {
-        ctx[RoutPolicy]?.onFlowStart(f)
+        val senderN = sendNodesById[f.senderId]!!
+        f.senderNode = senderN
+
+        routPolicy.onFlowStart(f)
 
         assert(f.destId in _nodesById)
-        sendNodesById[f.senderId]!!.startFlow(f)
+        senderN.startFlow(f)
         _flows += f.id to f
     }
 
@@ -71,6 +78,9 @@ internal abstract class NetworkImpl : Network {
     context(NetSimScope)
     override suspend fun fmtFlows(mode: NetSimStabilityMode): String =
         barrier.whileStable(mode) {
+            val snap = net.snapshot()
+            val f =_flows.values
+
             buildString {
                 appendLine("==== Flows ====")
                 appendLine(
@@ -91,6 +101,35 @@ internal abstract class NetworkImpl : Network {
                             flow.throughput.fmtValue("%.3f").padEnd(20),
                     )
                 }
+                appendLine("| ==== Overview ====")
+                appendLine(
+                    " | " +
+                        "avg-demand".padEnd(15) +
+                        "avg-tput".padEnd(15) +
+                        "max-demand".padEnd(15) +
+                        "max-tput".padEnd(15) +
+                        "min-demand".padEnd(15) +
+                        "min-tput".padEnd(15) +
+                        "avg-tput [%]".padEnd(15) +
+                        "min-tput [%]".padEnd(15) +
+                        "tot-demand".padEnd(15) +
+                        "tot-tput".padEnd(15) +
+                        "tot-tput [%]".padEnd(15)
+                )
+                appendLine(
+                    " | " +
+                        f.averageOfUnitOrNull { it.demand }?.fmtValue("%.3f")?.padEnd(15) +
+                        f.averageOfUnitOrNull { it.throughput }?.fmtValue("%.3f")?.padEnd(15) +
+                        f.maxOfOrNull { it.demand }?.fmtValue("%.3f")?.padEnd(15) +
+                        f.maxOfOrNull { it.throughput }?.fmtValue("%.3f")?.padEnd(15) +
+                        f.minOfOrNull { it.demand }?.fmtValue("%.3f")?.padEnd(15) +
+                        f.minOfOrNull { it.throughput }?.fmtValue("%.3f")?.padEnd(15) +
+                        snap.avrgTputPerc?.fmtValue("%.3f")?.padEnd(15) +
+                        snap.worstTputPerc?.fmtValue("%.3f")?.padEnd(15) +
+                        f.sumOfUnit { it.demand }.fmtValue("%.3f").padEnd(15) +
+                        f.sumOfUnit { it.throughput }.fmtValue("%.3f").padEnd(15) +
+                        snap.totTputPerc?.fmtValue("%.3f")?.padEnd(15)
+                )
             }
         }
 
@@ -101,7 +140,9 @@ internal abstract class NetworkImpl : Network {
 
         /**
          * [NodeId] reserved for inet representation (for inter-datacenter communication).
+         *
+         * Corresponds to ip address 255.255.255.255.
          */
-        val INTERNET_ID: NodeId = NodeId(0)
+        val INTERNET_ID: NodeId = NodeId(UInt.MAX_VALUE.toLong())
     }
 }

@@ -9,10 +9,12 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
+import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
+import org.opendc.simulator.network.policies.routing.RoutMeta
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.utils.CoroutineID
@@ -27,28 +29,44 @@ internal class NetFlowImpl private constructor(
     override val senderId: NodeId,
     override val destId: NodeId,
     override val id: FlowId,
-    demand: DataRate,
+    override var demand: DataRate,
     override val stabilizer: NetSimStabilizer,
+    override val parentFlow: INetFlow? = null,
+    override val intermediate: NodeId? = null,
 ): INetFlow {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // INetFlow
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override lateinit var senderNode: SenderNode<*>
+
+    override lateinit var routMeta: RoutMeta<*>
+
+    override var subFPerc: Percentage? = null
+
+    override val subFlows by lazy { mutableSetOf<INetFlow>() }
+
     override var throughput: DataRate = DataRate.zero
-        private set
-    override var demand: DataRate = demand
         private set
 
     override suspend fun setDemand(demand: DataRate) {
         assert(demand >= DataRate.zero)
 
-        val msg = setDemandDisp.acquire().reset()
-        msg.newDemand = demand
-        msg.sendTo(this)
+        setDemandDisp.acquire().reset {
+            newDemand = demand
+        }.sendTo(this)
     }
 
-    override suspend fun setThroughput(newThroughput: DataRate) {
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is NetFlowImpl) return false
+
+        return id == other.id
+    }
+
+    override suspend fun msgAsyncSetTput(newThroughput: DataRate) {
         assert(newThroughput >= DataRate.zero)
 
         val msg = setTputDisp.acquire().reset()
@@ -62,13 +80,28 @@ internal class NetFlowImpl private constructor(
         msg.sendTo(this)
     }
 
+    context(NetSimScope)
+    override suspend fun subFlow(intermediate: NodeId?): NetFlowImpl =
+        NetFlowImpl(
+            intermediate = intermediate,
+            id = idDispenser.getFlowId(),
+            parentFlow = this,
+            stabilizer = barrier.stabilizer(),
+            demand = DataRate.zero,
+            senderId = senderId,
+            destId = destId,
+        ).also { subF ->
+            subFlows.add(subF)
+            this@NetFlowImpl.senderNode.startFlow(subF)
+        }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Launchable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     context(NetSimScope) override suspend fun netLaunch(scope: CoroutineScope): Job = scope.launch(CoroutineID.new()) {
         while (isActive) {
-            _notificationChl.receive().handle()
+            _msgChl.receive().handle()
         }
     }
 
@@ -83,8 +116,8 @@ internal class NetFlowImpl private constructor(
     // Notifiable
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private val _notificationChl: Channel<Msg<INetFlow, *>> = InvalidatorChl(this)
-    override val msgChl: SendChannel<Msg<INetFlow, *>> = _notificationChl
+    private val _msgChl: Channel<Msg<INetFlow, *>> = InvalidatorChl(this)
+    override val msgChl: SendChannel<Msg<INetFlow, *>> = _msgChl
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Other
@@ -151,15 +184,24 @@ internal class NetFlowImpl private constructor(
                         // If the requested demand is the same no changes made.
                         if (newDemand approx f.demand) return handled()
 
+
+
+                        if (f.parentFlow == null && f.subFlows.isNotEmpty()) {
+                            f.subFlows.forEach { subF ->
+                                val newSubDemand = newDemand * subF.subFPerc!!
+                                subF.setDemand(newSubDemand)
+                            }
+
+                            f.demand = newDemand
+                            return handled()
+                        }
+
+                        //
+                        // If no subflows.
+
                         val old: DataRate = f.demand
                         f.demand = newDemand
                         val deltaDemand = newDemand - old
-                        //TODO
-//                        val evnt = _demandChangedDisp.acquire()
-//                        evnt.netFlow = f
-//                        evnt.old = old
-//                        evnt.new = f.demand
-//                        f._eventFlow.emit(evnt)
                         f.senderNode.msgAsyncRxUpdt(deltaDemand, f)
 
                         handled()

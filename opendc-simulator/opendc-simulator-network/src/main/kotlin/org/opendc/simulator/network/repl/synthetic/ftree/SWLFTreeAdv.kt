@@ -1,4 +1,4 @@
-package org.opendc.simulator.network.repl.synthetic.adversarial
+package org.opendc.simulator.network.repl.synthetic.ftree
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -7,7 +7,9 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.ftree.FTree
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.HostNode
+import org.opendc.simulator.network.repl.synthetic.SyntheticWl
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.increaseMax
 
 /**
  * Adversarial synthetic traffic pattern for fat-tree topology.
@@ -17,14 +19,17 @@ import org.opendc.simulator.network.simscope.NetSimScope
  */
 @Serializable
 @SerialName("ftree-adversarial")
-internal object FTreeAdv: AdversarialWl<FTree> {
-    context(NetSimScope) override suspend fun startSyntheticFlows(
+internal object SWLFTreeAdv: SyntheticWl<FTree> {
+    context(NetSimScope, ProgressBar)
+    override suspend fun startSyntheticFlows(
         net: Network,
-        pb: ProgressBar?,
         demandMapping: (HostNode) -> DataRate
     ) {
         require(net is FTree)
-        pb?.maxHint(net.specs.N_.toLong())
+
+        // Increase the number of actions to be taken to complete the current context
+        // progress bar by the number of flows that will need to be started.
+        this@ProgressBar.increaseMax(net.specs.N_.toLong())
 
         // The randomization seed of the simulation scope.
         val rndm = config.random
@@ -40,7 +45,7 @@ internal object FTreeAdv: AdversarialWl<FTree> {
                     )
                 )
 
-                pb?.step()
+                this@ProgressBar.step()
             }
         }
     }

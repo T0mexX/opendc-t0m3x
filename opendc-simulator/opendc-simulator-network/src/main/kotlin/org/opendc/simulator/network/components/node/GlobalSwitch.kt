@@ -10,6 +10,7 @@ import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
+import kotlin.system.measureTimeMillis
 
 internal class GlobalSwitch private constructor(
     ip: IPv4Address,
@@ -77,9 +78,9 @@ internal class GlobalSwitch private constructor(
                 flowTable = nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer()
             ).also { gs ->
-                gs.ports = 0.rangeUntil(gs.nPorts).map { idx -> nodeConfig.portConfig.version(gs, idx) }
-                gs.invalidate()
-                gs.netLaunch()
+                    gs.ports = 0.rangeUntil(gs.nPorts).map { idx -> nodeConfig.portConfig.version(gs, idx) }
+                    gs.invalidate()
+                    gs.netLaunch()
             }
         }
     }

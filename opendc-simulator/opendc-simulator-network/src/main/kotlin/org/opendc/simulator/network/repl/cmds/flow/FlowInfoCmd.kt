@@ -22,20 +22,27 @@
 
 package org.opendc.simulator.network.repl.cmds.flow
 
+import com.github.ajalt.clikt.parameters.options.check
+import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.long
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
+import org.opendc.simulator.network.utils.NETWORK_JSON
 
 private const val CMD_STR: String = "info"
 
 internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
-    private val nodeId: Long? by option(
+    private val ip: IPv4Address? by option(
         help = "Id of the node to display info of",
         names = arrayOf("-N_", "--node"),
-    ).long()
+    ).convert {str ->
+        decodeOrNull<IPv4Address>(str)!!
+    }.check("node does not exist") { it.toNId() in net.nodesById }
 
     override fun aliases(): Map<String, List<String>> =
         mapOf(
@@ -45,9 +52,9 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
     override fun run(): Unit = execREPLCmdCatching {
         scope.barrier.awaitStability()
 
-        nodeId?.let {
+        ip?.let {
             // NodeId2 specified.
-            val node: Node<*>? = net[NodeId(it)]
+            val node: Node<*>? = net[ip!!.toNId()]
             checkNotNull(node)
 //                echo(node.fmtFlows())
         } ?: echo(net.fmtFlows())

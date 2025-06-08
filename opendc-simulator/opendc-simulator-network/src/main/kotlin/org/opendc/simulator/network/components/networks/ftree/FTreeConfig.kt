@@ -20,12 +20,11 @@ import org.opendc.simulator.network.simscope.NetConfig
  * Hence, if failure is not part of the simulation, there is no reason to set it to `false`.
  */
 @Serializable
-@SerialName("ftree")
 internal class FTreeConfig(
     val buildSteps: Int = 1,
     // TODO: not used yet
     val subnets: Boolean = true,
-): NetConfig<FTree> {
+) {
     init {
         require(buildSteps in 1..3)
     }

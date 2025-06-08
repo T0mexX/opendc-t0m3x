@@ -1,8 +1,11 @@
 package org.opendc.simulator.network.utils.flyweight.internals
 
-import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.flyweight.publics.FW
 
-internal fun interface FWDispenser<out T: FW<T>> {
-    suspend fun acquire(): T
+internal interface FWDispenser<T: FW<T>> {
+    /**
+     * TODO
+     * @param block Can be used to initialize the [FW] object in a suspending context.
+     */
+    suspend fun acquire(block: (suspend T.() -> Unit)? = null): T
 }

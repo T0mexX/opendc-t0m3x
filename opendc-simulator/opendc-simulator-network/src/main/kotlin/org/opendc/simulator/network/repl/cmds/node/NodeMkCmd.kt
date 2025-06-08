@@ -40,7 +40,7 @@ internal class NodeMkCmd : REPLCmd(name = "mk") {
         names = arrayOf("-n", "--nodeid"),
     ).convert { str ->
         decodeOrNull<IPv4Address>(str)!!
-    }.required().check("node with id already exists") { !net.nodesById.keys.contains(it.toNId()) }
+    }.required().check("node with id already exists") { it.toNId() !in net.nodesById }
 
     private val portSpeed: DataRate by option(
         help = "Speed of the ports on the node",

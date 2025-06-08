@@ -1,6 +1,19 @@
-import resources/my/scope.json
+import resources/my/scope.jsonc
 net info
-f synth bit-reversal 100%
+net prefix-trie
+f synth full 1Gbps
+f info
+q
+
+f synth random-permutation 30%
+f info
+q
+f mk -s 4 -b 1Gbps -d 5
+f mk -s 4 -b 2Gbps -d 5
+f mk -s 4 -b 1Gbps -d 5
+f info
+q
+f synth random-permutation 30%
 f info
 q
 
@@ -11,6 +24,11 @@ n mk -b 1Gbps -n 2 -p 3 s
 n mk -b 1Gbps -n 3 -p 2 h
 l mk -n 4 -n 1 -b 1Gbps
 l mk -n 4 -n 2 -b 1Gbps
+l mk -n 4 -n 2 -b 1Gbps
+l mk -n 4 -n 3 -b 1Gbps
+l mk -n 4 -n 3 -b 10Gbps
+
+l mk -n 4 -n 4 -b 120Gbps
 l mk -n 3 -n 1 -b 1Gbps
 l mk -n 3 -n 2 -b 1Gbps
 f mk -s 4 -d 3 -b 3Gbps

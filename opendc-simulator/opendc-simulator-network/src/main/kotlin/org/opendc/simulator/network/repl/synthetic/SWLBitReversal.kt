@@ -9,6 +9,7 @@ import org.opendc.simulator.network.components.networks.Network.Companion.getNod
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.increaseMax
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.log2
@@ -31,11 +32,17 @@ import kotlin.math.log2
 
 @Serializable
 @SerialName("bit-reversal")
-internal data object BitReversal: SyntheticWl<Network> {
-    context(NetSimScope)
-    override suspend fun startSyntheticFlows(net: Network, pb: ProgressBar?, demandMapping: (HostNode) -> DataRate) {
+internal data object SWLBitReversal: SyntheticWl<Network> {
+    context(NetSimScope, ProgressBar)
+    override suspend fun startSyntheticFlows(
+        net: Network,
+        demandMapping: (HostNode) -> DataRate
+    ) {
         val hosts = net.getNodesById<HostNode>()
-        pb?.maxHint(hosts.size.toLong())
+
+        // Increase the number of actions to be taken to complete the current context
+        // progress bar by the number of flows that will need to be started.
+        this@ProgressBar.increaseMax(hosts.size.toLong())
 
         // Maps temporary ids 0 to nHosts to the corresponding hosts.
         // Temporary ids are used for bit reversal operation.
@@ -82,7 +89,7 @@ internal data object BitReversal: SyntheticWl<Network> {
             )
 
             net.startFlow(f)
-            pb?.step()
+            this@ProgressBar.step()
         }
     }
 
@@ -92,13 +99,15 @@ internal data object BitReversal: SyntheticWl<Network> {
         this - (floor(log2(this.toDouble())).toLong())
 
     private fun Long.revNBits(n: Int): Long {
-        val nBitsMask = (1L shl n) - 1
-        val mostSignMask = 1L shl (n - 1)
-        val packman = this and mostSignMask != 0L
+        var res = 0L
+        var input = this
 
-        return (this shl 1 and nBitsMask).let {
-            if (packman) it or 1L
-            else it
+        repeat(n) {
+            res = res shl 1
+            res = res or (input and 1L)
+            input = input shr 1
         }
+
+        return res
     }
 }

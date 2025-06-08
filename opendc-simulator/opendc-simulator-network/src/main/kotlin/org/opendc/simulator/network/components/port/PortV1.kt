@@ -28,6 +28,8 @@ import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.statefull.State
+import kotlin.system.measureNanoTime
+import kotlin.system.measureTimeMillis
 
 internal class PortV1 private constructor(
     override val owner: Node<*>,
@@ -131,7 +133,9 @@ internal class PortV1 private constructor(
                 portIdx = portIdx,
                 initialCapacity = devConfig.portConfig.initialCapacity,
                 stabilizer = barrier.stabilizer()
-            ).also { it.invalidate() }
+            ).also {
+                it.invalidate()
+            }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Notifications Dispensers
@@ -198,6 +202,7 @@ internal class PortV1 private constructor(
                         val p = this@Port as PortV1
 
                         entryId = entryId ?: p.newEntry()
+                        assert(entryId != -1) { "f is parent: ${netF.parentFlow == null}" }
                         val entry = p.entries[entryId!!]
                         assert(entry.used)
                         entry.netF = netF

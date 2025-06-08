@@ -20,11 +20,11 @@ import org.opendc.simulator.network.simscope.NetSimScope
  */
 @Serializable
 @SerialName("dragonfly")
-internal data class DragonFlySpecs(
+internal data class DFSpecs(
     val a: Int,
-    val g: Int,
     val p: Int = a/2,
     val h: Int = a/2,
+    val g: Int = a * h + 1,
     val globalSwitchesPerGroup: Int = 1,
     val switchSpecs: SwitchSpecs,
     val hostSpecs: HostNodeSpecs,

@@ -4,38 +4,39 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.simscope.NetSimScope
 
 
 @Serializable
-@SerialName("ospf")
-internal class OSPF: RoutPolicy() {
+@SerialName("min")
+internal class MIN: RoutPolicy() {
     override val internetRoutPolicy: RoutPolicy = ECMP()
 
-    context(NetSimScope, Node<*>) override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
-        val f = nodeFlowEntry.netFlow
-        assert(nodeFlowEntry.txPorts.isEmpty())
+    context(NetSimScope, Node<*>) override suspend fun selectPorts(nodeFEntry: NodeFlowEntry) {
+        val f = nodeFEntry.netFlow
+        assert(nodeFEntry.txPorts.isEmpty())
+        assert(f.intermediate != null)
 
         this@Node.routTbl.getPossiblePathsTo(f.destId)
             .onlyMinimal()
-            .firstOrNull()
+            .takeIf { it.isNotEmpty() }
+            ?.first()
             ?.let { path ->
-                nodeFlowEntry.txPorts.clear()
-                nodeFlowEntry.txPorts[path.associatedPort()] = Percentage.ofPercentage(100)
+                nodeFEntry.txPorts.clear()
+                nodeFEntry.txPorts[path.associatedPort()] = Percentage.ofPercentage(100)
             }
     }
 
     companion object {
         context(NetSimScope, Node<*>)
-        suspend fun selectPorts(to: Node<*>): Set<Port> =
-            setOf(
-                this@Node.routTbl.getPossiblePathsTo(to.id)
-                    .onlyMinimal()
-                    .random()
-                    .associatedPort()
-            )
+        suspend fun selectPort(to: NodeId): Port =
+            this@Node.routTbl.getPossiblePathsTo(to)
+                .onlyMinimal()
+                .first()
+                .associatedPort()
     }
 }
 

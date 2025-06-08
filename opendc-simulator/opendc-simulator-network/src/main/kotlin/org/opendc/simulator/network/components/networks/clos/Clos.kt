@@ -1,7 +1,5 @@
 package org.opendc.simulator.network.components.networks.clos
 
-import me.tongfei.progressbar.ProgressBarBuilder
-import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.GlobalSwitch
@@ -14,6 +12,8 @@ import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import org.opendc.simulator.network.utils.withProgressBar
+import kotlin.system.measureTimeMillis
 
 /**
  * Network of [ClosSpecs.N_] fully connected layers. Last layer is of [HostNode]s.
@@ -49,18 +49,19 @@ internal class Clos(
         /**
          * Suspending constructor.
          */
-        context(NetSimScope) suspend operator fun invoke(specs: ClosSpecs): Clos {
-            // Progress bar used while building network.
-            val pb = ProgressBarBuilder()
-                // Each step is building a node or adding a link.
-                .setInitialMax(specs.E_.toLong() + specs.V_)
-                .setStyle(ProgressBarStyle.ASCII)
-                .setTaskName("Building DragonFly Network...")
-                .build()
+        context(NetSimScope) suspend operator fun invoke(
+            specs: ClosSpecs
+        ): Clos = withProgressBar(task = "Building Clos Network...", max = specs.E_.toLong() + specs.V_) pb@ {
+            // TODO: change impl.
+            // Only same size layers supported now.
+            require(specs.nodesPerLayer.values.all { it == specs.nodesPerLayer.values.first() })
 
+            val updtOnConnect = this@NetSimScope.devConfig.netConfig.closConfig.updtRoutingOnEachConnect
             val inet = Internet()
             val layers = buildList {
-                repeat(specs.n + 1) { add(mutableListOf<Node<*>>()) }
+                specs.nodesPerLayer.values.forEach {
+                    add(ArrayList<Node<*>>(it))
+                }
             }
 
             // Build layers.
@@ -88,33 +89,54 @@ internal class Clos(
                             else -> Switch(portSpeed = speed, nPorts = nAbove + nBelow)
                         }
                     )
-                    pb.step()
+                    this@pb.step()
                 }
             }
 
             // Connect layers.
-            layers.forEachIndexed { layerIdx, layer ->
-                layer.forEach { n ->
+            layers.dropLast(1).forEachIndexed { lIdx, layer ->
+                layer.forEachIndexed { nIdx, n ->
                     // Connect the uppermost layer to the internet.
-                    if (layerIdx == 0) {
-                        n.msgSyncConnect(inet)
+                    if (lIdx == 0) {
+                        n.msgSyncConnect(inet, updtRoutTbl = updtOnConnect)
                     }
 
-                    // Connect to the layer below.
-                    layers.getOrNull(layerIdx + 1)?.forEach { nBelow ->
-                        n.msgSyncConnect(nBelow)
-                        pb.step()
+                    // The layer below.
+                    val nextL = layers[lIdx + 1]
+                    // Downward network radix.
+                    val kDwn = specs.k / 2
+
+                    // Connect each node `n` to `k/2` nodes of the layer below.
+                    (0..<kDwn).forEach { deltaIdx ->
+                        // The node in the layer below to connect to.
+                        val nTarget = nextL.getModuloIdx(nIdx + deltaIdx)
+                        n.msgSyncConnect(nTarget, updtRoutTbl = updtOnConnect)
+                        this@pb.step()
                     }
                 }
+
+                if (updtOnConnect.not()) {
+                    layer.first().msgAsyncShareRoutVect()
+                    layers[lIdx + 1].first().msgAsyncShareRoutVect()
+                    barrier.awaitStability()
+                }
+            }
+
+            if (updtOnConnect) {
+                inet.msgAsyncShareRoutVect()
+                barrier.awaitStability()
             }
 
             // Assert built topology corresponds to specs.
             assert(layers.sumOf { it.size } == specs.V_)
             assert(layers.dropLast(1).sumOf { it.size } == specs.R_)
             assert(layers.last().size == specs.N_)
-            assert(pb.current == specs.E_.toLong() + specs.V_)
+            assert(this@pb.current == specs.E_.toLong() + specs.V_)
+            assert(layers.first().all { it.ports.count { it.txLink != null } == specs.k / 2 + 1})
+            assert(layers.dropLast(1).drop(1).flatten().all { it.ports.count { it.txLink != null } == specs.k })
+            assert(layers.last().all { it.ports.count { it.txLink != null } == specs.k / 2 })
 
-            return Clos(
+            Clos(
                 specs = specs,
                 layers = layers,
                 inet = inet,
@@ -127,9 +149,9 @@ internal class Clos(
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)
-
-                pb.close()
             }
         }
+
+        private fun <T> List<T>.getModuloIdx(idx: Int): T = this[idx % this.size]
     }
 }

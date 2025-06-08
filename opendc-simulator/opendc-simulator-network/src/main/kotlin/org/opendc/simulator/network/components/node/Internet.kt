@@ -12,8 +12,6 @@ import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
 import org.opendc.simulator.network.policies.routing.RoutPolicy
-import org.opendc.simulator.network.policies.routing.ECMP
-import org.opendc.simulator.network.policies.routing.OSPF
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 
@@ -55,15 +53,21 @@ internal class Internet(
 
     companion object {
         context(NetSimScope)
-        suspend operator fun invoke(): Internet =
-            Internet(
+        suspend operator fun invoke(): Internet {
+
+            // Claim the ip reserved for the representation
+            // of the internet absract node in the network.
+            addrMngr.claimIp(INTERNET_ID.toIp())
+
+            return Internet(
                 flowTable = devConfig.nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer(),
                 routPolicy = config.routPolicy.internetRoutPolicy,
-                inetIp = addrMngr.getNewIp(),
+                inetIp = INTERNET_ID.toIp(),
             ).also {
                 it.invalidate()
                 it.netLaunch()
             }
+        }
     }
 }

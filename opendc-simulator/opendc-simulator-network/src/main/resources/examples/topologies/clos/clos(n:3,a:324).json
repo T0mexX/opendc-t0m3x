@@ -1,7 +1,7 @@
 {
     "type": "clos",
     "n": 3,
-    "k": 8,
-    "dfltNodesPerLayer": 8,
+    "k": 36,
+    "dfltNodesPerLayer": 324,
     "dfltPortSpeed": "1Gbps"
 }
