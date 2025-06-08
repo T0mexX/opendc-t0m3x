@@ -39,7 +39,7 @@ private const val CMD_STR: String = "info"
 internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
     private val ip: IPv4Address? by option(
         help = "Id of the node to display info of",
-        names = arrayOf("-N_", "--node"),
+        names = arrayOf("-n", "--node"),
     ).convert {str ->
         decodeOrNull<IPv4Address>(str)!!
     }.check("node does not exist") { it.toNId() in net.nodesById }

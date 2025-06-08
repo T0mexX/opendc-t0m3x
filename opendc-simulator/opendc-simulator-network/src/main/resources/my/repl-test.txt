@@ -3,6 +3,7 @@ net info
 net prefix-trie
 f synth full 1Gbps
 f info
+n snap  255.255.255.255
 q
 
 f synth random-permutation 30%

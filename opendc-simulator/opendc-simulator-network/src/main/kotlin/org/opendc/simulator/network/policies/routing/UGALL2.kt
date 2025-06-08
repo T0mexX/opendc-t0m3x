@@ -8,6 +8,7 @@ import org.opendc.common.units.Percentage.Companion.percentageOf
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
@@ -80,10 +81,10 @@ internal class UGALL2 : RoutPolicy() {
             val meta = subF.routMeta as UGALLRoutMeta
             val portUtil = meta.port!!.txLink!!.util
 
-            meta.currScore = (1 / (meta.length!! * portUtil.toRatio())).takeUnless { it.isInfinite() } ?: .001
-            println(meta.currScore)
+            meta.currScore = (1 / (meta.length!! * portUtil.toRatio())).takeUnless { it.isInfinite() } ?: (.001 / meta.length)
             scoreSum += meta.currScore
         }
+
 
         // Distribute data rate proportionally to the scores.
         f.subFlows.forEach { subF ->
@@ -94,8 +95,8 @@ internal class UGALL2 : RoutPolicy() {
             subF.setDemand(fDemand * subF.subFPerc!!)
         }
 
+        println("${f.senderId.toIp()} -> ${f.destId.toIp()} ${f.subFlows.map { Triple(it.subFPerc, it.intermediate?.toIp() ?: NodeId(-10).toIp(), (it.routMeta as UGALLRoutMeta).length) }}")
         // Assert the distribution sums up to 100% of the parent flow demand.
-        println(f.subFlows.size)
         assert(
             f.subFlows.sumOfUnit {
                 it.subFPerc!!
@@ -147,15 +148,13 @@ internal class UGALL2 : RoutPolicy() {
         val subnet = smallestCommonSubnet(f.senderId.toIp(), f.destId.toIp())
 
         // Nodes in `subnet`, the ones considered as possible intermediates.
-        return net.nodeLs.filterIsInstance<SenderNode<*>>().mapNotNull { inter ->
+        return net.nodeLs.mapNotNull { inter ->
             if (inter.ip !in subnet) return@mapNotNull null
             if (inter === f.senderNode || inter.id == f.destId) return@mapNotNull null
 
-            println("${f.senderNode.ip} -> ${inter.ip}") // TODO: remove
             // The `MIN` path from sender node to possible intermediate.
             val pathToInter = f.senderNode.routTbl.getPossiblePathsTo(inter.id).onlyMinimal().first()
             // The `MIN` path from possible intermediate to destination.
-            println("${inter.ip} -> ${f.destId.toIp()}") // TODO: remove
             val pathToDest = inter.routTbl.getPossiblePathsTo(f.destId).onlyMinimal().first()
 
             // Avoid possible intermediates that have same nodes in 'toIntermediate' and 'toDest' path.
@@ -163,7 +162,7 @@ internal class UGALL2 : RoutPolicy() {
 
             val pathLength = pathToDest.distance + pathToInter.distance - 1
             inter to Pair(pathToInter.associatedPort(), pathLength)
-        }.toMap()
+        }.toMap().also { println("possible valiants number: ${it.size}") }
     }
 
     context(NetSimScope)

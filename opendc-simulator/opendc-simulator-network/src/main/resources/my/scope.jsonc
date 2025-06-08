@@ -1,6 +1,6 @@
 {
     "netSimConfig": {
-        "routingPolicy": { "type": "ecmp" },
+        "routingPolicy": { "type": "ugall2" },
         "fairnessPolicy": { "type": "proportional" },
         "netSimDevConfig": {
             "netConfig": {
