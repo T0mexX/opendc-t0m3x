@@ -10,6 +10,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.port.PortFlowEntry
+import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
  * TODO
@@ -18,37 +19,63 @@ import org.opendc.simulator.network.components.port.PortFlowEntry
 @Serializable
 @SerialName("proportional")
 internal class Proportional: FairnessPolicy() {
-    context(Port)
+    context(NetSimScope, Port)
     override suspend fun applyFairness(entryList: List<PortFlowEntry>) {
         val p = this@Port
         val l = p.txLink!!
+        val recvN = p.txLink!!.receiverPort.owner
+
         // Sum of all the demands at this port.
         val dmndSum = entryList.sumOfUnit { it.demand }
 
-        coroutineScope {
+        var rxUpdt = devConfig.nodeConfig.version.rxUpdateDisp.acquire().reset()
 
-            // Map each port flow entry with the delta data-rate that should be applied.
-            entryList.asFlow().let { f ->
-                // Apply data-rate reductions.
-                f.onEach { e ->
-                    if (e.used.not()) return@onEach
-                    val delta = (  (l.maxBw * (e.demand / dmndSum)  ) min e.demand) - e.tput
-                    if (delta >= DataRate.zero) return@onEach
-                    l.releaseBw(-delta, e.netF)
-                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1e-6)
-                }.launchIn(this@coroutineScope).join()
-
-                // Apply data-rate increases.
-                f.onEach { e ->
-                    if (e.used.not()) return@onEach
-                    val delta = (  (l.maxBw * (e.demand / dmndSum)  ) min e.demand) - e.tput
-                    if (delta <= DataRate.zero) return@onEach
-                    val claimed = l.claimBw(delta, e.netF)
-                    if (claimed approx DataRate.zero) return@onEach
-                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1e-6)
-                }.launchIn(this@coroutineScope).join()
-            }
+        // Apply data-rate reductions.
+        entryList.forEach { e ->
+            if (e.used.not()) return@forEach
+            val delta = ((l.maxBw * (e.demand / dmndSum)) min e.demand) - e.tput
+            if (delta >= DataRate.zero) return@forEach
+            l.releaseBw(-delta, e.netF)
+            rxUpdt.add(delta, e.netF)
+            rxUpdt = rxUpdt.sendAndReplaceIfFull(recvN)
+            e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1e-6)
         }
-    }
 
+        entryList.forEach { e ->
+            if (e.used.not()) return@forEach
+            val delta = (  (l.maxBw * (e.demand / dmndSum)  ) min e.demand) - e.tput
+            if (delta <= DataRate.zero) return@forEach
+            val claimed = l.claimBw(delta, e.netF)
+            if (claimed approx DataRate.zero) return@forEach
+            rxUpdt.add(claimed, e.netF)
+            rxUpdt = rxUpdt.sendAndReplaceIfFull(recvN)
+            e.tput = (e.tput + claimed).roundToIfWithinEpsilon(e.demand, 1e-6)
+        }
+
+        rxUpdt.sendOrDispose(recvN)
+//        coroutineScope {
+//
+//            // Map each port flow entry with the delta data-rate that should be applied.
+//            entryList.asFlow().let { f ->
+//                // Apply data-rate reductions.
+//                f.onEach { e ->
+//                    if (e.used.not()) return@onEach
+//                    val delta = (  (l.maxBw * (e.demand / dmndSum)  ) min e.demand) - e.tput
+//                    if (delta >= DataRate.zero) return@onEach
+//                    l.releaseBw(-delta, e.netF)
+//                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1e-6)
+//                }.launchIn(this@coroutineScope).join()
+//
+//                // Apply data-rate increases.
+//                f.onEach { e ->
+//                    if (e.used.not()) return@onEach
+//                    val delta = (  (l.maxBw * (e.demand / dmndSum)  ) min e.demand) - e.tput
+//                    if (delta <= DataRate.zero) return@onEach
+//                    val claimed = l.claimBw(delta, e.netF)
+//                    if (claimed approx DataRate.zero) return@onEach
+//                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1e-6)
+//                }.launchIn(this@coroutineScope).join()
+//            }
+//        }
+    }
 }

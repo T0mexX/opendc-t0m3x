@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
+import org.opendc.common.units.DataRate.Companion.setFromDr
 import org.opendc.simulator.network.components.internalstructs.RoutTbl
 import org.opendc.simulator.network.components.internalstructs.RoutTbl2
 import org.opendc.simulator.network.components.internalstructs.RoutVect
@@ -43,10 +44,13 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {
         assert(deltaRate.approx(DataRate.zero).not()) {deltaRate}
 
-        val msg = rxUpdateDisp.acquire().reset()
-        msg.deltaRate = deltaRate
-        msg.netF = netF
-        msg.sendTo(this)
+        throw UnsupportedOperationException()
+//        val msg = rxUpdateDisp.acquire().reset {
+//            msg.deltaRate = deltaRate
+//            msg.netF = netF
+//            msg.sendTo(this)
+//
+//        }
     }
 
     override suspend fun msgSyncConnect(other: Node<*>, linkBw: DataRate, updtRoutTbl: Boolean) {
@@ -189,16 +193,43 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _rxUpdateDisp =
                 poolAggr.getOrAdd(Node.RxUpdt as FWId<Node.RxUpdt>) { pool, idx ->
+                    val nodeConfig = this@NetSimScope.devConfig.nodeConfig
                     object : Node.RxUpdt, MsgImpl<Node<*>, Node.RxUpdt>(pool, idx) {
-                        override lateinit var netF: INetFlow
-                        override var deltaRate: DataRate = DataRate.zero
-                        override var toIntermediate: Boolean = false
+                        override val netFs = Array<INetFlow?>(nodeConfig.rxUpdtSz) { null }
+                        override val deltaRates = DoubleArray(nodeConfig.rxUpdtSz)
+                        override var sz: Int = 0
 
                         context(Node<*>)
                         override suspend fun handle() {
-                            assert(deltaRate.approx(DataRate.zero).not())
+                            assert(netFs.take(sz).all { it!!.demand.approx(DataRate.zero).not() })
+
                             flowTable.rxUpdt(this)
+
                             handled()
+                        }
+
+                        override suspend fun reset(builderBlock: (suspend Node.RxUpdt.() -> Unit)?): Node.RxUpdt {
+                            sz = 0
+                            return super.reset(builderBlock)
+                        }
+
+                        override fun add(deltaRate: DataRate, f: INetFlow) {
+                            require(sz < deltaRates.size)
+                            netFs[sz] = f
+                            deltaRates.setFromDr(sz, deltaRate)
+                            sz++
+                        }
+
+                        override suspend fun sendAndReplaceIfFull(dest: Node<*>): Node.RxUpdt {
+                            if (sz < deltaRates.size) return this
+
+                            sendTo(dest)
+                            return _rxUpdateDisp.acquire().reset()
+                        }
+
+                        override suspend fun sendOrDispose(dest: Node<*>) {
+                            if (sz > 0) sendTo(dest)
+                            else dispose()
                         }
                     }
                 }

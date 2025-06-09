@@ -44,9 +44,9 @@ internal class SimplexLink(
 
         // Update the currently used bandwidth on the link, rounding to max if necessary.
         usedBw = (usedBw + deltaBw).roundToIfWithinEpsilon(maxBw, 1.0)
-
-        // Send update to the receiver node.
-        receiverPort.owner.msgAsyncRxUpdt(deltaBw, netF)
+//
+//        // Send update to the receiver node.
+//        receiverPort.owner.msgAsyncRxUpdt(deltaBw, netF)
 
         return deltaBw
     }
@@ -60,8 +60,8 @@ internal class SimplexLink(
 
         // Update currently used bandwidth on the link, routing to 0 if necessary
         usedBw = (usedBw - bw).roundToIfWithinEpsilon(DataRate.zero, epsilon = 1.0)
-
-        // Send update to the receiver node.
-        receiverPort.owner.msgAsyncRxUpdt(-bw, netF)
+//
+//        // Send update to the receiver node.
+//        receiverPort.owner.msgAsyncRxUpdt(-bw, netF)
     }
 }

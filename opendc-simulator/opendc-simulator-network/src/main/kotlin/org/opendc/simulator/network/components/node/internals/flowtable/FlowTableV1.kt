@@ -2,7 +2,9 @@ package org.opendc.simulator.network.components.node.internals.flowtable
 
 import kotlinx.coroutines.flow.asFlow
 import org.opendc.common.units.DataRate
+import org.opendc.common.units.DataRate.Companion.getAsDr
 import org.opendc.simulator.network.components.node.Node
+import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
@@ -24,35 +26,39 @@ internal class FlowTableV1 private constructor(
      */
     context(NetSimScope, Node<*>)
     override suspend fun rxUpdt(updt: Node.RxUpdt) {
-        assert(updt.deltaRate.approx(DataRate.zero).not())
-
-        var new = false
-        val entry = _flows.getOrPut(updt.netF) {
-            assert(updt.deltaRate > DataRate.zero) { updt.deltaRate }
-            new = true
-            newEntry(updt)
-        }
-        entry.rx = (entry.rx + updt.deltaRate).roundToIfWithinEpsilon(DataRate.zero, epsilon = 1.0)
-        entry.node = this@Node
-        if (updt.netF.destId == this@Node.id) {
-            updt.netF.setThroughput(entry.rx)
-
-            return
-        }
-
-        assert(entry.rx >= DataRate.zero) { entry.rx.value }
-
-        entry.txPorts.forEach { (p, perc) ->
-            // The data-rate sent to port `p` of this flow.
-            val portDemand = entry.rx * perc
-            if (new) {
-                entry.portFlowEntryIds[p.portIdx] =
-                    p.msgSetTxDemand(portDemand, entry.netFlow) ?: -1
-            } else {
-                p.msgSetTxDemand(portDemand, entry.netFlow, entry.portFlowEntryIds[p.portIdx])
+        suspend fun helper(deltaRate: DataRate, f: INetFlow) {
+            var new = false
+            val entry = _flows.getOrPut(f) {
+                assert(deltaRate > DataRate.zero) { deltaRate }
+                new = true
+                newEntry(f)
             }
+            entry.rx = (entry.rx + deltaRate).roundToIfWithinEpsilon(DataRate.zero, epsilon = 1.0)
+            entry.node = this@Node
+            if (f.destId == this@Node.id) {
+                f.setThroughput(entry.rx)
+
+                return
+            }
+
+            assert(entry.rx >= DataRate.zero) { entry.rx.value }
+
+            entry.txPorts.forEach { (p, perc) ->
+                // The data-rate sent to port `p` of this flow.
+                val portDemand = entry.rx * perc
+                if (new) {
+                    entry.portFlowEntryIds[p.portIdx] =
+                        p.msgSetTxDemand(portDemand, entry.netFlow) ?: -1
+                } else {
+                    p.msgSetTxDemand(portDemand, entry.netFlow, entry.portFlowEntryIds[p.portIdx])
+                }
+            }
+            if (entry.rx approx DataRate.zero) rmEntry(entry)
         }
-        if (entry.rx approx DataRate.zero) rmEntry(entry)
+
+        (0..<updt.sz).forEach { idx ->
+            helper(updt.deltaRates.getAsDr(idx), updt.netFs[idx]!!)
+        }
     }
 
     /**
@@ -87,11 +93,11 @@ internal class FlowTableV1 private constructor(
     }
 
     context(NetSimScope, Node<*>)
-    private suspend fun newEntry(updt: Node.RxUpdt): NodeFlowEntry {
+    private suspend fun newEntry(f: INetFlow): NodeFlowEntry {
         val entry = nodeFlowEntryDispenser.acquire()
         entry.tracker = this
         entry.resizeIfNeeded()
-        entry.netFlow = updt.netF
+        entry.netFlow = f
         entry.node = this@Node
         entry.rx = DataRate.zero
         entry.txPorts.clear()

@@ -250,24 +250,25 @@ internal class PortV1 private constructor(
                 poolAggr.getOrAdd(Port.Disconnect as FWId<Port.Disconnect>) { pool, idx ->
                     object : Port.Disconnect, MsgImpl<Port, Port.Disconnect>(pool, idx) {
                         context(Port) override suspend fun handle() {
-                            val p = this@Port as PortV1
-                            p._state.emit(Port.DISCONNECTING)
-                            require(p.txLink != null) { "unable to disconnect port $this, port not connected" }
-
-                            p.entries.forEach {
-
-                                TODO("change")
-                                val msg = nodeVersion.rxUpdateDisp.acquire()
-                                msg.netF = it.netF
-                                msg.deltaRate = -it.tput
-                                p.txLink!!.send(msg)
-                            }
-
-                            txLink = null
-                            rxLink = null
-                            p._state.emit(Port.DISCONNECTED)
-
-                            handled()
+                            TODO()
+//                            val p = this@Port as PortV1
+//                            p._state.emit(Port.DISCONNECTING)
+//                            require(p.txLink != null) { "unable to disconnect port $this, port not connected" }
+//
+//                            p.entries.forEach {
+//
+//                                TODO("change")
+//                                val msg = nodeVersion.rxUpdateDisp.acquire()
+//                                msg.netF = it.netF
+//                                msg.deltaRate = -it.tput
+//                                p.txLink!!.send(msg)
+//                            }
+//
+//                            txLink = null
+//                            rxLink = null
+//                            p._state.emit(Port.DISCONNECTED)
+//
+//                            handled()
                         }
                     }
                 }

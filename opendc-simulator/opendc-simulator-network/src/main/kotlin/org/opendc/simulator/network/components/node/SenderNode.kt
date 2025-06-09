@@ -24,9 +24,9 @@ internal abstract class SenderNode<Self: SenderNode<Self>>(ip: IPv4Address): Nod
 
         if (netF.demand.isZero()) return
 
-        val msg = nodeVersion.rxUpdateDisp.acquire().reset()
-        msg.deltaRate = netF.demand
-        msg.netF = netF
+        val msg = nodeVersion.rxUpdateDisp.acquire().reset {
+            add(netF.demand, netF)
+        }
         flowTable.rxUpdt(msg)
         portProcessAwait()
         msg.dispose()

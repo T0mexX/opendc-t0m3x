@@ -15,6 +15,7 @@ import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
 @Serializable
 internal data class NodeConfig(
     val version: NodeVersion = NodeImpl,
+    val rxUpdtSz: Int = 10,
     val flowTableVersion: FlowTableVersion = FlowTableV1,
     val portConfig: PortConfig = PortConfig(),
     val hostNodeConfig: HostNodeConfig = HostNodeConfig(),

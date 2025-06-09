@@ -29,7 +29,7 @@ internal sealed class FairnessPolicy: AbstractCoroutineContextElement(Key) {
      * It sets up the [PortFlowEntry.demand].
      * @param entryList The list of flow entries at a specific port.
      */
-    context(Port)
+    context(NetSimScope, Port)
     abstract suspend fun applyFairness(entryList: List<PortFlowEntry>)
 
     /**
@@ -37,15 +37,23 @@ internal sealed class FairnessPolicy: AbstractCoroutineContextElement(Key) {
      * since freeing some bandwidth can allow other currently unsatisfied flows,
      * to have their throughput increased.
      */
-    context(Port)
-    suspend fun processDemandReductions(entryList: List<PortFlowEntry>) = coroutineScope {
-        entryList.asFlow().onEach { entry ->
-            if (entry.used.not()) return@onEach
+    context(NetSimScope, Port)
+    suspend fun processDemandReductions(entryList: List<PortFlowEntry>) {
+        var rxUpdt = devConfig.nodeConfig.version.rxUpdateDisp.acquire().reset()
+        val recvN = this@Port.txLink!!.receiverPort.owner
+
+        entryList.forEach { entry ->
+            if (entry.used.not()) return@forEach
             if (entry.demand < entry.tput) {
-                this@Port.txLink!!.releaseBw(entry.tput - entry.demand, entry.netF)
+                val toRelease = entry.tput - entry.demand
+                this@Port.txLink!!.releaseBw(toRelease, entry.netF)
                 entry.tput = entry.demand
+                rxUpdt.add(-toRelease, entry.netF)
+                rxUpdt = rxUpdt.sendAndReplaceIfFull(recvN)
             }
-        }.launchIn(this@coroutineScope)
+        }
+
+        rxUpdt.sendOrDispose(recvN)
     }
 
     /**

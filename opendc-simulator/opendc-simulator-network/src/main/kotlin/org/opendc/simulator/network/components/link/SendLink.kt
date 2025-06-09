@@ -43,7 +43,7 @@ internal interface SendLink: SendChannel<Msg<Node<*>, *>> {
 
     /**
      * Increases the current bandwidth usage on this link by the specified amount, [bw],
-     * and notifies the receiver node with a delta bandwidth update, attributing the change to [netF].
+//     * and notifies the receiver node with a delta bandwidth update, attributing the change to [netF].
      *
      * Note: This class does not maintain a mapping between flows and their allocated bandwidth.
      * It solely tracks total bandwidth usage for congestion management.
@@ -61,7 +61,7 @@ internal interface SendLink: SendChannel<Msg<Node<*>, *>> {
 
     /**
      * Reduces the current bandwidth usage on this link by the specified amount, [bw],
-     * and notifies the receiver node with a delta bandwidth update, attributing the change to [netF].
+//     * and notifies the receiver node with a delta bandwidth update, attributing the change to [netF].
      *
      * Note: This class does not maintain a mapping between flows and their allocated bandwidth.
      * It solely tracks total bandwidth usage for congestion management.

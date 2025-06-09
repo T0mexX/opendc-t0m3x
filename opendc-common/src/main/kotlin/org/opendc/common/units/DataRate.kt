@@ -197,6 +197,10 @@ public value class DataRate private constructor(
 
         @JvmStatic override val min: DataRate = DataRate(Double.MIN_VALUE)
 
+        public fun DoubleArray.getAsDr(idx: Int): DataRate = DataRate(this[idx])
+
+        public fun DoubleArray.setFromDr(idx: Int, value: DataRate) { this[idx] = value.value }
+
         public operator fun Number.times(unit: DataRate): DataRate = unit * this
 
         @JvmStatic

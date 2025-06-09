@@ -16,6 +16,7 @@ import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.routing.RoutPolicy
+import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.flyweight.publics.FW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
@@ -125,9 +126,15 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * For an explanation of flyweight objects used during simulation, see [FW].
      */
     interface RxUpdt: Msg<Node<*>, RxUpdt> {
-        var netF: INetFlow
-        var deltaRate: DataRate
-        var toIntermediate: Boolean
+        val netFs: Array<INetFlow?>
+        val deltaRates: DoubleArray
+        var sz: Int
+
+        fun add(deltaRate: DataRate, f: INetFlow)
+
+        suspend fun sendAndReplaceIfFull(dest: Node<*>): RxUpdt
+
+        suspend fun sendOrDispose(dest: Node<*>)
 
         companion object : FWId<RxUpdt>
     }
