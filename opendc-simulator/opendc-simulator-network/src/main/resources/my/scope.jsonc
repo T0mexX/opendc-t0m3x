@@ -1,7 +1,6 @@
 {
     "netSimConfig": {
         "routingPolicy": { "type": "ecmp" },
-        "fairnessPolicy": { "type": "proportional" },
         "netSimDevConfig": {
             "netConfig": {
                 "includeRoutInfo2Switches": false,
@@ -28,6 +27,6 @@
             }
         }
     },
-    "netPath": "./resources/examples/topologies/ftree/ftree(k:10).json",
+    "netPath": "./resources/examples/topologies/ftree/ftree(k:8).json",
     "initialTmStamp": "1970-10-01T15:23:44Z"
 }

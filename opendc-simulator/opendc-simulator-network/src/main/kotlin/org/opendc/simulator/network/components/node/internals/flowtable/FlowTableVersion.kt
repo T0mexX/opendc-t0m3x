@@ -1,7 +1,5 @@
 package org.opendc.simulator.network.components.node.internals.flowtable
 
-import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.simscope.NetSimScope
 
 internal fun interface FlowTableVersion {

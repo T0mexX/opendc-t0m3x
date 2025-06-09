@@ -1,6 +1,5 @@
 package org.opendc.simulator.network.simscope
 
-import inet.ipaddr.ipv4.IPv4AddressNetwork
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -20,8 +19,6 @@ import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.NetworkSpecs
 import org.opendc.simulator.network.components.node.NodeVersion
-import org.opendc.simulator.network.components.port.PortVersion
-import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.flow.internals.NetFlowVersion
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.routing.RoutPolicy
@@ -49,13 +46,11 @@ internal class NetSimScope(
     val enRecorder: NetSimEnRecorder
     val tmSrc: NetSimTmSrc<*>
     val routPolicy: RoutPolicy
-    val fairPolicy: FairnessPolicy
     val log by logger()
     val net: Network get() = _net
     private lateinit var _net: Network
     val addrMngr: NetSimAddressManager
 
-    val portVersion: PortVersion
     val nodeVersion: NodeVersion
     val netFlowVersion: NetFlowVersion
 
@@ -76,7 +71,6 @@ internal class NetSimScope(
             tmpCtx[NetSimTmSrc] ?: let { tmpCtx += NetSimTmSrc.Internal() }
             tmpCtx[NetSimEnRecorder] ?: let { tmpCtx += NetSimEnRecorder(tmpCtx[NetSimTmSrc]!!) }
             tmpCtx[RoutPolicy] ?: let { tmpCtx += tmpCtx[NetSimConfig]!!.routPolicy }
-            tmpCtx[FairnessPolicy] ?: let { tmpCtx += tmpCtx[NetSimConfig]!!.fairPolicy }
             tmpCtx += NetSimAddressManager()
         }
         coroutineContext = tmpCtx
@@ -88,10 +82,8 @@ internal class NetSimScope(
         tmSrc = tmpCtx[NetSimTmSrc]!!
         enRecorder = tmpCtx[NetSimEnRecorder]!!
         routPolicy = tmpCtx[RoutPolicy]!!
-        fairPolicy = tmpCtx[FairnessPolicy]!!
         addrMngr = tmpCtx[NetSimAddressManager]!!
 
-        portVersion = devConfig.portConfig.version
         nodeVersion = devConfig.nodeConfig.version
         netFlowVersion = devConfig.netFlowConfig.version
         runBlocking { initDispensers() }
@@ -102,7 +94,6 @@ internal class NetSimScope(
     }
 
     private suspend fun initDispensers() {
-        portVersion.initDispensers()
         nodeVersion.initDispensers()
         netFlowVersion.initDispensers()
     }

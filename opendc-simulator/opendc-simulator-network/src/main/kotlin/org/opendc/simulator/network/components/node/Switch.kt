@@ -3,7 +3,6 @@ package org.opendc.simulator.network.components.node
 import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.energy.EnModel
@@ -17,14 +16,11 @@ internal open class Switch protected constructor(
     ip: IPv4Address,
     override val portSpeed: DataRate,
     override val nPorts: Int,
-    override var fairnessPolicy: FairnessPolicy,
     override var routPolicy: RoutPolicy,
     override val enModel: EnModel<Switch>,
     override val flowTable: FlowTable,
     override val stabilizer: NetSimStabilizer,
-): NodeImpl<Switch>(ip), EnConsumer<Switch>, SerializableNode {
-
-    override lateinit var  ports: List<Port>
+): NodeImpl<Switch>(ip, nPorts), EnConsumer<Switch>, SerializableNode {
 
     override fun toSpecs(): Specs<Switch> =
         SwitchSpecs(
@@ -69,7 +65,6 @@ internal open class Switch protected constructor(
                 nPorts = nPorts
                     ?: switchConfig.defaultNPorts
                     ?: nodeConfig.defaultNPorts!!,
-                fairnessPolicy = this@NetSimScope.config.fairPolicy,
                 routPolicy = this@NetSimScope.config.routPolicy,
                 enModel = enModel
                     ?:switchConfig.defaultEnModel
@@ -77,11 +72,6 @@ internal open class Switch protected constructor(
                 flowTable = nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer()
             ).also { s ->
-                s.ports = 0.rangeUntil(s.nPorts).map { idx ->
-                    with(this@NetSimScope) {
-                        nodeConfig.portConfig.version(s, idx)
-                    }
-                }
                 s.invalidate()
                 s.netLaunch()
             }

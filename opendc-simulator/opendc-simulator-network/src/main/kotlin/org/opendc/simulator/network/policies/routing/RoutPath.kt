@@ -1,10 +1,9 @@
 package org.opendc.simulator.network.policies.routing
 
 import org.opendc.common.units.Percentage
+import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.NetFlow
 
 /**
  * Represents specific routing path(s) for a flow in the network.
@@ -16,12 +15,12 @@ import org.opendc.simulator.network.flow.publics.NetFlow
  */
 internal data class RoutPath(
     val f: INetFlow,
-    private val nextHops: MutableMap<Node<*>, MutableMap<Port, Percentage>>
-) : MutableMap<Node<*>, MutableMap<Port, Percentage>> by nextHops {
+    private val nextHops: MutableMap<Node<*>, MutableMap<Link, Percentage>>
+) : MutableMap<Node<*>, MutableMap<Link, Percentage>> by nextHops {
     companion object {
         suspend operator fun invoke(
             f: INetFlow,
-            block: suspend MutableMap<Node<*>, MutableMap<Port, Percentage>>.() -> Unit
+            block: suspend MutableMap<Node<*>, MutableMap<Link, Percentage>>.() -> Unit
         ): RoutPath =
             RoutPath(
                 f,

@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
+import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.components.port.PortFlowEntry
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.utils.NonSerializable
@@ -29,7 +29,7 @@ internal sealed class FairnessPolicy: AbstractCoroutineContextElement(Key) {
      * It sets up the [PortFlowEntry.demand].
      * @param entryList The list of flow entries at a specific port.
      */
-    context(Port)
+    context(Link)
     abstract suspend fun applyFairness(entryList: List<PortFlowEntry>)
 
     /**
@@ -37,16 +37,18 @@ internal sealed class FairnessPolicy: AbstractCoroutineContextElement(Key) {
      * since freeing some bandwidth can allow other currently unsatisfied flows,
      * to have their throughput increased.
      */
-    context(Port)
-    suspend fun processDemandReductions(entryList: List<PortFlowEntry>) = coroutineScope {
-        entryList.asFlow().onEach { entry ->
-            if (entry.used.not()) return@onEach
-            if (entry.demand < entry.tput) {
-                this@Port.txLink!!.releaseBw(entry.tput - entry.demand, entry.netF)
-                entry.tput = entry.demand
-            }
-        }.launchIn(this@coroutineScope)
+    context(Link)
+    suspend fun processDemandReductions(entryList: List<PortFlowEntry>) {
+        TODO()
     }
+//        entryList.asFlow().onEach { entry ->
+//            if (entry.used.not()) return@onEach
+//            if (entry.demand < entry.tput) {
+//                this@Port.txLink!!.releaseBw(entry.tput - entry.demand, entry.netF)
+//                entry.tput = entry.demand
+//            }
+//        }.launchIn(this@coroutineScope)
+//    }
 
     /**
      * Invoked after network construction.

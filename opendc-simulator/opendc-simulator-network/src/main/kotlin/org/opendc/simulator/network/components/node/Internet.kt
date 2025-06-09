@@ -3,10 +3,9 @@ package org.opendc.simulator.network.components.node
 import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Power
+import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
-import org.opendc.simulator.network.components.port.Port
-import org.opendc.simulator.network.components.port.PortV1
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
@@ -20,27 +19,22 @@ internal class Internet(
     override val stabilizer: NetSimStabilizer,
     override val routPolicy: RoutPolicy,
     inetIp: IPv4Address,
-): SenderNode<Internet>(inetIp), SerializableNode {
+): SenderNode<Internet>(inetIp, 0), SerializableNode {
 
     override val portSpeed: DataRate = DataRate.max
     override var nPorts: Int = 0
-    override var fairnessPolicy: FairnessPolicy = FirstComeFirstServed()
 
-    override val ports: List<Port> get() = _ports
-    private val _ports: MutableList<Port> = mutableListOf()
+    override val links = mutableListOf<Link?>()
 
-    /**
-     * TODO
-     */
-    context(NetSimScope)
-    override suspend fun getFreePort(): Port =
-        ports.firstOrNull {
-            it.txLink == null
-        } ?: let {
-            _ports.add(PortV1(owner = this, portIdx = ports.size))
-            nPorts += 1
-            ports.last().also { it.netLaunch() }
-        }
+    override fun getFreeLinkIdx(): Int =
+        links.indexOfFirst {
+            it == null
+        }.takeIf { it != -1 }
+            ?: let {
+                links.add(null)
+                nPorts++
+                links.size - 1
+            }
 
     override fun toSpecs(): Specs<Internet> {
         throw RuntimeException("Internet does not have specs")

@@ -338,7 +338,7 @@ public class NodeSnapshot internal constructor(
                     avrgPwrUseOverTime = Power.zero, // TODO: change
                     totEnConsumed = Energy.zero, // TODO: change
                     currNodeTputAllFlows = totNodeTput,
-                    currNodePortUsageAllPorts = totNodeTput roundedPercentageOf ports.sumOfUnit { it.speed },
+                    currNodePortUsageAllPorts = totNodeTput roundedPercentageOf (portSpeed * nPorts),
                 ).also { cache[id] = it }
             }
         }

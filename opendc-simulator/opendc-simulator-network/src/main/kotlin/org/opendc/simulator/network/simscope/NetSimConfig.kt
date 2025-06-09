@@ -9,7 +9,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
-import org.opendc.simulator.network.policies.fairness.Proportional
 import org.opendc.simulator.network.policies.routing.ECMP
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
@@ -29,7 +28,6 @@ public data class NetSimConfig internal constructor(
     val stabilityMode: NetSimStabilityMode = NetSimStabilityMode.ASSUMED,
     val netSimExportConfig: NetworkExportConfig? = null,
     internal val routPolicy: RoutPolicy = ECMP(),
-    internal val fairPolicy: FairnessPolicy = Proportional(),
     internal val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
     val random: Random = Random(Random.nextInt()),
     val wlToNetIdMapping: Boolean = true,
@@ -51,7 +49,6 @@ public data class NetSimConfig internal constructor(
             val wlToNetIdMapping: Boolean = true,
             val seed: Int = Random.nextInt(),
             @Polymorphic val routingPolicy: RoutPolicy = ECMP(),
-            @Polymorphic val fairnessPolicy: FairnessPolicy = Proportional(),
         )
 
         private val surrogateSerial: KSerializer<NetSimConfigSurrogate> = kotlinx.serialization.serializer()
@@ -67,7 +64,6 @@ public data class NetSimConfig internal constructor(
                 netSimDevConfig = surr.netSimDevConfig,
                 wlToNetIdMapping = surr.wlToNetIdMapping,
                 routPolicy = surr.routingPolicy,
-                fairPolicy = surr.fairnessPolicy,
                 random = Random(surr.seed)
             )
         }

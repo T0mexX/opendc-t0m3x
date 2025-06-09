@@ -31,7 +31,7 @@ import java.util.Stack
 //    context(NetSimScope, Node<*>)
 //    override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
 //        val f = nodeFlowEntry.netFlow
-//        assert(nodeFlowEntry.txPorts.isEmpty())
+//        assert(nodeFlowEntry.txlinks.isEmpty())
 //        assert(f.destId != this@Node.id)
 //
 //
@@ -42,7 +42,7 @@ import java.util.Stack
 //            assert(it.size == 1)
 //        }.forEach { port ->
 //            // Add the port to those to which the flow will be sent to.
-//            nodeFlowEntry.txPorts += port
+//            nodeFlowEntry.txlinks += port
 //        }
 //    }
 //

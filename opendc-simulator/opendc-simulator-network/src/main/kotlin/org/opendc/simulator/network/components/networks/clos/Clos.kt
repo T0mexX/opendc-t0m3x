@@ -51,7 +51,7 @@ internal class Clos(
          */
         context(NetSimScope) suspend operator fun invoke(
             specs: ClosSpecs
-        ): Clos = withProgressBar(task = "Building Clos Network...", max = specs.E_.toLong() + specs.V_) pb@ {
+        ): Clos = withProgressBar<Clos>(task = "Building Clos Network...", max = specs.E_.toLong() + specs.V_) pb@ {
             // TODO: change impl.
             // Only same size layers supported now.
             require(specs.nodesPerLayer.values.all { it == specs.nodesPerLayer.values.first() })
@@ -132,9 +132,9 @@ internal class Clos(
             assert(layers.dropLast(1).sumOf { it.size } == specs.R_)
             assert(layers.last().size == specs.N_)
             assert(this@pb.current == specs.E_.toLong() + specs.V_)
-            assert(layers.first().all { it.ports.count { it.txLink != null } == specs.k / 2 + 1})
-            assert(layers.dropLast(1).drop(1).flatten().all { it.ports.count { it.txLink != null } == specs.k })
-            assert(layers.last().all { it.ports.count { it.txLink != null } == specs.k / 2 })
+            assert(layers.first().all { it.links.count { it != null } == specs.k / 2 + 1})
+            assert(layers.dropLast(1).drop(1).flatten().all { it.links.count { it != null } == specs.k })
+            assert(layers.last().all { it.links.count { it != null } == specs.k / 2 })
 
             Clos(
                 specs = specs,
@@ -143,9 +143,6 @@ internal class Clos(
             ).also {
                 // Setup global routing policy if needed.
                 this@NetSimScope.config.routPolicy.setUp()
-
-                // Setup global fairness policy if needed.
-                this@NetSimScope.config.fairPolicy.setUp()
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)

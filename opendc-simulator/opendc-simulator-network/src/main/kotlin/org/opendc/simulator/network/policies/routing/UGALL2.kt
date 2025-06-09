@@ -59,10 +59,10 @@
 //
 //        // If the flow still needs to be routed to the intermediate node, then do so.
 //        if (nodeFEntry.toIntermediate)
-//            nodeFEntry.txPorts[MIN.selectPort(f.intermediate!!)] = Percentage.ofPercentage(100)
+//            nodeFEntry.txlinks[MIN.selectPort(f.intermediate!!)] = Percentage.ofPercentage(100)
 //        // Else rout it to destination.
 //        else
-//            nodeFEntry.txPorts[MIN.selectPort(f.destId)] = Percentage.ofPercentage(100)
+//            nodeFEntry.txlinks[MIN.selectPort(f.destId)] = Percentage.ofPercentage(100)
 //    }
 //
 //    context(NetSimScope, SenderNode<*>)
@@ -115,7 +115,7 @@
 //            val port = pair.first
 //            val subF = f.subFlow(intermediate = int.id)
 //            val nodeSubFEntry = senderN.flowTable[subF]
-//            nodeSubFEntry.txPorts[port] = Percentage.ofPercentage(100)
+//            nodeSubFEntry.txlinks[port] = Percentage.ofPercentage(100)
 //            subF.routMeta = UGALLRoutMeta(
 //                length = pathLength,
 //                port = port,
@@ -127,7 +127,7 @@
 //        val minSubF = f.subFlow()
 //        val port = minPath.associatedPort()
 //        val entry = f.senderNode.flowTable[minSubF]
-//        entry.txPorts[port] = Percentage.ofPercentage(100)
+//        entry.txlinks[port] = Percentage.ofPercentage(100)
 //        f.routMeta = UGALLRoutMeta(minSubF = minSubF)
 //
 //        minSubF.routMeta = UGALLRoutMeta(

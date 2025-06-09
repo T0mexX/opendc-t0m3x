@@ -42,14 +42,14 @@ internal class FlowTableV1 private constructor(
 
         assert(entry.rx >= DataRate.zero) { entry.rx.value }
 
-        entry.txPorts.forEach { (p, perc) ->
+        entry.txlinks.forEach { (l, perc) ->
             // The data-rate sent to port `p` of this flow.
             val portDemand = entry.rx * perc
             if (new) {
-                entry.portFlowEntryIds[p.portIdx] =
-                    p.msgSetTxDemand(portDemand, entry.netFlow) ?: -1
+                entry.linkFlowEntryIds[l.linkIdx] =
+                    l.setTentativeTx(portDemand, entry.netFlow)
             } else {
-                p.msgSetTxDemand(portDemand, entry.netFlow, entry.portFlowEntryIds[p.portIdx])
+                l.setTentativeTx(portDemand, entry.netFlow, entry.linkFlowEntryIds[l.linkIdx])
             }
         }
         if (entry.rx approx DataRate.zero) rmEntry(entry)
@@ -62,8 +62,8 @@ internal class FlowTableV1 private constructor(
         val entriesFlow = _flows.values.asFlow()
         // Reset current port outgoing data-rates.
         entriesFlow.collect { entry ->
-            entry.txPorts.keys.forEach { p ->
-                p.msgSetTxDemand(DataRate.zero, netF = entry.netFlow, entryId = entry.portFlowEntryIds[p.portIdx])
+            entry.txlinks.keys.forEach { l ->
+                l.setTentativeTx(DataRate.zero, f = entry.netFlow, entryId = entry.linkFlowEntryIds[l.linkIdx])
             }
         }
 
@@ -79,9 +79,9 @@ internal class FlowTableV1 private constructor(
     override suspend fun reset(f: NetFlow) {
         val entry = _flows[f]!!
         entry.rx = DataRate.zero
-        entry.txPorts.keys.forEach { p ->
-            entry.portFlowEntryIds[p.portIdx] =
-                p.msgSetTxDemand(DataRate.zero, entry.netFlow) ?: -1
+        entry.txlinks.keys.forEach { l ->
+            entry.linkFlowEntryIds[l.linkIdx] =
+                l.setTentativeTx(DataRate.zero, entry.netFlow) ?: -1
         }
         rmEntry(entry)
     }
@@ -94,7 +94,7 @@ internal class FlowTableV1 private constructor(
         entry.netFlow = updt.netF
         entry.node = this@Node
         entry.rx = DataRate.zero
-        entry.txPorts.clear()
+        entry.txlinks.clear()
         if (entry.netFlow.destId != this@Node.id)
             this@Node.routPolicy.selectPorts(entry)
         return entry

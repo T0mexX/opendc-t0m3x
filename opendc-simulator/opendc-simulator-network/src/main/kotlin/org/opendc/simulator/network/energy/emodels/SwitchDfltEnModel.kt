@@ -26,8 +26,8 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
+import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.node.Switch
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.energy.EnModel
 import kotlin.math.log
 import kotlin.math.pow
@@ -53,7 +53,7 @@ internal data object SwitchDfltEnModel : EnModel<Switch> {
         val idlePortPwr: Power = getPortIdlePwr(e.portSpeed)
         // TODO: change to use port current speed, that in the future could be different from its max speed.
         //      The switch can lower its port speed to save energy.
-        val numOfActivePorts: Int = e.getActivePorts().size
+        val numOfActivePorts: Int = e.links.count { it != null }
 
         val totalStaticPwr: Power = CHASSIS_PWR + idlePortPwr * numOfActivePorts
         val totalDynamicPwr: Power = totalStaticPwr * STATIC_TO_DYNAMIC_RATIO * e.avrgPortUtilization().toRatio()
@@ -81,15 +81,8 @@ internal data object SwitchDfltEnModel : EnModel<Switch> {
     }
 
     /**
-     *  @return the ports of ***this*** [Switch] that are currently active.
-     *  @see[Port.isActive]
-     */
-    private fun Switch.getActivePorts(): Collection<Port> =
-        ports.filter { (it.txLink?.util ?: Percentage.zero) > Percentage.zero }
-
-    /**
      * @return average port utilization considering both active and not active ports.
      */
     private fun Switch.avrgPortUtilization(): Percentage =
-        this.ports.sumOfUnit { it.txLink?.util ?: Percentage.zero } / ports.size
+        this.links.sumOfUnit { it?.util ?: Percentage.zero } / links.size
 }

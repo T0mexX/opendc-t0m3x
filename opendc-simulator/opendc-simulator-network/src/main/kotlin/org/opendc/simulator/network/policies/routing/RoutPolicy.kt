@@ -3,7 +3,6 @@ package org.opendc.simulator.network.policies.routing
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.internalstructs.RoutTbl2
-import org.opendc.simulator.network.components.internalstructs.RoutingTable
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry

@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.simscope.NetSimScope
 import kotlin.math.max
 
@@ -25,7 +24,7 @@ internal class UGALL : RoutPolicy() {
     context(NetSimScope, Node<*>)
     override suspend fun selectPorts(nodeFEntry: NodeFlowEntry) {
         val f = nodeFEntry.netFlow
-        nodeFEntry.txPorts.clear()
+        nodeFEntry.txlinks.clear()
 
         // Ports the flow will be forwarded to.
         val paths = this@Node.routTbl.getPossiblePathsTo(f.destId)
@@ -34,17 +33,17 @@ internal class UGALL : RoutPolicy() {
 
         var scoreSum = .0
         paths.map { p ->
-            val port = p.associatedPort()
-            val availableBw = port.txLink!!.availableBw
+            val port = p.associatedLink()
+            val availableBw = port.availableBw
 
-            port to max(10 - p.distance, 1) * (availableBw max (port.txLink!!.maxBw / 100)).tobps().also {
+            port to max(10 - p.distance, 1) * (availableBw max (port.maxBw / 100)).tobps().also {
                 scoreSum += it
             }
         }.forEach { (port, score) ->
             val prop =
                 if (scoreSum == .0) Percentage.zero
                 else Percentage.ofRatio(score / scoreSum)
-            if (prop.isZero().not()) nodeFEntry.txPorts[port] = prop
+            if (prop.isZero().not()) nodeFEntry.txlinks[port] = prop
         }
 
 //        // Choose path considering both path length and congestion at the port.
@@ -58,6 +57,6 @@ internal class UGALL : RoutPolicy() {
 //        }
 //
 //        // Set the chosen port as the only one that will handle the outgoing flow.
-//        nodeFlowEntry.txPorts[chosenPath.associatedPort()] = Percentage.ofPercentage(100)
+//        nodeFlowEntry.txlinks[chosenPath.associatedPort()] = Percentage.ofPercentage(100)
     }
 }

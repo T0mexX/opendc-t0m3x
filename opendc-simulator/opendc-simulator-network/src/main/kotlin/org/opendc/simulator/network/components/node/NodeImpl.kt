@@ -6,8 +6,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
@@ -15,44 +13,46 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.internalstructs.RoutTbl
 import org.opendc.simulator.network.components.internalstructs.RoutTbl2
-import org.opendc.simulator.network.components.internalstructs.RoutVect
-import org.opendc.simulator.network.components.port.Port
+import org.opendc.simulator.network.components.link.Link
+import org.opendc.simulator.network.components.link.LinkImpl
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.CoroutineID
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
-import org.opendc.simulator.network.utils.notifiable.ReqMsgImpl
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
 internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     final override val ip: IPv4Address,
+    nPorts: Int,
 ) : Node<Self> {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Node
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    override val links: MutableList<Link?> = ArrayList<Link?>(nPorts).also { l ->
+        repeat(nPorts) { l.add(null) }
+    }
+
     @Suppress("LeakingThis")
     override val routTbl: RoutTbl2 = RoutTbl2(owner = this)
     override lateinit var job: Job
 
-    override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow) {
+    override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, f: INetFlow) {
         assert(deltaRate.approx(DataRate.zero).not()) {deltaRate}
 
-        val msg = rxUpdateDisp.acquire().reset()
-        msg.deltaRate = deltaRate
-        msg.netF = netF
-        msg.sendTo(this)
+        rxUpdateDisp.acquire().reset {
+            this.deltaRate = deltaRate
+            this.netF = f
+        }.sendTo(this)
     }
 
     override suspend fun msgSyncConnect(other: Node<*>, linkBw: DataRate, updtRoutTbl: Boolean) {
         val msg = connectDisp.acquire().reset()
         msg.other = other
-        msg.linkBw = linkBw
         msg.updtRoutTbl = updtRoutTbl
         msg.sendTo(this, dispose = false).awaitHandling().dispose()
     }
@@ -73,40 +73,40 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     // Node Implementation
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * Awaits all ports to be in [Port.STABLE] or [Port.DISCONNECTED] or [Port.IDLE] states.
-     */
-    private suspend fun awaitPorts() {
-        if (ports.isEmpty()) return
-        combine(ports.map { it.state }) { states ->
-            states.all { it == Port.STABLE || it == Port.IDLE || it == Port.DISCONNECTED }
-        }.first { it }
-    }
+//    /**
+//     * Awaits all ports to be in [Port.STABLE] or [Port.DISCONNECTED] or [Port.IDLE] states.
+//     */
+//    private suspend fun awaitPorts() {
+//        if (ports.isEmpty()) return
+//        combine(ports.map { it.state }) { states ->
+//            states.all { it == Port.STABLE || it == Port.IDLE || it == Port.DISCONNECTED }
+//        }.first { it }
+//    }
 
-    /**
-     * @return One free port (not connected) available on this node.
-     */
-    context(NetSimScope)
-    protected open suspend fun getFreePort(): Port? = ports.firstOrNull { it.txLink == null }
+//    /**
+//     * @return One free port (not connected) available on this node.
+//     */
+//    context(NetSimScope)
+//    protected open suspend fun getFreePort(): Port? = ports.firstOrNull { it.txLink == null }
 
-    /**
-     * Sends [Port.Process] msgs to all ports on the node and awaits the ports to be done processing the updates.
-     */
-    context(NetSimScope)
-    protected suspend fun portProcessAwait() {
-        coroutineScope {
-            ports.asFlow().onEach { p ->
-                // TODO: change to use `Port` convenience methods.
-                portVersion
-                    .startProcessingDisp
-                    .acquire()
-                    .reset()
-                    .sendTo(p, dispose = false)
-                    .awaitHandling()
-                    .dispose()
-            }.launchIn(this@coroutineScope)
-        }
-    }
+//    /**
+//     * Sends [Port.Process] msgs to all ports on the node and awaits the ports to be done processing the updates.
+//     */
+//    context(NetSimScope)
+//    protected suspend fun portProcessAwait() {
+//        coroutineScope {
+//            ports.asFlow().onEach { p ->
+//                // TODO: change to use `Port` convenience methods.
+//                portVersion
+//                    .startProcessingDisp
+//                    .acquire()
+//                    .reset()
+//                    .sendTo(p, dispose = false)
+//                    .awaitHandling()
+//                    .dispose()
+//            }.launchIn(this@coroutineScope)
+//        }
+//    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Launchable
@@ -117,9 +117,6 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
         assert(::job.isInitialized.not())
 
         job = scope.launch(CoroutineID.new()) {
-            // Launch all ports coroutines.
-            ports.forEach { it.netLaunch() }
-
             while (isActive) {
                 while (true) {
                     // Accumulate multiple updates if possible
@@ -127,8 +124,13 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                     _msgChl.tryReceiveValidate().getOrNull()?.handle()
                         ?: break
                 }
-                // Make ports process updates and propagate results.
-                portProcessAwait()
+                //
+                // Propagate updates to adjacent nodes.
+                coroutineScope {
+                    links.forEach { l ->
+                        launch { l?.attemptTx() }
+                    }
+                }
                 // Suspending receive. When node suspends here, its stability is validated.
                 _msgChl.receive().handle()
                 assert(stabilizer.isValidated.not())
@@ -197,6 +199,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                         context(Node<*>)
                         override suspend fun handle() {
                             assert(deltaRate.approx(DataRate.zero).not())
+                            // TODO: apply dynamic policy
+
                             flowTable.rxUpdt(this)
                             handled()
                         }
@@ -212,33 +216,30 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                 poolAggr.getOrAdd(Node.Connect as FWId<Node.Connect>) { pool, idx ->
                     object : Node.Connect, MsgImpl<Node<*>, Node.Connect>(pool, idx) {
                         override lateinit var other: Node<*>
-                        override var linkBw = DataRate.zero
                         override var updtRoutTbl: Boolean = true
 
-                        context(Node<*>)
+                        context(NodeImpl<*>)
                         override suspend fun handle() {
                             // Used to refer to this anonymous object since labels (@label) cannot be used.
-                            this@Node as NodeImpl
                             val thisMsg = this
                             val otherN = other as NodeImpl
 
-                            assert(this@Node.isConnectedTo(otherN).not())
+                            assert(this@NodeImpl.isConnectedTo(otherN).not())
 
-                            // Get free port on this node.
-                            val freePort: Port = this@Node.getFreePort() ?: error("unable to connect node, no port available")
+                            //
+                            // Set up link from this node to `otherN`.
+                            val lIdx = getFreeLinkIdx()
+                            links[lIdx] = LinkImpl(
+                                senderN = this@NodeImpl,
+                                receiverN = otherN,
+                                linkIdx = lIdx,
+                            )
 
-                            // Ask another node to accept connection and retrieve its available port.
-                            val otherP = acceptConnectionDisp.acquire().reset {
-                                linkBw = thisMsg.linkBw
-                                toBeAccepted = freePort
+                            // Ask another node to accept connection.
+                            acceptConnectionDisp.acquire().reset {
+                                toBeAccepted = this@NodeImpl
                                 updtRoutTbl = thisMsg.updtRoutTbl
-                            }.sendTo(otherN).awaitResponse()
-
-                            // Tell the port on this node to connect to the port on the other node.
-                            portVersion.connectDisp.acquire().reset {
-                                linkBw = thisMsg.linkBw
-                                other = otherP
-                            }.sendTo(freePort, dispose = false).awaitHandling().dispose()
+                            }.sendTo(otherN, dispose = false).awaitHandling().dispose()
 
                             // Mark the routing table as to be shared.
                             routTbl.shared = false
@@ -247,7 +248,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             if (updtRoutTbl) {
                                 // Send this node's routing vector to the newly connected node.
                                 routTblUpdtDisp.acquire().reset {
-                                    from = this@Node
+                                    from = this@NodeImpl
                                     routVect = routTbl.routVect
                                     updtRoutTbl = true
                                 }.sendTo(otherN)
@@ -268,30 +269,24 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
             // AcceptConnection
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _acceptConnectioDisp = poolAggr.getOrAdd(Node.AcceptConnection as FWId<Node.AcceptConnection>) { pool, idx ->
-                object : Node.AcceptConnection, ReqMsgImpl<Node<*>, Port, Node.AcceptConnection>(pool, idx) {
-                    override lateinit var toBeAccepted: Port
-                    override var linkBw: DataRate = DataRate.zero
+                object : Node.AcceptConnection, MsgImpl<Node<*>, Node.AcceptConnection>(pool, idx) {
+                    override lateinit var toBeAccepted: Node<*>
                     override var updtRoutTbl: Boolean = true
 
-                    context(Node<*>)
+                    context(NodeImpl<*>)
                     override suspend fun handle() {
-                        // Used to refer to this anonymous object since labels (@label) cannot be used.
-                        val thisMsg = this
-                        this@Node as NodeImpl<*>
-                        val otherN = toBeAccepted.owner
+                        // TODO: needed?
+//                        // Process all flow updates at the port level received so far.
+//                        this@Node.portProcessAwait()
 
-                        // Process all flow updates at the port level received so far.
-                        this@Node.portProcessAwait()
-
-                        // Get free port on this node.
-                        val freeP: Port = this@Node.getFreePort()
-                            ?: error("unable to connect node, no port available")
-
-                        // Tell the port on this node to connect to the port on the other node.
-                        portVersion.connectDisp.acquire().reset {
-                            other = toBeAccepted
-                            linkBw = thisMsg.linkBw
-                        }.sendTo(freeP, dispose = false).awaitHandling().dispose()
+                        //
+                        // Set up link from this node to `toBeAccepted`.
+                        val lIdx = getFreeLinkIdx()
+                        links[lIdx] = LinkImpl(
+                            receiverN = toBeAccepted,
+                            senderN = this@NodeImpl,
+                            linkIdx = lIdx,
+                        )
 
                         // Mark the routing table as to be shared.
                         routTbl.shared = false
@@ -299,18 +294,17 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                         if (updtRoutTbl) {
                             // Send this node's routing vector to the newly connected node.
                             routTblUpdtDisp.acquire().reset {
-                                from = this@Node
+                                from = this@NodeImpl
                                 routVect = routTbl.routVect
                                 updtRoutTbl = true
-                            }.sendTo(otherN)
+                            }.sendTo(toBeAccepted)
 
                             // The other node will be sending its routing vector to this.
                             // Until both nodes processed the new routing information and made
                             // the necessary adjustments, the network state is considered unstable.
                         }
 
-                        // Respond to the connection request with the port used for the connection.
-                        respond(freeP)
+                        handled()
                     }
                 }
             }
@@ -326,7 +320,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                         override lateinit var other: Node<*>
                         override var notifyOther = false
 
-                        context(Node<*>)
+                        context(NodeImpl<*>)
                         override suspend fun handle() {
                             TODO()
                         }
@@ -341,14 +335,14 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
             _applyRoutingDisp =
                 poolAggr.getOrAdd(Node.ApplyRouting as FWId<Node.ApplyRouting>) { pool, idx ->
                     object : Node.ApplyRouting, MsgImpl<Node<*>, Node.ApplyRouting>(pool, idx) {
-                        context(Node<*>)
+                        context(NodeImpl<*>)
                         override suspend fun handle() {
-                            val n = this@Node as NodeImpl
 
-                            n.flowTable.reapplyRouting()
+                            flowTable.reapplyRouting()
 
-                            // Make ports reapply fairness policy.
-                            n.portProcessAwait()
+//                            // Make ports reapply fairness policy.
+//                            portProcessAwait()
+                            TODO()
 
                             handled()
                         }
@@ -367,19 +361,17 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                         override lateinit var routVect: RoutTbl2.RoutVect
 
 
-                        context(Node<*>)
+                        context(NodeImpl<*>)
                         override suspend fun handle() {
-                            val n = this@Node as NodeImpl
-
                             //
                             // Update the routing table with new routing vector.
-                            n.routTbl.updtWithInfoFrom(routVect).let { tblChanged ->
+                            routTbl.updtWithInfoFrom(routVect).let { tblChanged ->
                                 if (tblChanged) {
                                     // Mark the table as to be shared.
                                     routTbl.shared = false
 
                                     // Enqueue a `ShareRoutVect` msg.
-                                    shareRoutVectDisp.acquire().reset().sendTo(this@Node)
+                                    shareRoutVectDisp.acquire().reset().sendTo(this@NodeImpl)
                                 }
                             }
 
@@ -397,7 +389,7 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                 poolAggr.getOrAdd(Node.ShareRoutVect as FWId<Node.ShareRoutVect>) { pool, idx ->
                     object : Node.ShareRoutVect, MsgImpl<Node<*>, Node.ShareRoutVect>(pool, idx) {
 
-                        context(Node<*>)
+                        context(NodeImpl<*>)
                         override suspend fun handle() {
                             // A previous `ShareRoutVect` has already shared the current version of the routing table.
                             if (routTbl.shared) return handled()
@@ -405,12 +397,13 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             //
                             // Share the new version of the routing table to all adjacent nodes.
                             coroutineScope {
-                                ports.asFlow().onEach { p ->
+                                links.asFlow().onEach { l ->
+                                    if (l == null) return@onEach
                                     // Adjacent node to share the routing vector with.
-                                    val adjN = p.connectedNode() ?: return@onEach
+                                    val adjN = l.receiverN
                                     routTblUpdtDisp.acquire().reset {
-                                        from = this@Node
-                                        routVect = this@Node.routTbl.routVect
+                                        from = this@NodeImpl
+                                        routVect = this@NodeImpl.routTbl.routVect
                                     }.sendTo(adjN)
                                 }.launchIn(this@coroutineScope)
                             }

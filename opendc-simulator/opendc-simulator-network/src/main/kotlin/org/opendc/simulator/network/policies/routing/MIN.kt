@@ -3,10 +3,10 @@ package org.opendc.simulator.network.policies.routing
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.Percentage
+import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.simscope.NetSimScope
 
 
@@ -17,25 +17,25 @@ internal class MIN: RoutPolicy() {
 
     context(NetSimScope, Node<*>) override suspend fun selectPorts(nodeFEntry: NodeFlowEntry) {
         val f = nodeFEntry.netFlow
-        assert(nodeFEntry.txPorts.isEmpty())
+        assert(nodeFEntry.txlinks.isEmpty())
 
         this@Node.routTbl.getPossiblePathsTo(f.destId)
             .onlyMinimal()
             .takeIf { it.isNotEmpty() }
             ?.first()
             ?.let { path ->
-                nodeFEntry.txPorts.clear()
-                nodeFEntry.txPorts[path.associatedPort()] = Percentage.ofPercentage(100)
+                nodeFEntry.txlinks.clear()
+                nodeFEntry.txlinks[path.associatedLink()] = Percentage.ofPercentage(100)
             }
     }
 
     companion object {
         context(NetSimScope, Node<*>)
-        suspend fun selectPort(to: NodeId): Port =
+        suspend fun selectPort(to: NodeId): Link =
             this@Node.routTbl.getPossiblePathsTo(to)
                 .onlyMinimal()
                 .first()
-                .associatedPort()
+                .associatedLink()
     }
 }
 
@@ -52,8 +52,8 @@ internal class MIN: RoutPolicy() {
 //            .onlyMinimal()
 //            .firstOrNull()
 //            ?.let { path ->
-//                nodeFlowEntry.txPorts.clear()
-//                nodeFlowEntry.txPorts += path.associatedPort()
+//                nodeFlowEntry.txlinks.clear()
+//                nodeFlowEntry.txlinks += path.associatedPort()
 //            }
 //    }
 //

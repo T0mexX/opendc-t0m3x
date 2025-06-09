@@ -3,24 +3,19 @@ package org.opendc.simulator.network.components.node
 import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.internalstructs.RoutTbl
 import org.opendc.simulator.network.components.internalstructs.RoutTbl2
-import org.opendc.simulator.network.components.internalstructs.RoutVect
 import org.opendc.simulator.network.components.specs.WithSpecs
-import org.opendc.simulator.network.components.internalstructs.RoutingTable
+import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.NetFlow
-import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.utils.Launchable
 import org.opendc.simulator.network.utils.flyweight.publics.FW
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
-import org.opendc.simulator.network.utils.notifiable.ReqMsg
 import org.opendc.simulator.network.utils.notifiable.Msg
 import org.opendc.simulator.network.utils.notifiable.Msgable
 
@@ -53,9 +48,9 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     val nPorts: Int
 
     /**
-     * List of ports available on this node.
+     * List of links available on this node.
      */
-    val ports: List<Port>
+    val links: List<Link?>
 
     /**
      * The coroutine's job that is running this node's logic and processing incoming messages.
@@ -68,11 +63,6 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     val routPolicy: RoutPolicy
 
     /**
-     * Policy that determines how the flowsById data are handled in case of maximum bw reached.
-     */
-    var fairnessPolicy: FairnessPolicy
-
-    /**
      * Contains network information about the routs
      * available to reach each node in the [Network].
      */
@@ -83,11 +73,15 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      */
     val flowTable: FlowTable
 
+    fun getFreeLinkIdx(): Int = links.indexOfFirst { it == null }.takeIf { it != -1 } ?: let {
+        error("port not available")
+    }
+
     /**
      * Convenience method to send a [RxUpdt] [Msg] to this node.
      * @see RxUpdt
      */
-    suspend fun msgAsyncRxUpdt(deltaRate: DataRate, netF: INetFlow)
+    suspend fun msgAsyncRxUpdt(deltaRate: DataRate, f: INetFlow)
 
     /**
      * Convenience method to send a [Connect] [Msg] to this node.
@@ -145,7 +139,6 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     interface Connect: Msg<Node<*>, Connect> {
         var other: Node<*>
         var updtRoutTbl: Boolean
-        var linkBw: DataRate
 
         companion object : FWId<Connect>
     }
@@ -162,9 +155,8 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * For an explanation of flyweight objects used during simulation, see [FW].
      * @see Connect
      */
-    interface AcceptConnection: ReqMsg<Node<*>, Port, AcceptConnection> {
-        var toBeAccepted: Port
-        var linkBw: DataRate
+    interface AcceptConnection: Msg<Node<*>, AcceptConnection> {
+        var toBeAccepted: Node<*>
         var updtRoutTbl: Boolean
 
         companion object : FWId<AcceptConnection>

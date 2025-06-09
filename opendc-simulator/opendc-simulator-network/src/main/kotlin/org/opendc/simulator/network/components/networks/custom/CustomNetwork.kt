@@ -86,7 +86,7 @@ internal class CustomNetwork private constructor(
 
                 nodes.forEach { node ->
                     addAll(
-                        node.ports.mapNotNull { it.txLink?.receiverPort?.owner?.id }
+                        node.links.mapNotNull { it?.receiverN?.id }
                             .filterNot { it in doneNodes || it == INTERNET_ID }
                             .map { Pair(it, node.id) },
                     )
@@ -113,9 +113,6 @@ internal class CustomNetwork private constructor(
 
                 // Setup global routing policy if needed.
                 this@NetSimScope.config.routPolicy.setUp()
-
-                // Setup global fairness policy if needed.
-                this@NetSimScope.config.fairPolicy.setUp()
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(net)

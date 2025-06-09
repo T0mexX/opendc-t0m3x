@@ -75,7 +75,7 @@ internal class FlowSynthWlCmd: REPLCmd(name = CMD_STR) {
 
                 (demand as? Percentage)?.let { perc ->
                     synthWl.startSyntheticFlows(net) { h ->
-                        h.portSpeed * h.ports.count { it.txLink != null } * perc
+                        h.portSpeed * h.links.count { it != null } * perc
                     }
                 }
             }

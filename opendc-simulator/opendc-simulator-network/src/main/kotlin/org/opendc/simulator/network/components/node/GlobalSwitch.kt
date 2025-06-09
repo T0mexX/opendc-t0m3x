@@ -16,12 +16,11 @@ internal class GlobalSwitch private constructor(
     ip: IPv4Address,
     portSpeed: DataRate,
     nPorts: Int,
-    fairnessPolicy: FairnessPolicy,
     routPolicy: RoutPolicy,
     enModel: EnModel<Switch>,
     flowTable: FlowTable,
     stabilizer: NetSimStabilizer,
-) : Switch(ip, portSpeed, nPorts, fairnessPolicy, routPolicy, enModel, flowTable, stabilizer), SerializableNode {
+) : Switch(ip, portSpeed, nPorts, routPolicy, enModel, flowTable, stabilizer), SerializableNode {
 
     override fun toSpecs(): Specs<GlobalSwitch> =
         GlobalSwitchSpecs(
@@ -69,7 +68,6 @@ internal class GlobalSwitch private constructor(
                     ?: coreSwitchConfig.defaultNPorts
                     ?: switchConfig.defaultNPorts
                     ?: nodeConfig.defaultNPorts!!,
-                fairnessPolicy = this@NetSimScope.config.fairPolicy,
                 routPolicy = this@NetSimScope.config.routPolicy,
                 enModel = enModel
                     ?: coreSwitchConfig.defaultEnModel
@@ -78,7 +76,6 @@ internal class GlobalSwitch private constructor(
                 flowTable = nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer()
             ).also { gs ->
-                    gs.ports = 0.rangeUntil(gs.nPorts).map { idx -> nodeConfig.portConfig.version(gs, idx) }
                     gs.invalidate()
                     gs.netLaunch()
             }

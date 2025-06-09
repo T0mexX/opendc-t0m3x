@@ -16,7 +16,6 @@ import org.opendc.simulator.network.components.specs.NodeSpecs
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
 import org.opendc.simulator.network.policies.fairness.MaxMin
-import org.opendc.simulator.network.policies.fairness.Proportional
 import org.opendc.simulator.network.policies.routing.ECMP
 import org.opendc.simulator.network.policies.routing.MIN
 import org.opendc.simulator.network.policies.routing.RoutPolicy
@@ -92,7 +91,6 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
     polymorphic(FairnessPolicy::class) {
         subclass(FirstComeFirstServed::class)
         subclass(MaxMin::class)
-        subclass(Proportional::class)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

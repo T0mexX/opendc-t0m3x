@@ -128,9 +128,6 @@ internal class FTree private constructor(
                 // Setup global routing policy if needed.
                 this@NetSimScope.config.routPolicy.setUp()
 
-                // Setup global fairness policy if needed.
-                this@NetSimScope.config.fairPolicy.setUp()
-
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)
             }

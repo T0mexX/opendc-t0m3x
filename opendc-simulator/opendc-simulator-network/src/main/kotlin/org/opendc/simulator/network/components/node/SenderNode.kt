@@ -8,7 +8,10 @@ import org.opendc.simulator.network.simscope.NetSimScope
 /**
  * TODO
  */
-internal abstract class SenderNode<Self: SenderNode<Self>>(ip: IPv4Address): NodeImpl<Self>(ip) {
+internal abstract class SenderNode<Self: SenderNode<Self>>(
+    ip: IPv4Address,
+    nPorts: Int
+): NodeImpl<Self>(ip, nPorts) {
     /**
      * TODO
      */
@@ -24,12 +27,10 @@ internal abstract class SenderNode<Self: SenderNode<Self>>(ip: IPv4Address): Nod
 
         if (netF.demand.isZero()) return
 
-        val msg = nodeVersion.rxUpdateDisp.acquire().reset()
-        msg.deltaRate = netF.demand
-        msg.netF = netF
-        flowTable.rxUpdt(msg)
-        portProcessAwait()
-        msg.dispose()
+        nodeVersion.rxUpdateDisp.acquire().reset {
+            this.deltaRate = netF.demand
+            this.netF = netF
+        }.sendTo(this)
     }
 
     /**

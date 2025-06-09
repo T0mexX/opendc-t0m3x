@@ -73,13 +73,13 @@ internal class DragonFly private constructor(
             val groups = 0.rangeUntil(specs.g).map { DFGroup(specs, inet) }
 
             fun Switch.isConnectedTo(other: Switch): Boolean =
-                this.ports.any { it.txLink?.receiverPort?.owner == other }
+                this.links.any { it?.receiverN === other }
 
             fun Switch.expectedNConnections(): Int =
                 if (this is GlobalSwitch) (specs.a - 1) + specs.h + specs.p + 1
                 else (specs.a - 1) + specs.h + specs.p
 
-            fun Switch.nConnections(): Int = this.ports.count { it.txLink != null }
+            fun Switch.nConnections(): Int = this.links.count { it != null }
 
             fun Switch.nMissingConnections(): Int = expectedNConnections() - nConnections()
 
@@ -160,9 +160,6 @@ internal class DragonFly private constructor(
             ).also {
                 // Setup global routing policy if needed.
                 this@NetSimScope.config.routPolicy.setUp()
-
-                // Setup global fairness policy if needed.
-                this@NetSimScope.config.fairPolicy.setUp()
 
                 // Register the network in the simulation scope.
                 this@NetSimScope.registerNetwork(it)

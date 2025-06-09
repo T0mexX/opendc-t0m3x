@@ -2,9 +2,8 @@ package org.opendc.simulator.network.components.node.internals.flowtable
 
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
-import org.opendc.common.units.Unit.Companion.sumOfUnit
+import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.port.Port
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Idx
@@ -22,8 +21,8 @@ import org.opendc.simulator.network.utils.tracker.Tracker
 internal class NodeFlowEntry private constructor(
     override val pool: FWPool<NodeFlowEntry, FWId<NodeFlowEntry>>,
     override val poolIdx: Idx,
-    val txPorts: MutableMap<Port, Percentage>,
-    var portFlowEntryIds: IntArray,
+    val txlinks: MutableMap<Link, Percentage>,
+    var linkFlowEntryIds: IntArray,
 ): IFW<NodeFlowEntry>, Trackable<NodeFlowEntry> {
     lateinit var node: Node<*>
     lateinit var netFlow: INetFlow
@@ -43,17 +42,17 @@ internal class NodeFlowEntry private constructor(
 
     context(Node<*>)
     fun resizeIfNeeded() {
-        if (this@Node.nPorts > portFlowEntryIds.size) {
-            portFlowEntryIds = portFlowEntryIds.copyOf(this@Node.nPorts)
+        if (this@Node.nPorts > linkFlowEntryIds.size) {
+            linkFlowEntryIds = linkFlowEntryIds.copyOf(this@Node.nPorts)
         }
     }
 
-    fun tput(): DataRate =
-        txPorts.keys.sumOfUnit { p ->
-            p.getTxTput(portFlowEntryIds[p.portIdx])
-        }.also {
-            assert(it >= DataRate.zero)
-        }
+    fun tput(): DataRate = TODO()
+//        txlinks.keys.sumOfUnit { p ->
+//            p.getTxTput(linkFlowEntryIds[p.portIdx])
+//        }.also {
+//            assert(it >= DataRate.zero)
+//        }
 
     companion object : FWId<NodeFlowEntry> {
 
@@ -65,8 +64,8 @@ internal class NodeFlowEntry private constructor(
                 NodeFlowEntry(
                     pool = pool,
                     poolIdx = idx,
-                    txPorts = mutableMapOf(),
-                    portFlowEntryIds = IntArray(10) { -1 },
+                    txlinks = mutableMapOf(),
+                    linkFlowEntryIds = IntArray(10) { -1 },
                 )
             }
 
