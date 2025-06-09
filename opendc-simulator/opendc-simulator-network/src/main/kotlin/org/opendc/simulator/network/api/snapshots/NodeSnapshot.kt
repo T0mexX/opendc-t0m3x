@@ -93,7 +93,7 @@ public class NodeSnapshot internal constructor(
 
         val secondLine =
             buildString {
-                appendPad("| ${node.id}")
+                appendPad("| $node")
                 flags.ifSet(INSTANT) { appendPad(instant, pad = 30) }
                 flags.ifSet(NUM_FLOWS_IN) { appendPad(numIncomingFlows) }
                 flags.ifSet(NUM_FLOWS_OUT) { appendPad(numOutgoingFlows) }

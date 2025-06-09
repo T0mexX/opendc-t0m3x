@@ -11,6 +11,8 @@ import org.opendc.simulator.network.components.networks.ftree.FTreeConfig
  * Contains configuration for a specific [Network] about
  * possible optimizations during the building process, for routing etc.,
  * that do not inherently belong to the topology specification.
+ *
+ * @property useSubnets Enables subnet optimization. It may be incompatible with some protocols.
  */
 @Serializable
 @SerialName("netConfig")
@@ -19,6 +21,7 @@ internal data class NetConfig(
     // TODO: currently unused.
     // TODO: write that it is needed for some routing algorithms.
     val includeRoutInfo2Switches: Boolean = false,
+    val useSubnets: Boolean = false,
     val ftreeConfig: FTreeConfig = FTreeConfig(),
     val dfConfig: DFConfig = DFConfig(),
     val closConfig: ClosConfig = ClosConfig(),

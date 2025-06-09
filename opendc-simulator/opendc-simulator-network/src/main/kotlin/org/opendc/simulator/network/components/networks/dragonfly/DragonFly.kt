@@ -1,8 +1,6 @@
 package org.opendc.simulator.network.components.networks.dragonfly
 
 import me.tongfei.progressbar.ProgressBar
-import me.tongfei.progressbar.ProgressBarBuilder
-import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.GlobalSwitch
@@ -67,6 +65,7 @@ internal class DragonFly private constructor(
         suspend operator fun invoke(
             specs: DFSpecs,
         ): DragonFly = withProgressBar(task = "Building DragonFly...", max = specs.E_.toLong() + specs.V_) pb@ {
+            // TODO: check subnet option.
             val inet = Internet()
 
             // Build groups and their internal connections.

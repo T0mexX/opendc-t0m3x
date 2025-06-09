@@ -3,6 +3,7 @@ package org.opendc.simulator.network.policies.routing
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.Percentage
+import org.opendc.simulator.network.components.internalstructs.RoutTbl2
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
@@ -31,11 +32,17 @@ internal class MIN: RoutPolicy() {
 
     companion object {
         context(NetSimScope, Node<*>)
-        suspend fun selectPort(to: NodeId): Port =
+        fun selectPort(to: NodeId): Port =
             this@Node.routTbl.getPossiblePathsTo(to)
                 .onlyMinimal()
                 .first()
                 .associatedPort()
+
+        context(NetSimScope, Node<*>)
+        fun getPath(to: NodeId): RoutTbl2.RoutTblPath =
+            this@Node.routTbl.getPossiblePathsTo(to)
+                .onlyMinimal()
+                .first()
     }
 }
 

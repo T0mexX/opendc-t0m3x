@@ -6,9 +6,10 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.units.Percentage
 import org.opendc.common.units.Percentage.Companion.percentageOf
 import org.opendc.common.units.Unit.Companion.sumOfUnit
+import org.opendc.simulator.network.components.networks.ftree.FTree
 import org.opendc.simulator.network.components.node.HostNode
+import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
@@ -31,7 +32,8 @@ internal class UGALL2 : RoutPolicy() {
 
     context(NetSimScope)
     override suspend fun checkRequirements() {
-        require(devConfig.netConfig.includeRoutInfo2Switches)
+        require(devConfig.netConfig.includeRoutInfo2Switches) { "UGALL requires `devConfig.netconfig.includeRoutInfo2Switches == true`" }
+        require(devConfig.netConfig.useSubnets.not())  { "UGALL requires `devConfig.netconfig.useSubnets == false`" }
     }
 
 
@@ -95,7 +97,7 @@ internal class UGALL2 : RoutPolicy() {
             subF.setDemand(fDemand * subF.subFPerc!!)
         }
 
-        println("${f.senderId.toIp()} -> ${f.destId.toIp()} ${f.subFlows.map { Triple(it.subFPerc, it.intermediate?.toIp() ?: NodeId(-10).toIp(), (it.routMeta as UGALLRoutMeta).length) }}")
+//        println("${f.senderId.toIp()} -> ${f.destId.toIp()} ${f.subFlows.map { Triple(it.subFPerc, it.intermediate?.toIp() ?: NodeId(-10).toIp(), (it.routMeta as UGALLRoutMeta).length) }}")
         // Assert the distribution sums up to 100% of the parent flow demand.
         assert(
             f.subFlows.sumOfUnit {
@@ -108,6 +110,7 @@ internal class UGALL2 : RoutPolicy() {
 
     context(NetSimScope, SenderNode<*>)
     private suspend fun initSubFlows(f: INetFlow) {
+        // TODO: remove paths that are same but with different intermediate
         val ints = possibleIntermediates(f)
         val senderN = f.senderNode
 
@@ -147,8 +150,15 @@ internal class UGALL2 : RoutPolicy() {
         // Smallest subnet containing both sender and receiver nodes.
         val subnet = smallestCommonSubnet(f.senderId.toIp(), f.destId.toIp())
 
+        //
+        // Store all valiant paths until now (including the MIN).
+        // Used to avoid the same exact path but with different intermediates (fewer flows initiated).
+        val minAddrHops = MIN.getPath(to = f.destId).addrHops
+        val pathsAsHops = mutableSetOf(minAddrHops)
+
         // Nodes in `subnet`, the ones considered as possible intermediates.
         return net.nodeLs.mapNotNull { inter ->
+            if (inter is Internet) return@mapNotNull null
             if (inter.ip !in subnet) return@mapNotNull null
             if (inter === f.senderNode || inter.id == f.destId) return@mapNotNull null
 
@@ -160,9 +170,19 @@ internal class UGALL2 : RoutPolicy() {
             // Avoid possible intermediates that have same nodes in 'toIntermediate' and 'toDest' path.
             if (pathToInter.addrHops.dropLast(1).any { it in pathToDest.addrHops }) return@mapNotNull null
 
-            val pathLength = pathToDest.distance + pathToInter.distance - 1
+            //
+            // If the same exact valiant path with different intermediate is already selected, then skip,
+            // else add it to the ones that were selected
+            val pathAsHops = pathToInter.addrHops + pathToDest.addrHops
+            if (pathAsHops in pathsAsHops) return@mapNotNull null
+            else pathsAsHops.add(pathAsHops)
+
+            val pathLength = pathToDest.distance + pathToInter.distance
+
+            assert(net !is FTree || inter !is HostNode)
+
             inter to Pair(pathToInter.associatedPort(), pathLength)
-        }.toMap().also { println("possible valiants number: ${it.size}") }
+        }.toMap()
     }
 
     context(NetSimScope)
