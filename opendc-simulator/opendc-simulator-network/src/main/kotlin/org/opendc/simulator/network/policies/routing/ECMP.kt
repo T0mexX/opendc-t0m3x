@@ -20,7 +20,6 @@ internal class ECMP : RoutPolicy() {
     override suspend fun selectPorts(nodeFEntry: NodeFlowEntry) {
         val f = nodeFEntry.netFlow
         nodeFEntry.txPorts.clear()
-        assert(f.intermediate == null)
 
         // Ports the flow will be forwarded to.
         val txPorts = this@Node.routTbl.getPossiblePathsTo(f.destId).onlyMinimal()

@@ -202,7 +202,6 @@ internal class PortV1 private constructor(
                         val p = this@Port as PortV1
 
                         entryId = entryId ?: p.newEntry()
-                        assert(entryId != -1) { "f is parent: ${netF.parentFlow == null}" }
                         val entry = p.entries[entryId!!]
                         assert(entry.used)
                         entry.netF = netF

@@ -11,8 +11,6 @@ import org.opendc.simulator.network.components.port.PortConfig
 import org.opendc.simulator.network.energy.EnModel
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.fairness.FirstComeFirstServed
-import org.opendc.simulator.network.policies.routing.ECMP
-import org.opendc.simulator.network.policies.routing.RoutPolicy
 
 @Serializable
 internal data class NodeConfig(

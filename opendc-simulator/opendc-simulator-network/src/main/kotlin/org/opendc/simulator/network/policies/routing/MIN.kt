@@ -18,7 +18,6 @@ internal class MIN: RoutPolicy() {
     context(NetSimScope, Node<*>) override suspend fun selectPorts(nodeFEntry: NodeFlowEntry) {
         val f = nodeFEntry.netFlow
         assert(nodeFEntry.txPorts.isEmpty())
-        assert(f.intermediate != null)
 
         this@Node.routTbl.getPossiblePathsTo(f.destId)
             .onlyMinimal()

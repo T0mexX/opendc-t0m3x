@@ -22,14 +22,13 @@ internal abstract class SenderNode<Self: SenderNode<Self>>(ip: IPv4Address): Nod
         netF.netLaunch()
         netF.senderNode = this
 
-//        if (netF.demand.isZero()) return
+        if (netF.demand.isZero()) return
 
-        val msg = nodeVersion.rxUpdateDisp.acquire().reset {
-            this.deltaRate = netF.demand
-            this.netF = netF
-        }
+        val msg = nodeVersion.rxUpdateDisp.acquire().reset()
+        msg.deltaRate = netF.demand
+        msg.netF = netF
         flowTable.rxUpdt(msg)
-        portProcessAwait() // TODO: maybe change start flow to msg and remove this.
+        portProcessAwait()
         msg.dispose()
     }
 

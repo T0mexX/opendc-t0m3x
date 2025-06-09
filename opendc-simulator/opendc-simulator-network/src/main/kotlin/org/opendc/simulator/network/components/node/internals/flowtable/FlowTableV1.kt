@@ -3,7 +3,6 @@ package org.opendc.simulator.network.components.node.internals.flowtable
 import kotlinx.coroutines.flow.asFlow
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
@@ -25,39 +24,35 @@ internal class FlowTableV1 private constructor(
      */
     context(NetSimScope, Node<*>)
     override suspend fun rxUpdt(updt: Node.RxUpdt) {
-        if (updt.netF.senderNode !== this@Node && updt.deltaRate == DataRate.zero) return
+        assert(updt.deltaRate.approx(DataRate.zero).not())
 
+        var new = false
         val entry = _flows.getOrPut(updt.netF) {
+            assert(updt.deltaRate > DataRate.zero) { updt.deltaRate }
+            new = true
             newEntry(updt)
         }
-
-        //
-        // Assert the node is not used both in the path to the intermediate and the final node
-        // (routing protocol should ensure this).
-        val f = updt.netF
-        assert(f.intermediate == null || f.intermediate!! == this@Node.id || updt.toIntermediate == entry.toIntermediate)
-
         entry.rx = (entry.rx + updt.deltaRate).roundToIfWithinEpsilon(DataRate.zero, epsilon = 1.0)
-        assert(entry.rx approxSmallerOrEq (f.demand.takeIf { f.parentFlow == null } ?: f.parentFlow!!.demand))
         entry.node = this@Node
-        if (f.destId == this@Node.id) {
-            if (f.parentFlow == null) f.msgAsyncSetTput(entry.rx)
-            else f.parentFlow!!.msgAsyncIncreaseTputBy(updt.deltaRate)
+        if (updt.netF.destId == this@Node.id) {
+            updt.netF.setThroughput(entry.rx)
 
             return
         }
 
         assert(entry.rx >= DataRate.zero) { entry.rx.value }
 
-//        if (entry.rx == DataRate.zero) return
-
         entry.txPorts.forEach { (p, perc) ->
             // The data-rate sent to port `p` of this flow.
             val portDemand = entry.rx * perc
-            entry.portFlowEntryIds[p.portIdx] =
-                p.msgSetTxDemand(portDemand, entry.netFlow, entry.portFlowEntryIds[p.portIdx].takeUnless { it == -1 })!!
+            if (new) {
+                entry.portFlowEntryIds[p.portIdx] =
+                    p.msgSetTxDemand(portDemand, entry.netFlow) ?: -1
+            } else {
+                p.msgSetTxDemand(portDemand, entry.netFlow, entry.portFlowEntryIds[p.portIdx])
+            }
         }
-        if (entry.netFlow.senderNode !== this@Node &&  entry.rx approx DataRate.zero) rmEntry(entry)
+        if (entry.rx approx DataRate.zero) rmEntry(entry)
     }
 
     /**
@@ -91,26 +86,17 @@ internal class FlowTableV1 private constructor(
         rmEntry(entry)
     }
 
-    override fun get(f: NetFlow): NodeFlowEntry = _flows[f]!!
-
     context(NetSimScope, Node<*>)
     private suspend fun newEntry(updt: Node.RxUpdt): NodeFlowEntry {
-        // Acquire and initialize the new `NodeFlowEntry` flyweight object.
-        val entry = nodeFlowEntryDispenser.acquire {
-            tracker = this@FlowTableV1
-            resizeIfNeeded()
-            netFlow = updt.netF
-            node = this@Node
-            rx = DataRate.zero
-            txPorts.clear()
-            // If this is the intermediate node, then switch `toIntermediate` boolean to `false`.
-            toIntermediate = updt.toIntermediate && updt.netF.intermediate != this@Node.id
-        }
-
-        // Apply routing policy.
+        val entry = nodeFlowEntryDispenser.acquire()
+        entry.tracker = this
+        entry.resizeIfNeeded()
+        entry.netFlow = updt.netF
+        entry.node = this@Node
+        entry.rx = DataRate.zero
+        entry.txPorts.clear()
         if (entry.netFlow.destId != this@Node.id)
             this@Node.routPolicy.selectPorts(entry)
-
         return entry
     }
 

@@ -29,7 +29,6 @@ import org.opendc.simulator.network.repl.synthetic.SyntheticWl
 import org.opendc.simulator.network.repl.synthetic.adversarial.SWLDFAdv
 import org.opendc.simulator.network.repl.synthetic.ftree.SWLFTreeAdv
 import org.opendc.simulator.network.components.specs.SwitchSpecs
-import org.opendc.simulator.network.policies.routing.UGALL2
 import org.opendc.simulator.network.repl.synthetic.SWLRandom
 import org.opendc.simulator.network.repl.synthetic.SWLRandPerm
 import org.opendc.simulator.network.repl.synthetic.ftree.SWLFTreePodShift
@@ -85,7 +84,6 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
         subclass(ECMP::class)
         subclass(MIN::class)
         subclass(UGALL::class)
-        subclass(UGALL2::class)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

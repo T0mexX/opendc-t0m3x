@@ -4,7 +4,7 @@
         "fairnessPolicy": { "type": "proportional" },
         "netSimDevConfig": {
             "netConfig": {
-                "includeRoutInfo2Switches": true,
+                "includeRoutInfo2Switches": false,
                 "ftreeConfig": {
                     "buildSteps": 3,
                     "subnets": true
@@ -28,6 +28,6 @@
             }
         }
     },
-    "netPath": "./resources/examples/topologies/ftree/ftree(k:4).json",
+    "netPath": "./resources/examples/topologies/ftree/ftree(k:8).json",
     "initialTmStamp": "1970-10-01T15:23:44Z"
 }
