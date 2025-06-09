@@ -22,6 +22,7 @@ import org.opendc.simulator.network.repl.synthetic.SyntheticWl
 import org.opendc.simulator.network.utils.NETWORK_SERIALIZERS_MODULE
 import org.opendc.simulator.network.utils.withProgressBar
 import java.lang.System.exit
+import kotlin.time.measureTime
 
 private const val CMD_STR: String = "synthetic-wl"
 
@@ -66,17 +67,22 @@ internal class FlowSynthWlCmd: REPLCmd(name = CMD_STR) {
 //            .setStyle(ProgressBarStyle.ASCII)
 //            .setTaskName("Executing Synthetic Workload...")
 //            .build()
-        withProgressBar("Executing Synthetic WL...") {
-            (demand as? DataRate)?.let { dr ->
-                synthWl.startSyntheticFlows(net) { dr }
-            }
+        val tm = measureTime {
+            withProgressBar("Executing Synthetic WL...") {
+                (demand as? DataRate)?.let { dr ->
+                    synthWl.startSyntheticFlows(net) { dr }
+                }
 
-            (demand as? Percentage)?.let { perc ->
-                synthWl.startSyntheticFlows(net) { h ->
-                    h.portSpeed * h.ports.count { it.txLink != null } * perc
+                (demand as? Percentage)?.let { perc ->
+                    synthWl.startSyntheticFlows(net) { h ->
+                        h.portSpeed * h.ports.count { it.txLink != null } * perc
+                    }
                 }
             }
+
+            barrier.awaitStability()
         }
 
+        echo("Synthetic workload executed successfully in $tm")
     }
 }

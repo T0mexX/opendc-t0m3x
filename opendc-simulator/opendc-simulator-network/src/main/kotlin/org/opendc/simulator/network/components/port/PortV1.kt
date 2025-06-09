@@ -3,8 +3,12 @@ package org.opendc.simulator.network.components.port
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.opendc.common.units.DataRate
@@ -98,7 +102,7 @@ internal class PortV1 private constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private val entries: MutableList<PortFlowEntry> = 0.rangeUntil(initialCapacity).map {
-        PortFlowEntry()
+        PortFlowEntry(it)
     }.toMutableList()
 
     private val freeIdxs: IntArrayQueue = IntArrayQueue(initialCapacity = initialCapacity).also { q ->
@@ -111,7 +115,7 @@ internal class PortV1 private constructor(
         }.also { idx -> entries[idx].used = true }
 
     private fun grow1(): Idx {
-        entries.add(PortFlowEntry())
+        entries.add(PortFlowEntry(idx = entries.size - 1))
         return entries.size - 1
     }
 
@@ -172,7 +176,11 @@ internal class PortV1 private constructor(
                             p.owner.fairnessPolicy.applyFairness(p.entries)
 
                             // Remove entries with 0 demand after updates propagated to connected node.
-                            p.entries.forEachIndexed { idx, e -> if (e.used && e.demand == DataRate.zero) p.rmEntry(idx)}
+                            coroutineScope {
+                                p.entries.asFlow().onEach { e ->
+                                    if (e.used && e.demand == DataRate.zero) p.rmEntry(e.idx)
+                                }.launchIn(this@coroutineScope)
+                            }
 
                             // Update port state.
                             if (p.freeIdxs.getSize() == p.entries.size) {
