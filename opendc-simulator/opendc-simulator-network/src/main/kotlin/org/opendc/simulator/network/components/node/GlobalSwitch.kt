@@ -24,7 +24,7 @@ internal class GlobalSwitch private constructor(
 
     override fun toSpecs(): Specs<GlobalSwitch> =
         GlobalSwitchSpecs(
-//            id = id,
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
         )
@@ -76,8 +76,8 @@ internal class GlobalSwitch private constructor(
                 flowTable = nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer()
             ).also { gs ->
-                    gs.invalidate()
-                    gs.netLaunch()
+                gs.invalidate()
+                gs.netLaunch()
             }
         }
     }

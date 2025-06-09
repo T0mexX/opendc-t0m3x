@@ -3,7 +3,7 @@
     "k": 12,
     "switchSpecs": {
         "portSpeed": "1Gbps",
-        "nPorts": 16
+        "nPorts": 12
     },
     "hostSpecs": {
         "portSpeed": "1Gbps",

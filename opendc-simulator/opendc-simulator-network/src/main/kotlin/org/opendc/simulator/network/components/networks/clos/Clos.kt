@@ -54,7 +54,7 @@ internal class Clos(
         ): Clos = withProgressBar<Clos>(task = "Building Clos Network...", max = specs.E_.toLong() + specs.V_) pb@ {
             // TODO: change impl.
             // Only same size layers supported now.
-            require(specs.nodesPerLayer.values.all { it == specs.nodesPerLayer.values.first() })
+            require(specs.nodesPerLayer.values.toList().dropLast(1).all { it == specs.nodesPerLayer.values.first() })
 
             val updtOnConnect = this@NetSimScope.devConfig.netConfig.closConfig.updtRoutingOnEachConnect
             val inet = Internet()
@@ -62,6 +62,11 @@ internal class Clos(
                 specs.nodesPerLayer.values.forEach {
                     add(ArrayList<Node<*>>(it))
                 }
+            }
+
+            val hostSubnets = (0..<specs.nodesPerLayer.values.first()).map {
+                // The subnet includes a switch of layer n-1 and all the hosts connected to it.
+                addrMngr.getNewSubNet(nIps = specs.k / 2 + 1)
             }
 
             // Build layers.
@@ -76,14 +81,17 @@ internal class Clos(
                 val speed = specs.portSpeedPerLayer[layerIdx]!!
 
                 // Build layer.
-                repeat(specs.nodesPerLayer[layerIdx]!!) {
+                (0..<specs.nodesPerLayer[layerIdx]!!).forEach { idx ->
                     layer.add(
                         when (layerIdx) {
                             // Higher layer of global switches.
                             0 -> GlobalSwitch(portSpeed = speed, nPorts = nBelow + 1)
 
                             // Lower layer of hosts.
-                            specs.n -> HostNode(portSpeed = speed, nPorts = nAbove)
+                            specs.n -> HostNode(portSpeed = speed, nPorts = 1, subnet = hostSubnets[idx / (specs.k / 2)])
+
+                            // Layer above hosts.
+                            specs.n - 1 -> Switch(portSpeed = speed, nPorts = nAbove + nBelow, subnet = hostSubnets[idx])
 
                             // All layers in the middle of switches.
                             else -> Switch(portSpeed = speed, nPorts = nAbove + nBelow)
@@ -94,7 +102,7 @@ internal class Clos(
             }
 
             // Connect layers.
-            layers.dropLast(1).forEachIndexed { lIdx, layer ->
+            layers.dropLast(2).forEachIndexed { lIdx, layer ->
                 layer.forEachIndexed { nIdx, n ->
                     // Connect the uppermost layer to the internet.
                     if (lIdx == 0) {
@@ -120,12 +128,22 @@ internal class Clos(
                     layers[lIdx + 1].first().msgAsyncShareRoutVect()
                     barrier.awaitStability()
                 }
+
+                println("layer $lIdx completed")
             }
 
-            if (updtOnConnect) {
-                inet.msgAsyncShareRoutVect()
-                barrier.awaitStability()
+            val aboveHostLayer = layers[layers.size - 2]
+            val hostLayer = layers.last()
+            hostLayer.forEachIndexed { hIdx, h ->
+                val s = aboveHostLayer[hIdx / (specs.k / 2)]
+                h.msgSyncConnect(s, updtRoutTbl = updtOnConnect)
+                this@pb.step()
             }
+
+            hostLayer.first().msgAsyncShareRoutVect()
+
+            inet.msgAsyncShareRoutVect()
+            barrier.awaitStability()
 
             // Assert built topology corresponds to specs.
             assert(layers.sumOf { it.size } == specs.V_)
@@ -134,7 +152,7 @@ internal class Clos(
             assert(this@pb.current == specs.E_.toLong() + specs.V_)
             assert(layers.first().all { it.links.count { it != null } == specs.k / 2 + 1})
             assert(layers.dropLast(1).drop(1).flatten().all { it.links.count { it != null } == specs.k })
-            assert(layers.last().all { it.links.count { it != null } == specs.k / 2 })
+            assert(layers.last().all { it.links.count { it != null } == 1 })
 
             Clos(
                 specs = specs,

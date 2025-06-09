@@ -40,7 +40,7 @@ internal class FlowSynthWlCmd: REPLCmd(name = CMD_STR) {
     }
 
     private val demand: Unit<*> by argument(
-        help = "The demand of the synthetic flows (E_.g. '1 Gbps' or '100%'). " +
+        help = "The demand of the synthetic flows (e.g. '1 Gbps' or '100%'). " +
             "If a percentage is used, that percentage of the tx bandwidth of " +
             "the sender host is used as demand",
     ).convert { str ->

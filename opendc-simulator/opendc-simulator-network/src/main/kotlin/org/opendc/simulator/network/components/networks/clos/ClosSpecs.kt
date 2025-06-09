@@ -19,11 +19,9 @@ import org.opendc.simulator.network.simscope.NetSimScope
  * Specifications of a [Clos] network.
  *
  * @param n Number of switch layers of the Clos network.
- * @param nodesPerLayer Number of nodes per layer.
- * This map has `N_ + 1` entries, 1 for each switch layer + the host layer.
+ * @param nodesPerLayer Number of nodes per switch layer.
+ * This map has `N_` entries, 1 for each switch layer.
  * Each node in a layer is fully connected with the layers above/below.
- * The first layer is `0` and corresponds to [GlobalSwitch]s,
- * the last layer is [N_] and will be filled with [HostNode]s.
  * @param portSpeedPerLayer Port speed of nodes for each layer.
  * Same mapping as [nodesPerLayer] applies.
  * @property k Network radix (number of ports per node).
@@ -42,20 +40,22 @@ internal class ClosSpecs(
         require(k % 2 == 0) { "k (network radix) must be even" }
         // TODO: change impl.
         // Only same size layers supported now.
-        require(nodesPerLayer.values.all { it == nodesPerLayer.values.first() })
+        require(nodesPerLayer.values.toList().dropLast(1).all { it == nodesPerLayer.values.first() })
+
+        require(nodesPerLayer.values.last() == (k/2) * nodesPerLayer.values.first()) {
+            nodesPerLayer.values.last()
+        }
     }
 
-    override val V_: Int = nodesPerLayer.values.sum()
+    override val N_: Int = nodesPerLayer.values.last()
 
-    override val N_: Int = nodesPerLayer.maxBy { it.key }.value
+    override val V_: Int = nodesPerLayer.values.sum()
 
     override val R_: Int = V_ - N_
 
     // TODO: change if differnet number of nodes per layers support is added.
     override val E_: Int =
-        nodesPerLayer.values.toList().dropLast(1).sumOf { it * k / 2 }
-
-
+        nodesPerLayer.values.toList().dropLast(2).sumOf { it * k / 2 } + N_
 
     context(NetSimScope) override suspend fun build(): Clos = Clos(this)
 }
@@ -71,7 +71,6 @@ private class ClosSpecsSerializer : KSerializer<ClosSpecs> {
      * @param n Number of switch layers.
      * @param k Network radix (number of ports per node).
      * @param nodesPerLayer Maps the layers (0 to N_) to the number of nodes in those layers.
-     * Layer 0 is the uppermost, built of global switches. The lowest layer is [n], built of host nodes.
      * Missing values will be replaced by [dfltNodesPerLayer] if defined.
      * @param dfltNodesPerLayer The default value used for missing ones in [nodesPerLayer].
      * @param portSpeedPerLayer  Maps the layers (0 to N_-1) to the port speed of the nodes in those layers.

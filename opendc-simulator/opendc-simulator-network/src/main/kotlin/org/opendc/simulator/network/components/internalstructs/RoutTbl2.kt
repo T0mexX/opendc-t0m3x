@@ -3,8 +3,10 @@ package org.opendc.simulator.network.components.internalstructs
 import inet.ipaddr.ipv4.IPv4Address
 import inet.ipaddr.ipv4.IPv4AddressTrie
 import org.opendc.simulator.network.components.link.Link
+import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.RWLock
 
@@ -51,7 +53,9 @@ internal class RoutTbl2(private val owner: Node<*>) {
      * @param n Adjacent node whose ip (or subnet) is to be registered.
      */
     context(NetSimScope)
-    internal suspend fun registerAdjN(n: Node<*>, destAddr: IPv4Address) {
+    internal suspend fun registerAdjN(n: Node<*>, destAddr: IPv4Address): Boolean {
+        // If configured to only hold routing information towards hosts, then ignore adjacent switches.
+        if (this@NetSimScope.devConfig.netConfig.includeRoutInfo2Switches.not() && n is Switch && destAddr.isPrefixBlock.not()) return false
 
         val e: RoutTblEntry
         val p: RoutTblPath
@@ -79,6 +83,8 @@ internal class RoutTbl2(private val owner: Node<*>) {
             // Register the new path as the shortest to ip `ip`.
             routVect[destAddr] = p
         }
+
+        return true
     }
 
     context(NetSimScope)
@@ -100,9 +106,12 @@ internal class RoutTbl2(private val owner: Node<*>) {
         // If a path of length 1 to address `b` (subnet or ip) with
         // `v.owner` as next node was not already present then add.
         if (addrRout[b]?.get(v.owner.ip)?.distance != 1) {
-            changed = true
-            registerAdjN(v.owner, b)
+            changed = changed or registerAdjN(v.owner, b)
         }
+
+        // Ignore paths with internet as next hop if the internet itself is not the destination.
+        // If the destination is inside the network, an intra-network option is used.
+        if (v.owner is Internet) return changed
 
         v.withRLock {
             v.forEach { (destAddr, otherP) ->

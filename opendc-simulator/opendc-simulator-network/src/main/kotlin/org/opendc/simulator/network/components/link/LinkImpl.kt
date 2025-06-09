@@ -39,17 +39,18 @@ internal class LinkImpl private constructor(
     private val mtx = Mutex()
 
     override suspend fun attemptTx() = mtx.withLock {
-        assert(usedBw <= maxBw)
+        assert(usedBw approxSmallerOrEq maxBw)
 
         coroutineScope {
             entries.asFlow().let { f ->
                 // Apply data-rate reductions.
                 f.onEach { e ->
                     if (e.used.not()) return@onEach
-                    val delta = (  (maxBw * (e.demand / totTentativeTx)  ) min e.demand) - e.tput
-                    if (delta >= DataRate.zero) return@onEach
-                    usedBw = (usedBw + delta).roundToIfWithinEpsilon(DataRate.zero, 1e-6)
-                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1e-6)
+                    var delta = (  (maxBw * (e.demand / totTentativeTx)  ) min e.demand) - e.tput
+                    delta = delta.roundToIfWithinEpsilon(DataRate.zero, 1.0)
+                    if (delta approxLargerOrEq DataRate.zero) return@onEach
+                    usedBw = (usedBw + delta).roundToIfWithinEpsilon(DataRate.zero, 1.0)
+                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1.0)
                     receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.netF)
                 }.launchIn(this@coroutineScope).join()
 
@@ -58,16 +59,16 @@ internal class LinkImpl private constructor(
                     if (e.used.not()) return@onEach
                     val delta = (  (maxBw * (e.demand / totTentativeTx)  ) min e.demand) - e.tput
                     if (delta <= DataRate.zero && e.demand == DataRate.zero) return@onEach rmEntry(e.idx)
-                    if (delta <= DataRate.zero) return@onEach
-                    usedBw = (usedBw + delta).roundToIfWithinEpsilon(maxBw, 1e-4)
-                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1e-4)
+                    if (delta approxSmallerOrEq DataRate.zero) return@onEach
+                    usedBw = (usedBw + delta).roundToIfWithinEpsilon(maxBw, 1.0)
+                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1.0)
                     receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.netF)
                 }.launchIn(this@coroutineScope).join()
             }
         }
 
         stabilizer.validate()
-        assert(usedBw <= maxBw) { "usedBw:$usedBw  maxBw:$maxBw" }
+        assert(usedBw approxSmallerOrEq maxBw) { "usedBw:$usedBw  maxBw:$maxBw" }
     }
 
     override suspend fun setTentativeTx(dr: DataRate, f: INetFlow, entryId: Int?): Int = mtx.withLock {

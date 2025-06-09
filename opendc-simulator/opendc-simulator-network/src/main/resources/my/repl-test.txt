@@ -1,7 +1,6 @@
 import resources/my/scope.jsonc
 net info
-net prefix-trie
-f synth full 1Gbps
+f synth random-permutation 1Gbps
 f info
 q
 
