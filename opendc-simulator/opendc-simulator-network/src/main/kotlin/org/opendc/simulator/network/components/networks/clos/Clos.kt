@@ -34,7 +34,7 @@ internal class Clos(
     override val _nodeLs: MutableList<Node<*>> =
         _nodesById.values.toMutableList()
 
-    override fun toSpecs(): Specs<Network> = specs
+    override fun toSpecs(): ClosSpecs = specs
 
     context(NetSimScope)
     override suspend fun fmt(mode: NetSimStabilityMode): String =

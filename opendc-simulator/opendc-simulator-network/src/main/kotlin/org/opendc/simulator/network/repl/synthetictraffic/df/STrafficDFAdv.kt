@@ -1,4 +1,4 @@
-package org.opendc.simulator.network.repl.synthetic.adversarial
+package org.opendc.simulator.network.repl.synthetictraffic.df
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -7,7 +7,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.dragonfly.DragonFly
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.HostNode
-import org.opendc.simulator.network.repl.synthetic.SyntheticWl
+import org.opendc.simulator.network.repl.synthetictraffic.SyntheticTraffic
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.increaseMax
 
@@ -23,7 +23,7 @@ import org.opendc.simulator.network.utils.increaseMax
  */
 @Serializable
 @SerialName("df-adversarial")
-internal object SWLDFAdv: SyntheticWl<DragonFly> {
+internal object STrafficDFAdv: SyntheticTraffic<DragonFly>() {
     context(NetSimScope, ProgressBar)
     override suspend fun startSyntheticFlows(
         net: Network,

@@ -78,7 +78,7 @@ internal class CustomNetwork private constructor(
         }
     }
 
-    override fun toSpecs(): Specs<CustomNetwork> {
+    override fun toSpecs(): CustomNetworkSpecs {
         val links: List<Pair<NodeId, NodeId>> =
             buildList {
                 val nodes = nodesById.values.filterNot { it is Internet }

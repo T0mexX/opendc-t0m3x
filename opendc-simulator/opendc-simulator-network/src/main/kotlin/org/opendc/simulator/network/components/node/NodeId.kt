@@ -5,9 +5,9 @@ import kotlinx.serialization.Serializable
 
 @JvmInline
 @Serializable
-public value class NodeId(public val value: Long) {
+public value class NodeId(public val value: Long): Comparable<NodeId> {
     internal operator fun inc(): NodeId = NodeId(this.value + 1)
-    internal operator fun compareTo(other: NodeId): Int = this.value.compareTo(other.value)
+    override operator fun compareTo(other: NodeId): Int = this.value.compareTo(other.value)
 
     override fun toString(): String = value.toString()
 

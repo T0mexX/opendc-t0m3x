@@ -20,17 +20,18 @@ import org.opendc.simulator.network.policies.routing.ECMP
 import org.opendc.simulator.network.policies.routing.MIN
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.policies.routing.UGALL
-import org.opendc.simulator.network.repl.synthetic.SWLBitComplement
-import org.opendc.simulator.network.repl.synthetic.SWLBitReversal
-import org.opendc.simulator.network.repl.synthetic.SWLBitShuffle
-import org.opendc.simulator.network.repl.synthetic.SWLFull
-import org.opendc.simulator.network.repl.synthetic.SyntheticWl
-import org.opendc.simulator.network.repl.synthetic.adversarial.SWLDFAdv
-import org.opendc.simulator.network.repl.synthetic.ftree.SWLFTreeAdv
+import org.opendc.simulator.network.repl.synthetictraffic.STrafficBitReversal
+import org.opendc.simulator.network.repl.synthetictraffic.SyntheticTraffic
+import org.opendc.simulator.network.repl.synthetictraffic.df.STrafficDFAdv
+import org.opendc.simulator.network.repl.synthetictraffic.ftree.STrafficFTreeAdv
 import org.opendc.simulator.network.components.specs.SwitchSpecs
-import org.opendc.simulator.network.repl.synthetic.SWLRandom
-import org.opendc.simulator.network.repl.synthetic.SWLRandPerm
-import org.opendc.simulator.network.repl.synthetic.ftree.SWLFTreePodShift
+import org.opendc.simulator.network.repl.synthetictraffic.STrafficBitComplement
+import org.opendc.simulator.network.repl.synthetictraffic.STrafficBitShuffle
+import org.opendc.simulator.network.repl.synthetictraffic.STrafficBitTranspose
+import org.opendc.simulator.network.repl.synthetictraffic.STrafficFull
+import org.opendc.simulator.network.repl.synthetictraffic.STrafficRandom
+import org.opendc.simulator.network.repl.synthetictraffic.STrafficRandomPerm
+import org.opendc.simulator.network.repl.synthetictraffic.ftree.STrafficFTreePodShift
 import org.opendc.simulator.network.routing.IPv4AddressSerializer
 
 /**
@@ -96,16 +97,17 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Synthetic Workload
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    polymorphic(SyntheticWl::class) {
-        subclass(SWLBitComplement::class)
-        subclass(SWLBitReversal::class)
-        subclass(SWLBitShuffle::class)
-        subclass(SWLFull::class)
-        subclass(SWLFTreeAdv::class)
-        subclass(SWLDFAdv::class)
-        subclass(SWLFTreePodShift::class)
-        subclass(SWLRandom::class)
-        subclass(SWLRandPerm::class)
+    polymorphic(SyntheticTraffic::class) {
+        subclass(STrafficBitComplement::class)
+        subclass(STrafficBitReversal::class)
+        subclass(STrafficBitShuffle::class)
+        subclass(STrafficBitTranspose::class)
+        subclass(STrafficRandomPerm::class)
+        subclass(STrafficFull::class)
+        subclass(STrafficRandom::class)
+        subclass(STrafficFTreeAdv::class)
+        subclass(STrafficDFAdv::class)
+        subclass(STrafficFTreePodShift::class)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

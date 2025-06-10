@@ -5,6 +5,7 @@ import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.simulator.network.components.networks.NetworkImpl
+import org.opendc.simulator.network.components.networks.NetworkSpecs
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
@@ -35,7 +36,7 @@ internal class FTree private constructor(
     override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
         getNodesById<SenderNode<*>>().toMutableMap()
 
-    override fun toSpecs(): Specs<FTree> = specs
+    override fun toSpecs(): NetworkSpecs<FTree> = specs
 
     context(NetSimScope)
     override suspend fun fmt(mode: NetSimStabilityMode): String = barrier.whileStable(mode) {

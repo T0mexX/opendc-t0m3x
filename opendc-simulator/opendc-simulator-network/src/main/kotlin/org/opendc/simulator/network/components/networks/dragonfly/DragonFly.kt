@@ -39,7 +39,7 @@ internal class DragonFly private constructor(
     override val _nodeLs: MutableList<Node<*>> =
         _nodesById.values.toMutableList()
 
-    override fun toSpecs(): Specs<Network> = specs
+    override fun toSpecs(): DFSpecs = specs
 
     context(NetSimScope)
     override suspend fun fmt(mode: NetSimStabilityMode): String = barrier.whileStable(mode) {

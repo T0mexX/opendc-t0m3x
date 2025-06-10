@@ -6,6 +6,7 @@ import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
+import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
@@ -88,6 +89,8 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
                 | global switches: ${getNodesById<GlobalSwitch>().size}
             """.trimIndent()
         }
+
+    override fun toSpecs(): NetworkSpecs<*>
 
     companion object {
         /**
