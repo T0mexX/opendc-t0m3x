@@ -45,9 +45,6 @@ internal abstract class SyntheticTraffic<in T: Network> {
     ) {
         val netSpecs = net.toSpecs()
 
-        // Bit-permutation patterns require # hosts to be a power of 2.
-        require((netSpecs.N_ > 0) && ((netSpecs.N_ and (netSpecs.N_ - 1)) == 0))
-
         // All the hosts in the network sorted by their ip/id (id = int representation of ip).
         // The network should have been built in such a way that ids are representative of the vicinity of nodes.
         val hosts = net.getNodesById<HostNode>().values.sortedBy { it.ip.toNId() }
