@@ -5,7 +5,7 @@
             "type": "global-switch",
             "nPorts": 10,
             "portSpeed": "2Gbps",
-            "ip": 1
+            "ip": "0.0.0.1"
         },{
             "type": "switch",
             "nPorts": 10,

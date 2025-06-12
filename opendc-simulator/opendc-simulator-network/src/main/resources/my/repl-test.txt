@@ -1,10 +1,9 @@
 import resources/my/scope.jsonc
 net info
-f synth random-perm 100%
+f synth bit-shuffle 100%
 f info
 q
 
-f synth random-permutation 30%
 f info
 q
 f mk -s 4 -b 1Gbps -d 5

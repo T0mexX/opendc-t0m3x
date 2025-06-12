@@ -7,6 +7,7 @@ import org.opendc.simulator.network.components.internalstructs.RoutTbl2
 import org.opendc.simulator.network.components.specs.WithSpecs
 import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.networks.Network
+import org.opendc.simulator.network.components.networks.TopNodeMeta
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.energy.EnConsumer
 import org.opendc.simulator.network.flow.internals.INetFlow
@@ -61,6 +62,11 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * Policy that determines to which [Port]s the flowsById are forwarded to.
      */
     val routPolicy: RoutPolicy
+
+    /**
+     * TODO
+     */
+    var topNodeMeta: TopNodeMeta<*>?
 
     /**
      * Contains network information about the routs

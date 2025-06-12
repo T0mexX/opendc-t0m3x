@@ -4,16 +4,7 @@
         "netSimDevConfig": {
             "netConfig": {
                 "includeRoutInfo2Switches": false,
-                "ftreeConfig": {
-                    "buildSteps": 3,
-                    "subnets": true
-                },
-                "dfConfig": {
-                    "subnets": true
-                },
-                "closConfig": {
-                    "updtRoutingOnEachConnect": false
-                }
+                "subnetOptimization": true,
             },
             "barrierConfig": {
                 "barrierNodeSize": 500
@@ -24,9 +15,12 @@
                 "subPoolMaxIdle": null,
                 "subPoolMaxSize": null,
                 "poolMaxSize": null
+            },
+            "nodeConfig": {
+                "defaultPortSpeed": "1Gbps"
             }
         }
     },
-    "netPath": "./resources/examples/topologies/dragonfly/df(a:12).json",
+    "netPath": "./resources/examples/topologies/flatfly/flatfly(n:2,k:16,c:16).json",
     "initialTmStamp": "1970-10-01T15:23:44Z"
 }

@@ -9,7 +9,9 @@ import org.opendc.simulator.network.components.networks.NetworkSpecs
 import org.opendc.simulator.network.components.networks.clos.ClosSpecs
 import org.opendc.simulator.network.components.networks.custom.CustomNetworkSpecs
 import org.opendc.simulator.network.components.networks.dragonfly.DFSpecs
+import org.opendc.simulator.network.components.networks.flatfly.FlatFlySpecs
 import org.opendc.simulator.network.components.networks.ftree.FatTreeSpecs
+import org.opendc.simulator.network.components.networks.polarfly.PolarFlySpecs
 import org.opendc.simulator.network.components.specs.GlobalSwitchSpecs
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
 import org.opendc.simulator.network.components.specs.NodeSpecs
@@ -28,7 +30,7 @@ import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.repl.synthetictraffic.STrafficBitComplement
 import org.opendc.simulator.network.repl.synthetictraffic.STrafficBitShuffle
 import org.opendc.simulator.network.repl.synthetictraffic.STrafficBitTranspose
-import org.opendc.simulator.network.repl.synthetictraffic.STrafficFull
+import org.opendc.simulator.network.repl.synthetictraffic.STrafficUniform
 import org.opendc.simulator.network.repl.synthetictraffic.STrafficRandom
 import org.opendc.simulator.network.repl.synthetictraffic.STrafficRandomPerm
 import org.opendc.simulator.network.repl.synthetictraffic.ftree.STrafficFTreePodShift
@@ -72,9 +74,11 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
 
     polymorphic(NetworkSpecs::class) {
         subclass(FatTreeSpecs::class)
+        subclass(PolarFlySpecs::class)
         subclass(ClosSpecs::class)
         subclass(DFSpecs::class)
         subclass(CustomNetworkSpecs::class)
+        subclass(FlatFlySpecs::class)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,7 +107,7 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
         subclass(STrafficBitShuffle::class)
         subclass(STrafficBitTranspose::class)
         subclass(STrafficRandomPerm::class)
-        subclass(STrafficFull::class)
+        subclass(STrafficUniform::class)
         subclass(STrafficRandom::class)
         subclass(STrafficFTreeAdv::class)
         subclass(STrafficDFAdv::class)

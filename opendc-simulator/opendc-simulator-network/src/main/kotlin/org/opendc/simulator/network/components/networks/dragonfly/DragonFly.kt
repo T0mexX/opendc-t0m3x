@@ -19,7 +19,7 @@ import org.opendc.simulator.network.utils.withProgressBar
  * source: https://dl.acm.org/doi/abs/10.1145/1394608.1382129
  */
 internal class DragonFly private constructor(
-    val specs: DFSpecs,
+    override val specs: DFSpecs,
     val groups: List<DFGroup>,
     override val inet: Internet,
 ): NetworkImpl() {
@@ -31,9 +31,6 @@ internal class DragonFly private constructor(
 
     override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
         getNodesById<SenderNode<*>>().toMutableMap()
-
-    override val _nodeLs: MutableList<Node<*>> =
-        _nodesById.values.toMutableList()
 
     override fun toSpecs(): DFSpecs = specs
 
@@ -130,7 +127,7 @@ internal class DragonFly private constructor(
             // Assert all switches have exactly the number of expected connections.
             assert(groups.all { it.switches.all { sw -> sw.nMissingConnections() == 0 } })
 
-            // Assert "each pair of groups connected by at least (ah+1)/g channels", see source.
+            // Assert "each pair of groups connected by at least (ah+1)/g channels".
             assert(
                 groups.all { g1 ->
                     groups.filter { it !== g1 }
@@ -180,14 +177,13 @@ internal class DragonFly private constructor(
              */
             context(NetSimScope, ProgressBar)
             suspend operator fun invoke(specs: DFSpecs, inet: Internet): DFGroup {
-                val dfConfig = this@NetSimScope.devConfig.netConfig.dfConfig
 
                 // Remaining global switches to add to group.
                 var glSwNum = specs.globalSwitchesPerGroup
 
                 val subnet =
                     // Create a new subnet in the global scope that can contain all the nodes in the group.
-                    if (dfConfig.subnets) addrMngr.getNewSubNet(nIps = specs.a * specs.p + specs.a)
+                    if (devConfig.netConfig.subnetOpt) addrMngr.getNewSubNet(nIps = specs.a * specs.p + specs.a)
                     // Else use "0.0.0.0/0" as a subnet (equivalent to no subnet)
                     else addrMngr.globalPrefix
 

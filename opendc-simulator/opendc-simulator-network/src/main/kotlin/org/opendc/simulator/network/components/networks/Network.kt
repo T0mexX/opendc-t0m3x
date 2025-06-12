@@ -33,12 +33,6 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
 
     /**
      * TODO
-     * performant indexing of nodes
-     */
-    val nodeLs: List<Node<*>>
-
-    /**
-     * TODO
      */
     val flowsById: Map<FlowId, INetFlow>
 
@@ -46,6 +40,11 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
      * TODO
      */
     val inet: Internet
+
+    /**
+     * TODO
+     */
+    val specs: NetworkSpecs<*>
 
     /**
      * TODO
@@ -74,7 +73,7 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
      * TODO
      */
     context(NetSimScope)
-    suspend fun fmtFlows(mode: NetSimStabilityMode = config.stabilityMode): String
+    suspend fun fmtFlows(mode: NetSimStabilityMode = config.stabilityMode, ls: Boolean = true): String
 
     context(NetSimScope)
     suspend fun fmt(mode: NetSimStabilityMode = config.stabilityMode): String =
@@ -89,8 +88,6 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
                 | global switches: ${getNodesById<GlobalSwitch>().size}
             """.trimIndent()
         }
-
-    override fun toSpecs(): NetworkSpecs<*>
 
     companion object {
         /**

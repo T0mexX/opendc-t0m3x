@@ -1,3 +1,5 @@
+@file:OptIn(InternalODCNetworkApi::class)
+
 package org.opendc.simulator.network.flow.internals
 
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +18,10 @@ import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.utils.CoroutineID
+import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.evntemitter.EvntEmitter
+import org.opendc.simulator.network.utils.evntemitter.IEvnt
+import org.opendc.simulator.network.utils.evntemitter.IEvntEmitter
 import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
 import org.opendc.simulator.network.utils.flyweight.publics.FWId
 import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
@@ -29,7 +35,7 @@ internal class NetFlowImpl private constructor(
     override val id: FlowId,
     demand: DataRate,
     override val stabilizer: NetSimStabilizer,
-): INetFlow {
+): INetFlow, IEvntEmitter<NetFlow> by IEvntEmitter() {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // INetFlow
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -133,8 +139,8 @@ internal class NetFlowImpl private constructor(
 //        override val demandChangedDisp: FWDispenser<NetFlow.DemandChanged> get() = _demandChangedDisp
 //        private lateinit var _demandChangedDisp: FWDispenser<NetFlow.DemandChanged>
 //
-//        override val throughputChangedDisp: FWDispenser<NetFlow.ThroughputChanged> get() = _throughputChangedDisp
-//        private lateinit var _throughputChangedDisp: FWDispenser<NetFlow.ThroughputChanged>
+        override val tputChangedDisp: FWDispenser<NetFlow.TPutChanged> get() = _throughputChangedDisp
+        private lateinit var _throughputChangedDisp: FWDispenser<NetFlow.TPutChanged>
 //
 //        override val fragmentCompletedDisp: FWDispenser<NetFlow.FragmentCompleted> get() = _fragmentCompletedDisp
 //        private lateinit var _fragmentCompletedDisp: FWDispenser<NetFlow.FragmentCompleted>
@@ -223,6 +229,8 @@ internal class NetFlowImpl private constructor(
                             val f = this@NetFlow as NetFlowImpl
                             val old: DataRate = throughput
                             f.throughput = newThroughput
+
+
 //                            val evnt = _throughputChangedDisp.acquire()
 //                            evnt.old = old
 //                            evnt.new = throughput
@@ -246,6 +254,17 @@ internal class NetFlowImpl private constructor(
                             val f = this@NetFlow as NetFlowImpl
                             val old: DataRate = throughput
                             f.throughput += amount
+
+                            if (this@NetFlow.nCollectors > 0) {
+                                @Suppress("UNCHECKED_CAST")
+                                (
+                                    tputChangedDisp.acquire().reset {
+                                    this.netFlow = this@NetFlow
+                                    this.old = old
+                                    this.new = f.throughput
+                                    } as IEvnt<NetFlow, NetFlow.TPutChanged>
+                                ).emit(from = this@NetFlow)
+                            }
 //                            val evnt = _throughputChangedDisp.acquire()
 //                            evnt.netFlow = f
 //                            evnt.old = old

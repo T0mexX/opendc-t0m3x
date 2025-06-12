@@ -24,7 +24,7 @@ internal sealed interface NetFlowVersion {
 
 //    val demandChangedDisp: FWDispenser<NetFlow.DemandChanged>
 //
-//    val throughputChangedDisp: FWDispenser<NetFlow.ThroughputChanged>
+    val tputChangedDisp: FWDispenser<NetFlow.TPutChanged>
 //
 //    val fragmentCompletedDisp: FWDispenser<NetFlow.FragmentCompleted>
 

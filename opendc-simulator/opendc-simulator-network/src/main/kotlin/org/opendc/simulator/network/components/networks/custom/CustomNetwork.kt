@@ -7,7 +7,7 @@ import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.Internet
-import org.opendc.simulator.network.components.specs.Specs
+import org.opendc.simulator.network.components.specs.NodeSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NonSerializable
 
@@ -17,13 +17,15 @@ internal class CustomNetwork private constructor(
     nodes: Collection<Node<*>>,
     override val inet: Internet,
 ): NetworkImpl() {
-
     override val _nodesById: MutableMap<NodeId, Node<*>> = nodes.associateBy { it.id }.toMutableMap()
-    override val _nodeLs: MutableList<Node<*>> = ArrayList(_nodesById.values)
-
 
     override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
         getNodesById<SenderNode<*>>().toMutableMap()
+
+    /**
+     * Recomputed on each call.
+     */
+    override val specs: CustomNetworkSpecs get() = toSpecs()
 
     // TODO: do not crash when error for REPL
     context(NetSimScope)
@@ -95,7 +97,7 @@ internal class CustomNetwork private constructor(
             }
 
         return CustomNetworkSpecs(
-            nodesSpecs = nodesById.values.filterNot { it is Internet }.map { it.toSpecs() },
+            nodesSpecs = nodesById.values.filterNot { it is Internet }.map { it.toSpecs() } as List<NodeSpecs<*>>,
             links = links,
         )
     }

@@ -1,9 +1,8 @@
-@file:OptIn(InternalOdcNetworkApi::class)
+@file:OptIn(InternalODCNetworkApi::class)
 
 package org.opendc.simulator.network.utils.invalidatable.internals
 
-import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
-import org.opendc.simulator.network.utils.InternalOdcNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNetworkApi
 
 public interface Invalidatable {
     public suspend fun invalidate()

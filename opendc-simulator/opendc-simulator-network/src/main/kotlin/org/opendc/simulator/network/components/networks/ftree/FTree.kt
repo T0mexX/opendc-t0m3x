@@ -2,8 +2,6 @@ package org.opendc.simulator.network.components.networks.ftree
 
 import kotlinx.serialization.Serializable
 import me.tongfei.progressbar.ProgressBar
-import me.tongfei.progressbar.ProgressBarBuilder
-import me.tongfei.progressbar.ProgressBarStyle
 import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.networks.NetworkSpecs
 import org.opendc.simulator.network.components.node.Node
@@ -13,7 +11,6 @@ import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.Internet
 import org.opendc.simulator.network.components.node.Switch
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
-import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
@@ -24,14 +21,13 @@ import kotlin.math.pow
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
 internal class FTree private constructor(
-    val specs: FatTreeSpecs,
+    override val specs: FatTreeSpecs,
     nodesById: Map<NodeId, Node<*>>,
     override val inet: Internet,
     val pods: List<FTreePod>,
 ): NetworkImpl() {
     override val _nodesById: MutableMap<NodeId, Node<*>> =
         nodesById.toMutableMap()
-    override val _nodeLs: MutableList<Node<*>> = ArrayList(_nodesById.values)
 
     override val _sendNodesById: MutableMap<NodeId, SenderNode<*>> =
         getNodesById<SenderNode<*>>().toMutableMap()
@@ -52,13 +48,7 @@ internal class FTree private constructor(
         suspend operator fun invoke(
             specs: FatTreeSpecs,
         ): FTree = withProgressBar(task = "Building FatTree Network...", max = specs.E_.toLong() + specs.V_) pb@ {
-            val fTreeConfig = devConfig.netConfig.ftreeConfig
-
             val inet = Internet()
-
-            // Determines if routing table should be updated progressively
-            // while the network is being built or at the end.
-            val updtRout = fTreeConfig.buildSteps == 1
 
             /**
              * Parameter that determines the topology which is defined as
@@ -75,7 +65,6 @@ internal class FTree private constructor(
                     specs.aggrSwSpecs,
                     specs.accessSwSpecs,
                     specs.hostSpecs,
-                    fTreeConfig
                 ))
             } }
 
@@ -83,7 +72,7 @@ internal class FTree private constructor(
                 buildList {
                     repeat(k * k / 4) {
                         add(
-                            specs.crSwSpecs.toGlobalSwitchSpecs().buildAsCore(inet, updtRoutTbl = updtRout)
+                            specs.crSwSpecs.toGlobalSwitchSpecs().buildAsCore(inet, updtRoutTbl = false)
                         )
                     }
                 }.chunked(k / 2)
@@ -91,7 +80,7 @@ internal class FTree private constructor(
 
             pods.forEach { pod ->
                 pod.aggrSwitches.forEachIndexed { switchIdx, switch ->
-                    coreSwitchesChunked[switchIdx].forEach { it.msgSyncConnect(switch, updtRoutTbl = updtRout) }
+                    coreSwitchesChunked[switchIdx].forEach { it.msgSyncConnect(switch, updtRoutTbl = false) }
                     this@pb.stepBy(coreSwitchesChunked[switchIdx].size.toLong())
                 }
             }
@@ -118,7 +107,8 @@ internal class FTree private constructor(
             assert(nodesById.values.filterIsInstance<HostNode>().size == specs.N_)
             assert(this@pb.current == specs.E_.toLong() + specs.V_)
 
-            if (fTreeConfig.buildSteps > 1) inet.msgAsyncShareRoutVect()
+            inet.msgAsyncShareRoutVect()
+            barrier.awaitStability()
 
             FTree(
                 specs = specs,
@@ -139,18 +129,14 @@ internal class FTree private constructor(
             aggrSpecs: SwitchSpecs,
             torSpecs: SwitchSpecs,
             hostNodeSpecs: HostNodeSpecs,
-            fTreeConfig: FTreeConfig,
         ): FTreePod {
-            val updtRoutOnConnect = fTreeConfig.buildSteps == 1
-            val updtRoutOnPodBuilt = fTreeConfig.buildSteps == 3
-
             val k: Int = listOf(aggrSpecs,torSpecs).minOf { it.nPorts() }
             val nodesPerPod: Int = (k.toDouble().pow(2) / 4 + k).toInt()
 
 
             val subnet =
                 // Create a new subnet in the global scope which contains at least `nodesPerPod` ips.
-                if (fTreeConfig.subnets) addrMngr.getNewSubNet(nIps = nodesPerPod)
+                if (devConfig.netConfig.subnetOpt) addrMngr.getNewSubNet(nIps = nodesPerPod)
                 // Else use "0.0.0.0/0" as a subnet (equivalent to no subnet)
                 else addrMngr.globalPrefix
 
@@ -167,7 +153,7 @@ internal class FTree private constructor(
             this@ProgressBar.stepBy(torSwitches.size.toLong())
 
             hostNodes.forEachIndexed { index, server ->
-                server.msgSyncConnect(torSwitches[index / (k / 2)], updtRoutTbl = updtRoutOnConnect)
+                server.msgSyncConnect(torSwitches[index / (k / 2)], updtRoutTbl = false)
             }
             this@ProgressBar.stepBy(hostNodes.size.toLong())
 
@@ -175,15 +161,13 @@ internal class FTree private constructor(
                 torSwitches
                     .map { _ ->
                         val newSwitch = aggrSpecs.build(subnet = subnet)
-                        torSwitches.forEach { newSwitch.msgSyncConnect(it, updtRoutTbl = updtRoutOnConnect) }
+                        torSwitches.forEach { newSwitch.msgSyncConnect(it, updtRoutTbl = false) }
                         this@ProgressBar.stepBy(torSwitches.size.toLong() + 1)
                         newSwitch
                     }.toList()
 
-            if (updtRoutOnPodBuilt) {
-                hostNodes.first().msgAsyncShareRoutVect()
-                barrier.awaitStability()
-            }
+            hostNodes.first().msgAsyncShareRoutVect()
+            barrier.awaitStability()
 
             return FTreePod(hosts = hostNodes, aggrSwitches = aggrSwitches, torSwitches = torSwitches)
         }
@@ -192,7 +176,7 @@ internal class FTree private constructor(
     /**
      * TODO
      */
-    internal class FTreePod(
+    data class FTreePod(
         val hosts: List<HostNode>,
         val torSwitches: List<Switch>,
         val aggrSwitches: List<Switch>,

@@ -1,6 +1,7 @@
 package org.opendc.simulator.network.components.node
 
 import inet.ipaddr.ipv4.IPv4Address
+import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
 import org.opendc.simulator.network.components.specs.GlobalSwitchSpecs

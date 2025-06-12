@@ -20,6 +20,7 @@ import org.opendc.common.logger.logger
 import org.opendc.simulator.network.components.node.SerializableNode
 import org.opendc.simulator.network.components.specs.HostNodeSpecs
 import org.opendc.simulator.network.components.networks.NetworkSpecs
+import org.opendc.simulator.network.components.specs.NodeSpecs
 import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.specs.SwitchSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -31,7 +32,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("custom")
 internal data class CustomNetworkSpecs(
-    val nodesSpecs: List<Specs<SerializableNode>> = emptyList(),
+    val nodesSpecs: List<NodeSpecs<*>> = emptyList(),
     @Serializable(with = LinkListSerializer::class)
     val links: List<Pair<NodeId, NodeId>> = emptyList(),
 ) : NetworkSpecs<CustomNetwork> {

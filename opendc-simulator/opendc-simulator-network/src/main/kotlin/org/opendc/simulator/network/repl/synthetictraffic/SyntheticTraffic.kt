@@ -212,12 +212,13 @@ internal class STrafficRandomPerm: SyntheticTraffic<Network>() {
     }
 }
 
+
 /**
  * TODO
  */
 @Serializable
-@SerialName("full")
-internal class STrafficFull: SyntheticTraffic<Network>() {
+@SerialName("uniform")
+internal class STrafficUniform: SyntheticTraffic<Network>() {
     context(NetSimScope, ProgressBar)
     override suspend fun startSyntheticFlows(
         net: Network,
@@ -238,7 +239,7 @@ internal class STrafficFull: SyntheticTraffic<Network>() {
                 val newF = devConfig.netFlowConfig.version(
                     senderId = src.id,
                     destId = dest.id,
-                    demand = demandMapping(src),
+                    demand = demandMapping(src) / (hosts.size - 1),
                 )
 
                 net.startFlow(newF)

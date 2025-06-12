@@ -29,24 +29,12 @@ internal data class DFSpecs(
     val switchSpecs: SwitchSpecs,
     val hostSpecs: HostNodeSpecs,
 ): NetworkSpecs<DragonFly> {
-    /**
-     * Number of routers (switches) in the network.
-     */
     override val R_: Int = a * g
 
-    /**
-     * Number of terminals (hosts) in the network.
-     */
     override val N_: Int = a * p * g
 
-    /**
-     * Number of vertices (nodes) in the network.
-     */
     override val V_: Int = R_ + R_ * p
 
-    /**
-     * Number of edges (links) in the network.
-     */
     override val E_: Int = let {
         val intraGroupsSw2Sw = (a *  (a - 1) / 2) * g
         val intraGroupH2Sw = a * p * g

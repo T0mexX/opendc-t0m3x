@@ -332,6 +332,10 @@ internal data class ERSpecs(
     }
 }
 
+
+internal fun main() {
+    println(ERSpecs(q = 31).adjacency.size)
+}
 //private fun main() {
 //
 //    val bo = FiniteField(3).getERGraph()

@@ -1,6 +1,5 @@
 package org.opendc.simulator.network.components.networks
 
-import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
@@ -10,6 +9,7 @@ import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.GlobalSwitch
 import org.opendc.simulator.network.components.node.HostNode
+import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.flow.publics.FlowId
 import org.opendc.simulator.network.policies.routing.RoutPolicy
@@ -33,9 +33,6 @@ internal abstract class NetworkImpl : Network {
 
     override val flowsById: Map<FlowId, INetFlow> get() = _flows
     protected val _flows: MutableMap<FlowId, INetFlow> = mutableMapOf()
-
-    override val nodeLs: List<Node<*>> get() = _nodeLs
-    protected abstract val _nodeLs: MutableList<Node<*>>
 
     override val evntFlow = EvntFlow<Network>()
 
@@ -68,40 +65,44 @@ internal abstract class NetworkImpl : Network {
             "\n" +
                 """
                 | === NETWORK INFO ===
-                | nodes: ${this.nodeLs.size - 1}
+                | nodes: ${this.nodesById.size - 1}
                 | switches: ${getNodesById<GlobalSwitch>().size}
                 | global switches: ${getNodesById<GlobalSwitch>().size}
                 | hosts: ${getNodesById<HostNode>().size}
                 """.trimIndent()
         }
 
+    override fun toSpecs(): Specs<Network> = specs
+
     context(NetSimScope)
-    override suspend fun fmtFlows(mode: NetSimStabilityMode): String =
+    override suspend fun fmtFlows(mode: NetSimStabilityMode, ls: Boolean): String =
         barrier.whileStable(mode) {
             val snap = net.snapshot()
             val f =_flows.values
 
             buildString {
-                appendLine("==== Flows ====")
-                appendLine(
-                    " | " +
-                        "id".padEnd(10) +
-                        "senderIp".padEnd(20) +
-                        "destIp".padEnd(20) +
-                        "demand".padEnd(20) +
-                        "throughput".padEnd(20),
-                )
-                flowsById.values.forEach { flow ->
+                if (ls) {
+                    appendLine("==== Flows ====")
                     appendLine(
                         " | " +
-                            flow.id.toString().padEnd(10) +
-                            flow.senderId.toIp().toString().padEnd(20) +
-                            flow.destId.toIp().toString().padEnd(20) +
-                            flow.demand.fmtValue("%.3f").padEnd(20) +
-                            flow.throughput.fmtValue("%.3f").padEnd(20),
+                            "id".padEnd(10) +
+                            "senderIp".padEnd(20) +
+                            "destIp".padEnd(20) +
+                            "demand".padEnd(20) +
+                            "throughput".padEnd(20),
                     )
+                    flowsById.values.forEach { flow ->
+                        appendLine(
+                            " | " +
+                                flow.id.toString().padEnd(10) +
+                                flow.senderId.toIp().toString().padEnd(20) +
+                                flow.destId.toIp().toString().padEnd(20) +
+                                flow.demand.fmtValue("%.3f").padEnd(20) +
+                                flow.throughput.fmtValue("%.3f").padEnd(20),
+                        )
+                    }
                 }
-                appendLine("| ==== Overview ====")
+                appendLine("==== Overview ====")
                 appendLine(
                     " | " +
                         "avg-demand".padEnd(15) +

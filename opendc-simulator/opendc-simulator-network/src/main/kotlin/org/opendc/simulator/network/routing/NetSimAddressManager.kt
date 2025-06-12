@@ -45,7 +45,7 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
         nIps: Int
     ): IPv4Address = mtx.withLock {
         assert(of == null || of.isIPv4 && of.isPrefixBlock)
-        assert(of == null || of in trie)
+        assert(of == null || of in trie || of == globalPrefix)
         assert(nIps > 0)
 
         // The largest prefix length that can contain nIps ips
@@ -109,9 +109,14 @@ internal class NetSimAddressManager: AbstractCoroutineContextElement(Key) {
      */
     internal  fun getNestedSubnetsOfIp(ip: IPv4Address): Sequence<IPv4Address> = sequence {
         assert(ip.isPrefixBlock.not())
-        var curr: TNode? = trie.getAddedNode(ip)!!
+
+        var curr: TNode = try {
+            trie.getAddedNode(ip)
+        } catch (_: Exception) {
+            error(ip)
+        }
         while (true) {
-            curr = curr?.addedParent() ?: break
+            curr = curr.addedParent() ?: break
             yield(curr.key)
         }
     }

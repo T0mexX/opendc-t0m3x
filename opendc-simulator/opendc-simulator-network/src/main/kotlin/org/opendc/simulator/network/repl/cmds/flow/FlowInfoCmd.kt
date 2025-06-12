@@ -24,6 +24,8 @@ package org.opendc.simulator.network.repl.cmds.flow
 
 import com.github.ajalt.clikt.parameters.options.check
 import com.github.ajalt.clikt.parameters.options.convert
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.long
 import inet.ipaddr.ipv4.IPv4Address
@@ -44,6 +46,10 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
         decodeOrNull<IPv4Address>(str)!!
     }.check("node does not exist") { it.toNId() in net.nodesById }
 
+    private val ls: Boolean by option(
+        names = arrayOf("-l", "--ls"),
+    ).flag(default = false)
+
     override fun aliases(): Map<String, List<String>> =
         mapOf(
             "i" to listOf(CMD_STR),
@@ -57,6 +63,6 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
             val node: Node<*>? = net[ip!!.toNId()]
             checkNotNull(node)
 //                echo(node.fmtFlows())
-        } ?: echo(net.fmtFlows())
+        } ?: echo(net.fmtFlows(ls = ls))
     }
 }

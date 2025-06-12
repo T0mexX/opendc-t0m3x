@@ -16,6 +16,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.internalstructs.RoutTbl2
 import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.link.LinkImpl
+import org.opendc.simulator.network.components.networks.TopNodeMeta
 import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.CoroutineID
@@ -32,6 +33,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Node
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    override var topNodeMeta: TopNodeMeta<*>? = null
 
     override val links: MutableList<Link?> = ArrayList<Link?>(nPorts).also { l ->
         repeat(nPorts) { l.add(null) }
