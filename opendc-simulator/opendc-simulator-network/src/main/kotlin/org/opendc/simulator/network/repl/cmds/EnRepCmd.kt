@@ -38,7 +38,6 @@ internal class EnRepCmd : REPLCmd(name = CMD_STR) {
         Json.decodeFromString("""{ "type": "$str" } """)
     }
 
-
     override fun aliases(): Map<String, List<String>> =
         mapOf(
             "en-rep" to listOf(CMD_STR),
@@ -47,10 +46,11 @@ internal class EnRepCmd : REPLCmd(name = CMD_STR) {
             "er" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run(): Unit = execREPLCmdCatching {
-        barrier.whileStable(NetSimStabilityMode.ENFORCED) {
-            sync(forceUpdt = true)
-            echo(enRecorder.fmt())
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+                sync(forceUpdt = true)
+                echo(enRecorder.fmt())
+            }
         }
-    }
 }

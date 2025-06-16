@@ -1,7 +1,6 @@
 import resources/my/scope.jsonc
 net info
-f synth bit-shuffle 100%
-f info
+f mk -s 0.0.0.4 -d 0.0.0.5 -b 800Mbps
 q
 
 f info

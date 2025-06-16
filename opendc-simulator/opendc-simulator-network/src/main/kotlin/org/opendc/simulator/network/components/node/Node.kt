@@ -1,32 +1,52 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.components.node
 
 import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.Job
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.internalstructs.RoutTbl2
-import org.opendc.simulator.network.components.specs.WithSpecs
+import org.opendc.simulator.network.components.Launchable
+import org.opendc.simulator.network.components.flow.INetFlow
+import org.opendc.simulator.network.components.flow.NetFlow
+import org.opendc.simulator.network.components.invalidatable.internals.IInvalidatable
 import org.opendc.simulator.network.components.link.Link
+import org.opendc.simulator.network.components.msgable.Msg
+import org.opendc.simulator.network.components.msgable.Msgable
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.TopNodeMeta
-import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
+import org.opendc.simulator.network.components.node.internalstructs.flowtable.FlowTable
+import org.opendc.simulator.network.components.node.internalstructs.routtbl.RoutTbl2
 import org.opendc.simulator.network.energy.EnConsumer
-import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.NetFlow
 import org.opendc.simulator.network.policies.routing.RoutPolicy
-import org.opendc.simulator.network.utils.Launchable
-import org.opendc.simulator.network.utils.flyweight.publics.FW
-import org.opendc.simulator.network.utils.flyweight.publics.FWId
-import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
-import org.opendc.simulator.network.utils.notifiable.Msg
-import org.opendc.simulator.network.utils.notifiable.Msgable
-
+import org.opendc.simulator.network.simscope.fwpool.FW
+import org.opendc.simulator.network.simscope.fwpool.FWId
 
 /**
  * Interface representing a node in a [Network].
  *
  * @param Self The more specific type of this [Node].
  */
-internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvalidatable, Msgable<Node<*>>, Launchable, EnConsumer<Self> {
+internal interface Node<Self : Node<Self>> : IInvalidatable, Msgable<Node<*>>, Launchable, EnConsumer<Self> {
     /**
      * The ip address associated with this node. All nodes have a unique ip address, including switches.
      */
@@ -59,11 +79,6 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     val job: Job?
 
     /**
-     * Policy that determines to which [Port]s the flowsById are forwarded to.
-     */
-    val routPolicy: RoutPolicy
-
-    /**
      * TODO
      */
     var topNodeMeta: TopNodeMeta<*>?
@@ -79,15 +94,29 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      */
     val flowTable: FlowTable
 
-    fun getFreeLinkIdx(): Int = links.indexOfFirst { it == null }.takeIf { it != -1 } ?: let {
-        error("port not available")
-    }
+    /**
+     * TODO
+     */
+    fun getFreeLinkIdx(): Int
+
+    /**
+     * TODO
+     */
+    fun toSpecs(): NodeSpecs<Self>
+
+    /**
+     * Used especially for assertions disabled at compile time.
+     */
+    infix fun isConnectedTo(otherN: Node<*>): Boolean = this.links.any { it?.receiverN === otherN }
 
     /**
      * Convenience method to send a [RxUpdt] [Msg] to this node.
      * @see RxUpdt
      */
-    suspend fun msgAsyncRxUpdt(deltaRate: DataRate, f: INetFlow)
+    suspend fun msgAsyncRxUpdt(
+        deltaRate: DataRate,
+        f: INetFlow,
+    )
 
     /**
      * Convenience method to send a [Connect] [Msg] to this node.
@@ -110,9 +139,9 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      */
     suspend fun msgAsyncShareRoutVect()
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Messages
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * A [Msg] that informs the receiving node that the incoming data rate for flow [netF]
@@ -124,7 +153,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * For details about inter-component communication using messages, see [Msg].
      * For an explanation of flyweight objects used during simulation, see [FW].
      */
-    interface RxUpdt: Msg<Node<*>, RxUpdt> {
+    interface RxUpdt : Msg<Node<*>, RxUpdt> {
         var netF: INetFlow
         var deltaRate: DataRate
         var toIntermediate: Boolean
@@ -142,7 +171,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * For details about inter-component communication using messages, see [Msg].
      * For an explanation of flyweight objects used during simulation, see [FW].
      */
-    interface Connect: Msg<Node<*>, Connect> {
+    interface Connect : Msg<Node<*>, Connect> {
         var other: Node<*>
         var updtRoutTbl: Boolean
 
@@ -161,7 +190,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * For an explanation of flyweight objects used during simulation, see [FW].
      * @see Connect
      */
-    interface AcceptConnection: Msg<Node<*>, AcceptConnection> {
+    interface AcceptConnection : Msg<Node<*>, AcceptConnection> {
         var toBeAccepted: Node<*>
         var updtRoutTbl: Boolean
 
@@ -171,7 +200,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     /**
      * TODO: Not used after total refactor.
      */
-    interface Disconnect: Msg<Node<*>, Disconnect> {
+    interface Disconnect : Msg<Node<*>, Disconnect> {
         var other: Node<*>
         var notifyOther: Boolean
 
@@ -186,8 +215,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * For details about inter-component communication using messages, see [Msg].
      * For an explanation of flyweight objects used during simulation, see [FW].
      */
-    interface ApplyRouting: Msg<Node<*>, ApplyRouting> {
-
+    interface ApplyRouting : Msg<Node<*>, ApplyRouting> {
         companion object : FWId<ApplyRouting>
     }
 
@@ -196,7 +224,7 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
      * @property from The adjacent node the routing update is coming from.
      * @property routVect The routing vector of [from] node.
      */
-    interface RoutTblUpdt: Msg<Node<*>, RoutTblUpdt> {
+    interface RoutTblUpdt : Msg<Node<*>, RoutTblUpdt> {
         var from: Node<*>
         var routVect: RoutTbl2.RoutVect
 
@@ -206,14 +234,9 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
     /**
      * TODO
      */
-    interface ShareRoutVect: Msg<Node<*>, ShareRoutVect> {
-
+    interface ShareRoutVect : Msg<Node<*>, ShareRoutVect> {
         companion object : FWId<ShareRoutVect>
     }
-
-
-
-
 
 //    override suspend fun totIncomingDataRateOf(fId: FlowId): DataRate = flowHandler.outgoingFlows[fId]?.demand.ifNull0()
 //
@@ -235,5 +258,3 @@ internal interface Node<Self: Node<Self>> : WithSpecs<SerializableNode>, IInvali
 //        | numConnectedNodes = $numOfConnectedNodes
 //        """.trimIndent()
 }
-
-

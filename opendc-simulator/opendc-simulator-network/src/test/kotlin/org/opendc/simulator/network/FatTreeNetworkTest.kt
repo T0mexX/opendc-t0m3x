@@ -34,9 +34,8 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.FatTreeNetwork
 import org.opendc.simulator.network.components.FatTreeNetwork.FatTreeTopologySpecs
 import org.opendc.simulator.network.components.HostNode
-import org.opendc.simulator.network.components.networks.`Network.bak`
-import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.Switch.SwitchSpecs
+import org.opendc.simulator.network.components.specs.Specs
 import java.io.File
 import kotlin.math.pow
 

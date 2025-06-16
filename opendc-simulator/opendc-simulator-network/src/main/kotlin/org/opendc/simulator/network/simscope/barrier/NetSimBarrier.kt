@@ -1,20 +1,42 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.simscope.barrier
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.simulator.network.simscope.NetSimConfig
 import org.opendc.simulator.network.simscope.NetSimScope
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
 /**
  * TODO
  */
 internal class NetSimBarrier internal constructor(
-    private val netSimConfig: NetSimConfig
-): AbstractCoroutineContextElement(Key) {
+    private val netSimConfig: NetSimConfig,
+) : AbstractCoroutineContextElement(Key) {
     /**
      * Determines if the network is currently in a stable state.
      * - locked => network unstable
@@ -22,11 +44,11 @@ internal class NetSimBarrier internal constructor(
      */
     private val stabilityMtx = Mutex()
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Stability Enforcing:
-    ///// Logic concerning awaiting and then enforcing network stability
-    ///// while a block is being executed.
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // /// Logic concerning awaiting and then enforcing network stability
+    // /// while a block is being executed.
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Number of coroutines that are currently enforcing stability.
@@ -64,11 +86,11 @@ internal class NetSimBarrier internal constructor(
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Stability Checking:
-    ///// Logic concerning checking that the network remains stable while
-    ///// a block is being executed.
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // /// Logic concerning checking that the network remains stable while
+    // /// a block is being executed.
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Number of blocks that are currently being executed in the [whileStabilityChecked] method.
@@ -109,11 +131,11 @@ internal class NetSimBarrier internal constructor(
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Adding Validators:
-    ///// Logic concerning increasing the number of `Validators`
-    ///// required to validate their state at the barrier.
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // /// Logic concerning increasing the number of `Validators`
+    // /// required to validate their state at the barrier.
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * The root's child [ChildBarrier] within the root [NetSimBarrier].
@@ -129,13 +151,14 @@ internal class NetSimBarrier internal constructor(
     /**
      * @return a new [NetSimStabilizer] for this [NetSimBarrier].
      */
-    internal suspend fun stabilizer(): NetSimStabilizer = newInvalidatorMtx.withLock {
-        childBarrier.stabilizer()
-    }
+    internal suspend fun stabilizer(): NetSimStabilizer =
+        newInvalidatorMtx.withLock {
+            childBarrier.stabilizer()
+        }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Base Stability Methods
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Suspends until the network is stable (All components
@@ -154,23 +177,24 @@ internal class NetSimBarrier internal constructor(
      * If not defined, it defaults to the mode inherited from [NetSimScope].
      * @param block The block that needs to be executed while the network is stable.
      */
-    internal suspend fun  <T> whileStable(
+    internal suspend fun <T> whileStable(
         netSimStabilityMode: NetSimStabilityMode = netSimConfig.stabilityMode,
-        block: suspend () -> T
-    ): T = when (netSimStabilityMode) {
-        NetSimStabilityMode.ENFORCED -> whileStabilityEnforced(block)
-        NetSimStabilityMode.CHECKED -> whileStabilityChecked(block)
-        NetSimStabilityMode.ASSUMED -> block()
-    }
+        block: suspend () -> T,
+    ): T =
+        when (netSimStabilityMode) {
+            NetSimStabilityMode.ENFORCED -> whileStabilityEnforced(block)
+            NetSimStabilityMode.CHECKED -> whileStabilityChecked(block)
+            NetSimStabilityMode.ASSUMED -> block()
+        }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // RootInvalidator
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * [NetSimStabilizer] passed to first [ChildBarrier] from the [NetSimBarrier].
      */
-    private inner class RootNetSimStabilizer: NetSimStabilizer() {
+    private inner class RootNetSimStabilizer : NetSimStabilizer() {
         override val netSimConfig: NetSimConfig = this@NetSimBarrier.netSimConfig
         override val isValidated: Boolean
             get() = stabilityMtx.isLocked
@@ -179,28 +203,29 @@ internal class NetSimBarrier internal constructor(
 
         override suspend fun validate(): Unit = stabilityMtx.unlock()
 
-        override suspend fun <T> whileNetStable(netSimStabilityMode: NetSimStabilityMode, block: suspend () -> T): T =
-            throw RuntimeException("should not be invoked")
+        override suspend fun <T> whileNetStable(
+            netSimStabilityMode: NetSimStabilityMode,
+            block: suspend () -> T,
+        ): T = throw RuntimeException("should not be invoked")
 
         override suspend fun awaitStability() = throw RuntimeException("should not be invoked")
     }
 
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ChildBarrier
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private inner class ChildBarrier(private val parentNetSimStabilizer: NetSimStabilizer) {
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Properties: counting invalidations at this barrier
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         private var invalidCount: Int = 0
         private val countMtx = Mutex()
 
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Properties: logic for constructing a new `NetSimStabilizer`
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         private lateinit var childBarrier: ChildBarrier
         private var invalidatorCount: Int = 0
@@ -208,27 +233,28 @@ internal class NetSimBarrier internal constructor(
         private val newInvalidatorMtx = Mutex()
 
         // Methods
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         /**
          * @return a new [NetSimStabilizer].
          */
-        suspend fun stabilizer(): NetSimStabilizer = newInvalidatorMtx.withLock {
-            if (invalidatorCount < invalidatorMax) {
-                invalidatorCount++
-                NetSimStabilizerImpl()
-            } else if (this::childBarrier.isInitialized) {
-                childBarrier.stabilizer()
-            } else {
-                childBarrier = ChildBarrier(parentNetSimStabilizer = NetSimStabilizerImpl())
-                childBarrier.stabilizer()
+        suspend fun stabilizer(): NetSimStabilizer =
+            newInvalidatorMtx.withLock {
+                if (invalidatorCount < invalidatorMax) {
+                    invalidatorCount++
+                    NetSimStabilizerImpl()
+                } else if (this::childBarrier.isInitialized) {
+                    childBarrier.stabilizer()
+                } else {
+                    childBarrier = ChildBarrier(parentNetSimStabilizer = NetSimStabilizerImpl())
+                    childBarrier.stabilizer()
+                }
             }
-        }
 
         /**
          * @see NetSimStabilizer
          */
-        private inner class NetSimStabilizerImpl: NetSimStabilizer() {
+        private inner class NetSimStabilizerImpl : NetSimStabilizer() {
             override val netSimConfig: NetSimConfig = this@NetSimBarrier.netSimConfig
 
             /**
@@ -251,7 +277,7 @@ internal class NetSimBarrier internal constructor(
                 if (shouldBeStable) {
                     error(
                         "unable to invalidate network stability: " +
-                            "a stability-checked block is currently being executed"
+                            "a stability-checked block is currently being executed",
                     )
                 }
 
@@ -280,7 +306,7 @@ internal class NetSimBarrier internal constructor(
 
             override suspend fun <T> whileNetStable(
                 netSimStabilityMode: NetSimStabilityMode,
-                block: suspend () -> T
+                block: suspend () -> T,
             ): T = this@NetSimBarrier.whileStable(netSimStabilityMode, block)
 
             override suspend fun awaitStability() = this@NetSimBarrier.awaitStability()

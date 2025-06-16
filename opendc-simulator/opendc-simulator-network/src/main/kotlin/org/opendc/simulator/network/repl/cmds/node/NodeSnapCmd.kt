@@ -25,15 +25,8 @@ package org.opendc.simulator.network.repl.cmds.node
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.arguments.convert
-import com.github.ajalt.clikt.parameters.arguments.default
-import com.github.ajalt.clikt.parameters.arguments.optional
-import com.github.ajalt.clikt.parameters.types.long
 import inet.ipaddr.ipv4.IPv4Address
-import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
-import org.opendc.simulator.network.components.networks.NetworkImpl
-import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
@@ -55,10 +48,11 @@ internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
             "snap" to listOf(CMD_STR),
         )
 
-    override fun run(): Unit = execREPLCmdCatching {
-        barrier.whileStable(NetSimStabilityMode.ENFORCED) {
-            sync(forceUpdt = true)
-            echo(net.nodesById[ip.toNId()]!!.snapshot().fmt())
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+                sync(forceUpdt = true)
+                echo(net.nodesById[ip.toNId()]!!.snapshot().fmt())
+            }
         }
-    }
 }

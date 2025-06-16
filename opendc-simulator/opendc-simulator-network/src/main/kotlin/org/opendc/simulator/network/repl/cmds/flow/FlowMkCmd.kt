@@ -26,12 +26,10 @@ import com.github.ajalt.clikt.parameters.options.check
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
-import com.github.ajalt.clikt.parameters.types.long
-import kotlinx.coroutines.runBlocking
+import inet.ipaddr.ipv4.IPv4Address
+import kotlinx.coroutines.selects.select
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
-import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.SenderNode
+import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowMkCmd : REPLCmd("mk") {
@@ -43,27 +41,54 @@ internal class FlowMkCmd : REPLCmd("mk") {
             ?: fail("Unable to parse data rate '$it' (E_.g. 1Gbps)")
     }.required().check("demand must be positive") { it >= DataRate.zero }
 
-    private val senderId: Long by option(
-        help = "The node id of the sender",
-        names = arrayOf("-s", "--senderid"),
-    ).long().required().check("sender invalid") { net.getNodesById<SenderNode<*>>().contains(NodeId(it)) }
+    private val srcIp: IPv4Address by option(
+        help = "The ip of the source node",
+        names = arrayOf("-s", "--senderip"),
+    ).convert { str ->
+        decodeOrNull<IPv4Address>(str)!!
+    }.required().check("node does not exist") { it.toNId() in net.nodesById }
 
-    private val destId: Long by option(
-        help = "The node id of the receiver",
-        names = arrayOf("-d", "--destinationid", "--destid"),
-    ).long().required().check("destination invalid") { net.nodesById.contains(NodeId(it)) }
+    private val destIp: IPv4Address by option(
+        help = "The ip of the destination node",
+        names = arrayOf("-d", "--destip"),
+    ).convert { str ->
+        decodeOrNull<IPv4Address>(str)!!
+    }.required().check("node does not exist") { it.toNId() in net.nodesById }
 
-    override fun run(): Unit = execREPLCmdCatching {
-        barrier.awaitStability()
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.awaitStability()
 
-        val newFlow = scope.devConfig.netFlowConfig.version(
-            demand = demand,
-            senderId = NodeId(senderId),
-            destId = NodeId(destId),
-        )
+            val newFlow =
+                scope.devConfig.netFlowConfig.version(
+                    demand = demand,
+                    senderId = srcIp.toNId(),
+                    destId = destIp.toNId(),
+                )
 
-        net.startFlow(newFlow)
-        barrier.awaitStability()
-        echo("| Started flow $newFlow")
-    }
+            // TODO: remove
+            val listener1 = newFlow.evntListener()
+            val listener2 = newFlow.evntListener()
+
+            net.startFlow(newFlow) // TODO not remove
+            var cnt = 0
+            while (cnt < 2) {
+                select {
+                    listener1.onReceive { evnt ->
+                        println(evnt)
+                        evnt.handled()
+                        cnt++
+                    }
+                    listener2.onReceive { evnt ->
+                        println(evnt)
+                        evnt.handled()
+                        cnt++
+                    }
+                }
+            }
+            // TODO: end remove
+
+            barrier.awaitStability()
+            echo("| Started flow $newFlow")
+        }
 }

@@ -28,14 +28,14 @@ import kotlinx.serialization.json.Json
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.REPLEnv
-import org.opendc.simulator.network.repl.REPLTmSrc
 import org.opendc.simulator.network.simscope.NetSimScope
 
 internal abstract class REPLNoOpCmd(val name: String) : NoOpCliktCommand(name = name, invokeWithoutSubcommand = false) {
     protected val log by logger(name)
 
     protected val env by requireObject<REPLEnv>()
-    protected val net: Network by lazy { env.network }
+    protected val net: Network<*> by lazy { env.network }
+
 //    protected val enRec: NetEnRecorder by lazy { env.energyRecorder }
     protected val scope: NetSimScope by lazy { env.scope }
 

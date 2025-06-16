@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.components.node
 
 import inet.ipaddr.ipv4.IPv4Address
@@ -13,39 +35,43 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
-import org.opendc.simulator.network.components.internalstructs.RoutTbl2
+import org.opendc.simulator.network.components.flow.INetFlow
+import org.opendc.simulator.network.components.invalidatable.internals.InvalidatorChl
 import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.link.LinkImpl
+import org.opendc.simulator.network.components.msgable.Msg
+import org.opendc.simulator.network.components.msgable.MsgImpl
 import org.opendc.simulator.network.components.networks.TopNodeMeta
-import org.opendc.simulator.network.flow.internals.INetFlow
+import org.opendc.simulator.network.components.node.internalstructs.routtbl.RoutTbl2
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.simscope.fwpool.FWDispenser
+import org.opendc.simulator.network.simscope.fwpool.FWId
 import org.opendc.simulator.network.utils.CoroutineID
-import org.opendc.simulator.network.utils.flyweight.internals.FWDispenser
-import org.opendc.simulator.network.utils.flyweight.publics.FWId
-import org.opendc.simulator.network.utils.invalidatable.internals.InvalidatorChl
-import org.opendc.simulator.network.utils.notifiable.Msg
-import org.opendc.simulator.network.utils.notifiable.MsgImpl
 
-internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
+internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
     final override val ip: IPv4Address,
     nPorts: Int,
 ) : Node<Self> {
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Node
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override var topNodeMeta: TopNodeMeta<*>? = null
 
-    override val links: MutableList<Link?> = ArrayList<Link?>(nPorts).also { l ->
-        repeat(nPorts) { l.add(null) }
-    }
+    override val links: MutableList<Link?> =
+        ArrayList<Link?>(nPorts).also { l ->
+            repeat(nPorts) { l.add(null) }
+        }
 
     @Suppress("LeakingThis")
     override val routTbl: RoutTbl2 = RoutTbl2(owner = this)
     override lateinit var job: Job
 
-    override suspend fun msgAsyncRxUpdt(deltaRate: DataRate, f: INetFlow) {
-        assert(deltaRate.approx(DataRate.zero).not()) {deltaRate}
+    override suspend fun msgAsyncRxUpdt(
+        deltaRate: DataRate,
+        f: INetFlow,
+    ) {
+        assert(deltaRate.approx(DataRate.zero).not()) { deltaRate }
 
         rxUpdateDisp.acquire().reset {
             this.deltaRate = deltaRate
@@ -53,7 +79,13 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
         }.sendTo(this)
     }
 
-    override suspend fun msgSyncConnect(other: Node<*>, linkBw: DataRate, updtRoutTbl: Boolean) {
+    override fun getFreeLinkIdx(): Int = links.indexOfFirst { it == null }.takeIf { it != -1 } ?: error("port not available")
+
+    override suspend fun msgSyncConnect(
+        other: Node<*>,
+        linkBw: DataRate,
+        updtRoutTbl: Boolean,
+    ) {
         val msg = connectDisp.acquire().reset()
         msg.other = other
         msg.updtRoutTbl = updtRoutTbl
@@ -70,11 +102,9 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
         shareRoutVectDisp.acquire().reset().sendTo(this)
     }
 
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Node Implementation
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //    /**
 //     * Awaits all ports to be in [Port.STABLE] or [Port.DISCONNECTED] or [Port.IDLE] states.
@@ -111,59 +141,58 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
 //        }
 //    }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Launchable
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     context(NetSimScope)
     override suspend fun netLaunch(scope: CoroutineScope): Job {
         assert(::job.isInitialized.not())
 
-        job = scope.launch(CoroutineID.new()) {
-            while (isActive) {
-                while (true) {
-                    // Accumulate multiple updates if possible
-                    // before telling the ports to process them and propagate results.
-                    _msgChl.tryReceiveValidate().getOrNull()?.handle()
-                        ?: break
-                }
-                //
-                // Propagate updates to adjacent nodes.
-                coroutineScope {
-                    links.forEach { l ->
-                        launch { l?.attemptTx() }
+        job =
+            scope.launch(CoroutineID.new()) {
+                while (isActive) {
+                    while (true) {
+                        // Accumulate multiple updates if possible
+                        // before telling the ports to process them and propagate results.
+                        _msgChl.tryReceiveValidate().getOrNull()?.handle()
+                            ?: break
                     }
+                    //
+                    // Propagate updates to adjacent nodes.
+                    coroutineScope {
+                        links.forEach { l ->
+                            launch { l?.attemptTx() }
+                        }
+                    }
+                    // Suspending receive. When node suspends here, its stability is validated.
+                    _msgChl.receive().handle()
+                    assert(stabilizer.isValidated.not())
                 }
-                // Suspending receive. When node suspends here, its stability is validated.
-                _msgChl.receive().handle()
-                assert(stabilizer.isValidated.not())
             }
-        }
 
         return job
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Msgable
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Suppress("LeakingThis")
     private val _msgChl: InvalidatorChl<Msg<Node<*>, *>> = InvalidatorChl(receiver = this)
     override val msgChl: SendChannel<Msg<Node<*>, *>> get() = _msgChl
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NodeVersion
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Serializable
     @SerialName("V0")
     companion object : NodeVersion {
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Msgs
-        ////// Dispenser initialization for flyweight `Msg` objects related to `Node`s
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // //// Dispenser initialization for flyweight `Msg` objects related to `Node`s
+        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         override val rxUpdateDisp: FWDispenser<Node.RxUpdt> get() = _rxUpdateDisp
         private lateinit var _rxUpdateDisp: FWDispenser<Node.RxUpdt>
@@ -177,8 +206,8 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
         override val applyRoutingDisp: FWDispenser<Node.ApplyRouting> get() = _applyRoutingDisp
         private lateinit var _applyRoutingDisp: FWDispenser<Node.ApplyRouting>
 
-        override val acceptConnectionDisp: FWDispenser<Node.AcceptConnection> get() = _acceptConnectioDisp
-        private lateinit var _acceptConnectioDisp: FWDispenser<Node.AcceptConnection>
+        override val acceptConnectionDisp: FWDispenser<Node.AcceptConnection> get() = _acceptConnectionDisp
+        private lateinit var _acceptConnectionDisp: FWDispenser<Node.AcceptConnection>
 
         override val routTblUpdtDisp: FWDispenser<Node.RoutTblUpdt> get() = _routTblUpdtDisp
         private lateinit var _routTblUpdtDisp: FWDispenser<Node.RoutTblUpdt>
@@ -186,12 +215,11 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
         override val shareRoutVectDisp: FWDispenser<Node.ShareRoutVect> get() = _shareRoutVectDisp
         private lateinit var _shareRoutVectDisp: FWDispenser<Node.ShareRoutVect>
 
-
-        context(NetSimScope) override suspend fun initDispensers() {
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        context(NetSimScope)
+        override suspend fun initDispensers() {
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // RxUpdate
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _rxUpdateDisp =
                 poolAggr.getOrAdd(Node.RxUpdt as FWId<Node.RxUpdt>) { pool, idx ->
                     object : Node.RxUpdt, MsgImpl<Node<*>, Node.RxUpdt>(pool, idx) {
@@ -210,11 +238,9 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                     }
                 }
 
-
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // Connect
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _connectDisp =
                 poolAggr.getOrAdd(Node.Connect as FWId<Node.Connect>) { pool, idx ->
                     object : Node.Connect, MsgImpl<Node<*>, Node.Connect>(pool, idx) {
@@ -232,11 +258,12 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             //
                             // Set up link from this node to `otherN`.
                             val lIdx = getFreeLinkIdx()
-                            links[lIdx] = LinkImpl(
-                                senderN = this@NodeImpl,
-                                receiverN = otherN,
-                                linkIdx = lIdx,
-                            )
+                            links[lIdx] =
+                                LinkImpl(
+                                    senderN = this@NodeImpl,
+                                    receiverN = otherN,
+                                    linkIdx = lIdx,
+                                )
 
                             // Ask another node to accept connection.
                             acceptConnectionDisp.acquire().reset {
@@ -264,59 +291,57 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                             handled()
                         }
                     }
-            }
+                }
 
-
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // AcceptConnection
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            _acceptConnectioDisp = poolAggr.getOrAdd(Node.AcceptConnection as FWId<Node.AcceptConnection>) { pool, idx ->
-                object : Node.AcceptConnection, MsgImpl<Node<*>, Node.AcceptConnection>(pool, idx) {
-                    override lateinit var toBeAccepted: Node<*>
-                    override var updtRoutTbl: Boolean = true
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            _acceptConnectionDisp =
+                poolAggr.getOrAdd(Node.AcceptConnection as FWId<Node.AcceptConnection>) { pool, idx ->
+                    object : Node.AcceptConnection, MsgImpl<Node<*>, Node.AcceptConnection>(pool, idx) {
+                        override lateinit var toBeAccepted: Node<*>
+                        override var updtRoutTbl: Boolean = true
 
-                    context(NodeImpl<*>)
-                    override suspend fun handle() {
-                        // TODO: needed?
+                        context(NodeImpl<*>)
+                        override suspend fun handle() {
+                            // TODO: needed?
 //                        // Process all flow updates at the port level received so far.
 //                        this@Node.portProcessAwait()
 
-                        //
-                        // Set up link from this node to `toBeAccepted`.
-                        val lIdx = getFreeLinkIdx()
-                        links[lIdx] = LinkImpl(
-                            receiverN = toBeAccepted,
-                            senderN = this@NodeImpl,
-                            linkIdx = lIdx,
-                        )
+                            //
+                            // Set up link from this node to `toBeAccepted`.
+                            val lIdx = getFreeLinkIdx()
+                            links[lIdx] =
+                                LinkImpl(
+                                    receiverN = toBeAccepted,
+                                    senderN = this@NodeImpl,
+                                    linkIdx = lIdx,
+                                )
 
-                        // Mark the routing table as to be shared.
-                        routTbl.shared = false
+                            // Mark the routing table as to be shared.
+                            routTbl.shared = false
 
-                        if (updtRoutTbl) {
-                            // Send this node's routing vector to the newly connected node.
-                            routTblUpdtDisp.acquire().reset {
-                                from = this@NodeImpl
-                                routVect = routTbl.routVect
-                                updtRoutTbl = true
-                            }.sendTo(toBeAccepted)
+                            if (updtRoutTbl) {
+                                // Send this node's routing vector to the newly connected node.
+                                routTblUpdtDisp.acquire().reset {
+                                    from = this@NodeImpl
+                                    routVect = routTbl.routVect
+                                    updtRoutTbl = true
+                                }.sendTo(toBeAccepted)
 
-                            // The other node will be sending its routing vector to this.
-                            // Until both nodes processed the new routing information and made
-                            // the necessary adjustments, the network state is considered unstable.
+                                // The other node will be sending its routing vector to this.
+                                // Until both nodes processed the new routing information and made
+                                // the necessary adjustments, the network state is considered unstable.
+                            }
+
+                            handled()
                         }
-
-                        handled()
                     }
                 }
-            }
 
-
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // Disconnect
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _disconnectDisp =
                 poolAggr.getOrAdd(Node.Disconnect as FWId<Node.Disconnect>) { pool, idx ->
                     object : Node.Disconnect, MsgImpl<Node<*>, Node.Disconnect>(pool, idx) {
@@ -330,17 +355,14 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                     }
                 }
 
-
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // ApplyRouting
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _applyRoutingDisp =
                 poolAggr.getOrAdd(Node.ApplyRouting as FWId<Node.ApplyRouting>) { pool, idx ->
                     object : Node.ApplyRouting, MsgImpl<Node<*>, Node.ApplyRouting>(pool, idx) {
                         context(NodeImpl<*>)
                         override suspend fun handle() {
-
                             flowTable.reapplyRouting()
 
 //                            // Make ports reapply fairness policy.
@@ -352,17 +374,14 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                     }
                 }
 
-
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // TblUpdt
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _routTblUpdtDisp =
                 poolAggr.getOrAdd(Node.RoutTblUpdt as FWId<Node.RoutTblUpdt>) { pool, idx ->
                     object : Node.RoutTblUpdt, MsgImpl<Node<*>, Node.RoutTblUpdt>(pool, idx) {
                         override lateinit var from: Node<*>
                         override lateinit var routVect: RoutTbl2.RoutVect
-
 
                         context(NodeImpl<*>)
                         override suspend fun handle() {
@@ -383,15 +402,12 @@ internal abstract class NodeImpl<Self: Node<Self>> protected constructor(
                     }
                 }
 
-
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // ShareRoutVect
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             _shareRoutVectDisp =
                 poolAggr.getOrAdd(Node.ShareRoutVect as FWId<Node.ShareRoutVect>) { pool, idx ->
                     object : Node.ShareRoutVect, MsgImpl<Node<*>, Node.ShareRoutVect>(pool, idx) {
-
                         context(NodeImpl<*>)
                         override suspend fun handle() {
                             // A previous `ShareRoutVect` has already shared the current version of the routing table.

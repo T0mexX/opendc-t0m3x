@@ -25,11 +25,9 @@ package org.opendc.simulator.network.repl.cmds
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.REPLEnv
-import org.opendc.simulator.network.repl.REPLTmSrc
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NETWORK_JSON
 import kotlin.coroutines.CoroutineContext
@@ -38,7 +36,8 @@ internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
     protected val log by logger(name)
 
     protected val env by requireObject<REPLEnv>()
-    protected val net: Network by lazy { env.network }
+    protected val net: Network<*> by lazy { env.network }
+
 //    protected val enRec: NetEnRecorder by lazy { env.energyRecorder }
 //    protected val tmSrc: REPLTmSrc by lazy { env.tmSrc }
     protected val scope: NetSimScope by lazy { env.scope }
@@ -53,10 +52,10 @@ internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
      */
     fun execREPLCmdCatching(
         ctx: CoroutineContext = scope.ctx,
-        block: suspend NetSimScope.() -> Unit
+        block: suspend NetSimScope.() -> Unit,
     ) = runBlocking(ctx) {
 //        runCatching {
-            scope.block()
+        scope.block()
 //        }.let {
 //            if (it.isFailure) {
 //                echo("unable to execute command ${this@REPLCmd.commandName}.\N_" +

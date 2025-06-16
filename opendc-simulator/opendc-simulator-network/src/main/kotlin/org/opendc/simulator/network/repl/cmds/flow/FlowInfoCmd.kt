@@ -27,14 +27,10 @@ import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.parameters.types.long
 import inet.ipaddr.ipv4.IPv4Address
-import kotlinx.coroutines.runBlocking
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
-import org.opendc.simulator.network.utils.NETWORK_JSON
 
 private const val CMD_STR: String = "info"
 
@@ -42,7 +38,7 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
     private val ip: IPv4Address? by option(
         help = "Id of the node to display info of",
         names = arrayOf("-N_", "--node"),
-    ).convert {str ->
+    ).convert { str ->
         decodeOrNull<IPv4Address>(str)!!
     }.check("node does not exist") { it.toNId() in net.nodesById }
 
@@ -55,14 +51,15 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
             "i" to listOf(CMD_STR),
         )
 
-    override fun run(): Unit = execREPLCmdCatching {
-        scope.barrier.awaitStability()
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            scope.barrier.awaitStability()
 
-        ip?.let {
-            // NodeId2 specified.
-            val node: Node<*>? = net[ip!!.toNId()]
-            checkNotNull(node)
+            ip?.let {
+                // NodeId2 specified.
+                val node: Node<*>? = net[ip!!.toNId()]
+                checkNotNull(node)
 //                echo(node.fmtFlows())
-        } ?: echo(net.fmtFlows(ls = ls))
-    }
+            } ?: echo(net.fmtFlows(ls = ls))
+        }
 }

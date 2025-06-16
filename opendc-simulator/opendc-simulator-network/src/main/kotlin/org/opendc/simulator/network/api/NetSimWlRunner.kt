@@ -1,8 +1,29 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.api
 
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
@@ -13,12 +34,11 @@ import org.opendc.simulator.network.api.workload.NetWorkload
 import org.opendc.simulator.network.api.workload.NetworkEvent
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
 import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
-import org.opendc.simulator.network.components.node.HostNode
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.export.NetSimExporter
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimTmSrc
-import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import kotlin.system.measureTimeMillis
 
 /**
@@ -28,15 +48,16 @@ import kotlin.system.measureTimeMillis
 public class NetSimWlRunner internal constructor(
     internal val netScope: NetSimScope,
     wl: NetWorkload,
-): AutoCloseable {
+) : AutoCloseable {
     /**
      * TODO
      */
-    private val pb = ProgressBarBuilder()
-                .setInitialMax(wl.numRemainingEvents.toLong())
-                .setStyle(ProgressBarStyle.ASCII)
-                .setTaskName("Simulating network...")
-                .build()
+    private val pb =
+        ProgressBarBuilder()
+            .setInitialMax(wl.numRemainingEvents.toLong())
+            .setStyle(ProgressBarStyle.ASCII)
+            .setTaskName("Simulating network...")
+            .build()
 
     /**
      * TODO
@@ -53,34 +74,35 @@ public class NetSimWlRunner internal constructor(
     /**
      * TODO
      */
-    public suspend fun run(): Unit = netScope.launch {
-        preRun()
+    public suspend fun run(): Unit =
+        netScope.launch {
+            preRun()
 
-        val simTime: TimeDelta = TimeDelta.ofMillis(
-            measureTimeMillis {
-                while (wl.hasNext()) {
-                    val nextDeadline = nextDeadline()
+            val simTime: TimeDelta =
+                TimeDelta.ofMillis(
+                    measureTimeMillis {
+                        while (wl.hasNext()) {
+                            val nextDeadline = nextDeadline()
 
-                    // Execute all network events up until `nextDeadline` timestamp.
-                    pb.stepBy(execUntil(nextDeadline))
-                    netScope.sync()
+                            // Execute all network events up until `nextDeadline` timestamp.
+                            pb.stepBy(execUntil(nextDeadline))
+                            netScope.sync()
 
-                    // If export is needed at the reached timestamp then do.
-                    exporter?.let { exp ->
-                        if (tmSrc.tmstamp == exp.nextExportDeadline()) {
-                            exp.exportNow()
+                            // If export is needed at the reached timestamp then do.
+                            exporter?.let { exp ->
+                                if (tmSrc.tmstamp == exp.nextExportDeadline()) {
+                                    exp.exportNow()
+                                }
+                            }
                         }
-                    }
-                }
-            }
-        )
+                    },
+                )
 
-        postRun(simTime)
-    }.join()
+            postRun(simTime)
+        }.join()
 
     context(NetSimScope)
-    private fun nextDeadline() =
-        (exporter?.nextExportDeadline() ?: Timestamp.max) min wl.peek()!!.deadline
+    private fun nextDeadline() = (exporter?.nextExportDeadline() ?: Timestamp.max) min wl.peek()!!.deadline
 
     /**
      * TODO
@@ -105,17 +127,18 @@ public class NetSimWlRunner internal constructor(
         // TODO: try more performant
 
         // Available physical hosts to be mapped to workload node ids.
-        val hToClaim = netScope.net.getNodesById<HostNode>().keys.iterator()
+        val hToClaim = netScope.net.getNodesById<Terminal>().keys.iterator()
 
         // Keeps track of the current mapping from workload ids to physical network node ids.
-        val virtualMap =  mutableMapOf<NodeId, NodeId>()
+        val virtualMap = mutableMapOf<NodeId, NodeId>()
 
         // If `this` `NodeId` not already mapped then map else use mapped.
-        fun NodeId.mapIfNeeded(): NodeId = this.takeIf {
-            it == INTERNET_ID
-        } ?: virtualMap[this]
-            ?: kotlin.runCatching { hToClaim.next().also { virtualMap += this to it } }
-            .getOrNull() ?: error("not enough hosts in topology for this workload")
+        fun NodeId.mapIfNeeded(): NodeId =
+            this.takeIf {
+                it == INTERNET_ID
+            } ?: virtualMap[this]
+                ?: kotlin.runCatching { hToClaim.next().also { virtualMap += this to it } }
+                    .getOrNull() ?: error("not enough hosts in topology for this workload")
 
         // New `NetWorkload` with all node ids corresponding to physical ids in the network.
         return NetWorkload(
@@ -126,7 +149,7 @@ public class NetSimWlRunner internal constructor(
                     to = evnt.to.mapIfNeeded(),
                     // Set old
                 ).also { new -> evnt.targetFlowGetter = { new.targetFlow } }
-            }
+            },
         )
     }
 
@@ -182,5 +205,3 @@ public class NetSimWlRunner internal constructor(
 //        }
 //    }
 }
-
-

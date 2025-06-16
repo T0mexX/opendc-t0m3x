@@ -1,10 +1,34 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+@file:Suppress("PropertyName")
+
 package org.opendc.simulator.network.components.networks.dragonfly
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.opendc.simulator.network.components.specs.HostNodeSpecs
-import org.opendc.simulator.network.components.networks.NetworkSpecs
-import org.opendc.simulator.network.components.specs.SwitchSpecs
+import org.opendc.simulator.network.components.networks.NetSpecs
+import org.opendc.simulator.network.components.node.switchh.SwitchSpecs
+import org.opendc.simulator.network.components.node.terminal.TerminalSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
@@ -22,26 +46,27 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @SerialName("dragonfly")
 internal data class DFSpecs(
     val a: Int,
-    val p: Int = a/2,
-    val h: Int = a/2,
+    val p: Int = a / 2,
+    val h: Int = a / 2,
     val g: Int = a * h + 1,
     val globalSwitchesPerGroup: Int = 1,
     val switchSpecs: SwitchSpecs,
-    val hostSpecs: HostNodeSpecs,
-): NetworkSpecs<DragonFly> {
+    val hostSpecs: TerminalSpecs,
+) : NetSpecs<DragonFly> {
     override val R_: Int = a * g
 
     override val N_: Int = a * p * g
 
     override val V_: Int = R_ + R_ * p
 
-    override val E_: Int = let {
-        val intraGroupsSw2Sw = (a *  (a - 1) / 2) * g
-        val intraGroupH2Sw = a * p * g
-        val interGroup = R_ * h / 2
+    override val E_: Int =
+        let {
+            val intraGroupsSw2Sw = (a * (a - 1) / 2) * g
+            val intraGroupH2Sw = a * p * g
+            val interGroup = R_ * h / 2
 
-        intraGroupH2Sw + intraGroupsSw2Sw + interGroup
-    }
+            intraGroupH2Sw + intraGroupsSw2Sw + interGroup
+        }
 
     /**
      * Property of dragonfly. `true` if there is exactly one connection between each pair of groups
@@ -55,8 +80,9 @@ internal data class DFSpecs(
         // to be lower or equal to the number of switches in each group.
         require(globalSwitchesPerGroup <= a)
 
-        require(  (a * g) % 2 == 0 )
+        require((a * g) % 2 == 0)
     }
 
-    context(NetSimScope) override suspend fun build(): DragonFly = DragonFly(specs = this)
+    context(NetSimScope)
+    override suspend fun build(): DragonFly = DragonFly(specs = this)
 }

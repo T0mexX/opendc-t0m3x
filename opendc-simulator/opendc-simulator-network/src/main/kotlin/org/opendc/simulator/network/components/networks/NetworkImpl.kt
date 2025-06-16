@@ -1,40 +1,54 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.components.networks
 
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snapshot
+import org.opendc.simulator.network.components.flow.FlowId
+import org.opendc.simulator.network.components.flow.INetFlow
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.components.node.GlobalSwitch
-import org.opendc.simulator.network.components.node.HostNode
-import org.opendc.simulator.network.components.specs.Specs
-import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.FlowId
+import org.opendc.simulator.network.components.node.switchh.Switch
+import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
-import org.opendc.simulator.network.utils.evntemitter.publics.EvntFlow
 
 /**
  * TODO
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-internal abstract class NetworkImpl : Network {
+internal abstract class NetworkImpl<Self : Network<Self>> : Network<Self> {
+    abstract override val sendNodesById: Map<NodeId, SenderNode<*>>
 
-    override val sendNodesById: Map<NodeId, SenderNode<*>> get() = _sendNodesById
-    protected abstract val _sendNodesById: MutableMap<NodeId, SenderNode<*>>
+    abstract override val nodesById: Map<NodeId, Node<*>>
 
-    override val nodesById: Map<NodeId, Node<*>> get() = _nodesById
-    protected abstract val _nodesById: MutableMap<NodeId, Node<*>>
-
-    override val flowsById: Map<FlowId, INetFlow> get() = _flows
-    protected val _flows: MutableMap<FlowId, INetFlow> = mutableMapOf()
-
-    override val evntFlow = EvntFlow<Network>()
+    override val flowsById: MutableMap<FlowId, INetFlow> = mutableMapOf()
 
     override operator fun get(nId: NodeId): Node<*>? = this.nodesById[nId]
 
@@ -45,9 +59,9 @@ internal abstract class NetworkImpl : Network {
 
         routPolicy.onFlowStart(f)
 
-        assert(f.destId in _nodesById)
+        assert(f.destId in nodesById)
         senderN.startFlow(f)
-        _flows += f.id to f
+        flowsById += f.id to f
     }
 
     context(NetSimScope)
@@ -55,9 +69,8 @@ internal abstract class NetworkImpl : Network {
         ctx[RoutPolicy]?.onFlowStop(f)
 
         sendNodesById[f.senderId]!!.stopFlow(f)
-        _flows -= f.id
+        flowsById -= f.id
     }
-
 
     context(NetSimScope)
     override suspend fun fmtNodes(mode: NetSimStabilityMode): String =
@@ -66,19 +79,20 @@ internal abstract class NetworkImpl : Network {
                 """
                 | === NETWORK INFO ===
                 | nodes: ${this.nodesById.size - 1}
-                | switches: ${getNodesById<GlobalSwitch>().size}
-                | global switches: ${getNodesById<GlobalSwitch>().size}
-                | hosts: ${getNodesById<HostNode>().size}
+                | switches: ${getNodesById<Switch>().size}
+                | global switches: ${getNodesById<Switch>().values.count { it.global }}
+                | hosts: ${getNodesById<Terminal>().size}
                 """.trimIndent()
         }
 
-    override fun toSpecs(): Specs<Network> = specs
-
     context(NetSimScope)
-    override suspend fun fmtFlows(mode: NetSimStabilityMode, ls: Boolean): String =
+    override suspend fun fmtFlows(
+        mode: NetSimStabilityMode,
+        ls: Boolean,
+    ): String =
         barrier.whileStable(mode) {
             val snap = net.snapshot()
-            val f =_flows.values
+            val f = flowsById.values
 
             buildString {
                 if (ls) {
@@ -115,7 +129,7 @@ internal abstract class NetworkImpl : Network {
                         "min-tput [%]".padEnd(15) +
                         "tot-demand".padEnd(15) +
                         "tot-tput".padEnd(15) +
-                        "tot-tput [%]".padEnd(15)
+                        "tot-tput [%]".padEnd(15),
                 )
                 appendLine(
                     " | " +
@@ -129,13 +143,13 @@ internal abstract class NetworkImpl : Network {
                         snap.worstTputPerc?.fmtValue("%.3f")?.padEnd(15) +
                         f.sumOfUnit { it.demand }.fmtValue("%.3f").padEnd(15) +
                         f.sumOfUnit { it.throughput }.fmtValue("%.3f").padEnd(15) +
-                        snap.totTputPerc?.fmtValue("%.3f")?.padEnd(15)
+                        snap.totTputPerc?.fmtValue("%.3f")?.padEnd(15),
                 )
             }
         }
 
     companion object {
-        internal inline fun <reified T : Node<*>> NetworkImpl.getNodesById(): Map<NodeId, T> {
+        internal inline fun <reified T : Node<*>> NetworkImpl<*>.getNodesById(): Map<NodeId, T> {
             return this.nodesById.values.filterIsInstance<T>().associateBy { it.id }
         }
 

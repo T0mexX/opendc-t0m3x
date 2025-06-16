@@ -24,8 +24,6 @@ package org.opendc.simulator.network.utils
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
-import java.util.concurrent.locks.Lock
-import java.util.concurrent.locks.ReadWriteLock
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -91,7 +89,7 @@ internal open class RWLock(private val readPermits: Int = 5) {
         } finally {
             if (attemptingWMutex.holdsLock(coroutineContext)) {
                 wUnlock()
-            } else  {
+            } else {
                 sem.release()
             }
         }

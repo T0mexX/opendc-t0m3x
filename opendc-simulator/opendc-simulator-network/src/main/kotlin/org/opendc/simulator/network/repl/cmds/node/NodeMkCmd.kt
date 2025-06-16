@@ -30,7 +30,6 @@ import com.github.ajalt.clikt.parameters.types.int
 import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
-import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 

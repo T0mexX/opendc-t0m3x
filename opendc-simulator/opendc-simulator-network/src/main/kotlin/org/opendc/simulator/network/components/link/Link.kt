@@ -1,13 +1,35 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.components.link
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
+import org.opendc.simulator.network.components.flow.INetFlow
+import org.opendc.simulator.network.components.invalidatable.internals.IInvalidatable
+import org.opendc.simulator.network.components.msgable.Msg
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.utils.invalidatable.internals.IInvalidatable
-import org.opendc.simulator.network.utils.notifiable.Msg
 
 /**
  * Interface for a unidirectional network communication link from the sender perspective,
@@ -18,8 +40,7 @@ import org.opendc.simulator.network.utils.notifiable.Msg
  *
  * A [Link] can also be used as a [Msg] [Channel] to send msgs directly to the receiver nodes.
  */
-internal interface Link: SendChannel<Msg<Node<*>, *>>, IInvalidatable {
-
+internal interface Link : SendChannel<Msg<Node<*>, *>>, IInvalidatable {
     /**
      * TODO
      */
@@ -52,7 +73,11 @@ internal interface Link: SendChannel<Msg<Node<*>, *>>, IInvalidatable {
 
     suspend fun attemptTx()
 
-    suspend fun setTentativeTx(dr: DataRate, f: INetFlow, entryId: Int? = null): Int
+    suspend fun setTentativeTx(
+        dr: DataRate,
+        f: INetFlow,
+        entryId: Int? = null,
+    ): Int
 
 //    /**
 //     * Increases the current bandwidth usage on this link by the specified amount, [bw],

@@ -34,10 +34,11 @@ internal class NetSnapCmd : REPLCmd(name = CMD_STR) {
             "snap" to listOf(CMD_STR),
         )
 
-    override fun run() = execREPLCmdCatching {
-        barrier.whileStable(NetSimStabilityMode.ENFORCED) {
-            sync(forceUpdt = true)
-            echo(net.snapshot().fmt())
+    override fun run() =
+        execREPLCmdCatching {
+            barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+                sync(forceUpdt = true)
+                echo(net.snapshot().fmt())
+            }
         }
-    }
 }

@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.components.link
 
 import kotlinx.coroutines.channels.SendChannel
@@ -9,15 +31,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
+import org.opendc.simulator.network.components.flow.INetFlow
+import org.opendc.simulator.network.components.msgable.Msg
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.port.PortFlowEntry
-import org.opendc.simulator.network.flow.internals.INetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.datastructures.IntArrayQueue
-import org.opendc.simulator.network.utils.notifiable.Msg
-
 
 internal class LinkImpl private constructor(
     override val receiverN: Node<*>,
@@ -25,7 +45,7 @@ internal class LinkImpl private constructor(
     override val stabilizer: NetSimStabilizer,
     override val linkIdx: Int,
     initialCapacity: Int,
-): Link, SendChannel<Msg<Node<*>, *>> by receiverN.msgChl {
+) : Link, SendChannel<Msg<Node<*>, *>> by receiverN.msgChl {
     private var usedBw: DataRate = DataRate.zero
     override val availableBw: DataRate get() = maxBw - usedBw
     override val util: Percentage get() = usedBw / maxBw
@@ -38,69 +58,77 @@ internal class LinkImpl private constructor(
      */
     private val mtx = Mutex()
 
-    override suspend fun attemptTx() = mtx.withLock {
-        assert(usedBw approxSmallerOrEq maxBw)
+    override suspend fun attemptTx() =
+        mtx.withLock {
+            assert(usedBw approxSmallerOrEq maxBw)
 
-        coroutineScope {
-            entries.asFlow().let { f ->
-                // Apply data-rate reductions.
-                f.onEach { e ->
-                    if (e.used.not()) return@onEach
-                    var delta = (  (maxBw * (e.demand / totTentativeTx)  ) min e.demand) - e.tput
-                    delta = delta.roundToIfWithinEpsilon(DataRate.zero, 1.0)
-                    if (delta approxLargerOrEq DataRate.zero) return@onEach
-                    usedBw = (usedBw + delta).roundToIfWithinEpsilon(DataRate.zero, 1.0)
-                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1.0)
-                    receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.netF)
-                }.launchIn(this@coroutineScope).join()
+            coroutineScope {
+                entries.asFlow().let { f ->
+                    // Apply data-rate reductions.
+                    f.onEach { e ->
+                        if (e.used.not()) return@onEach
+                        var delta = ((maxBw * (e.demand / totTentativeTx)) min e.demand) - e.tput
+                        delta = delta.roundToIfWithinEpsilon(DataRate.zero, 1.0)
+                        if (delta approxLargerOrEq DataRate.zero) return@onEach
+                        usedBw = (usedBw + delta).roundToIfWithinEpsilon(DataRate.zero, 1.0)
+                        e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1.0)
+                        receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.netF)
+                    }.launchIn(this@coroutineScope).join()
 
-                // Apply data-rate increases.
-                f.onEach { e ->
-                    if (e.used.not()) return@onEach
-                    val delta = (  (maxBw * (e.demand / totTentativeTx)  ) min e.demand) - e.tput
-                    if (delta <= DataRate.zero && e.demand == DataRate.zero) return@onEach rmEntry(e.idx)
-                    if (delta approxSmallerOrEq DataRate.zero) return@onEach
-                    usedBw = (usedBw + delta).roundToIfWithinEpsilon(maxBw, 1.0)
-                    e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1.0)
-                    receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.netF)
-                }.launchIn(this@coroutineScope).join()
+                    // Apply data-rate increases.
+                    f.onEach { e ->
+                        if (e.used.not()) return@onEach
+                        val delta = ((maxBw * (e.demand / totTentativeTx)) min e.demand) - e.tput
+                        if (delta <= DataRate.zero && e.demand == DataRate.zero) return@onEach rmEntry(e.idx)
+                        if (delta approxSmallerOrEq DataRate.zero) return@onEach
+                        usedBw = (usedBw + delta).roundToIfWithinEpsilon(maxBw, 1.0)
+                        e.tput = (e.tput + delta).roundToIfWithinEpsilon(e.demand, 1.0)
+                        receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.netF)
+                    }.launchIn(this@coroutineScope).join()
+                }
             }
+
+            stabilizer.validate()
+            assert(usedBw approxSmallerOrEq maxBw) { "usedBw:$usedBw  maxBw:$maxBw" }
         }
 
-        stabilizer.validate()
-        assert(usedBw approxSmallerOrEq maxBw) { "usedBw:$usedBw  maxBw:$maxBw" }
-    }
+    override suspend fun setTentativeTx(
+        dr: DataRate,
+        f: INetFlow,
+        entryId: Int?,
+    ): Int =
+        mtx.withLock {
+            assert(dr >= DataRate.zero)
 
-    override suspend fun setTentativeTx(dr: DataRate, f: INetFlow, entryId: Int?): Int = mtx.withLock {
-        assert(dr >= DataRate.zero)
+            // Invalidate the port until `attemptTx`
+            // is called and updates are propagated to `receiverN`.
+            stabilizer.invalidate()
 
-        // Invalidate the port until `attemptTx`
-        // is called and updates are propagated to `receiverN`.
-        stabilizer.invalidate()
+            @Suppress("NAME_SHADOWING")
+            val entryId = entryId ?: newEntry()
+            val entry = entries[entryId]
+            assert(entry.used)
 
-        @Suppress("NAME_SHADOWING")
-        val entryId = entryId ?: newEntry()
-        val entry = entries[entryId]
-        assert(entry.used)
+            entry.netF = f
+            totTentativeTx += dr - entry.demand
+            entry.demand = dr
 
-        entry.netF = f
-        totTentativeTx += dr - entry.demand
-        entry.demand = dr
+            return entryId
+        }
 
-        return entryId
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Link Internal Implementation
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private val entries: MutableList<PortFlowEntry> = 0.rangeUntil(initialCapacity).map {
-        PortFlowEntry(it)
-    }.toMutableList()
+    private val entries: MutableList<LinkEntry> =
+        0.rangeUntil(initialCapacity).map {
+            LinkEntry(it)
+        }.toMutableList()
 
-    private val freeIdxs: IntArrayQueue = IntArrayQueue(initialCapacity = initialCapacity).also { q ->
-        (0 until initialCapacity).forEach { q.add(it) }
-    }
+    private val freeIdxs: IntArrayQueue =
+        IntArrayQueue(initialCapacity = initialCapacity).also { q ->
+            (0 until initialCapacity).forEach { q.add(it) }
+        }
 
     private fun newEntry(): Idx =
         let {
@@ -108,7 +136,7 @@ internal class LinkImpl private constructor(
         }.also { idx -> entries[idx].used = true }
 
     private fun grow1(): Idx {
-        entries.add(PortFlowEntry(idx = entries.size - 1))
+        entries.add(LinkEntry(idx = entries.size - 1))
         return entries.size - 1
     }
 
@@ -119,7 +147,11 @@ internal class LinkImpl private constructor(
 
     companion object {
         context(NetSimScope)
-        suspend operator fun invoke(senderN: Node<*>, receiverN: Node<*>, linkIdx: Int): Link =
+        suspend operator fun invoke(
+            senderN: Node<*>,
+            receiverN: Node<*>,
+            linkIdx: Int,
+        ): Link =
             LinkImpl(
                 receiverN = receiverN,
                 maxBw = senderN.portSpeed min receiverN.portSpeed,

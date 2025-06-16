@@ -1,28 +1,48 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+@file:Suppress("PropertyName")
+
 package org.opendc.simulator.network.components.networks.custom
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.serialDescriptor
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonUnquotedLiteral
-import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.node.NodeId
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
-import org.opendc.simulator.network.components.node.SerializableNode
-import org.opendc.simulator.network.components.specs.HostNodeSpecs
-import org.opendc.simulator.network.components.networks.NetworkSpecs
-import org.opendc.simulator.network.components.specs.NodeSpecs
-import org.opendc.simulator.network.components.specs.Specs
-import org.opendc.simulator.network.components.specs.SwitchSpecs
+import org.opendc.simulator.network.components.networks.NetSpecs
+import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.switchh.SwitchSpecs
+import org.opendc.simulator.network.components.node.terminal.TerminalSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
@@ -32,26 +52,18 @@ import org.opendc.simulator.network.simscope.NetSimScope
 @Serializable
 @SerialName("custom")
 internal data class CustomNetworkSpecs(
-    val nodesSpecs: List<NodeSpecs<*>> = emptyList(),
+    val terminalSpecs: List<TerminalSpecs> = emptyList(),
+    val switchSpecs: List<SwitchSpecs> = emptyList(),
     @Serializable(with = LinkListSerializer::class)
     val links: List<Pair<NodeId, NodeId>> = emptyList(),
-) : NetworkSpecs<CustomNetwork> {
-    override val R_: Int = nodesSpecs.filterIsInstance<SwitchSpecs>().size
-    override val N_: Int = nodesSpecs.filterIsInstance<HostNodeSpecs>().size
-    override val V_: Int = nodesSpecs.size
+) : NetSpecs<CustomNetwork> {
+    override val R_: Int = switchSpecs.size
+    override val N_: Int = terminalSpecs.size
+    override val V_: Int = R_ + N_
     override val E_: Int = links.size
 
     context(NetSimScope)
-    override suspend fun build(): CustomNetwork {
-        val nodes: List<Node<*>> = nodesSpecs.map { it.build().asNode() }
-        val distinctNodes = nodes.distinctBy { it.id }
-        if (nodes.size != distinctNodes.size) {
-            log.warn("Some nodesById with already existing ids got filtered out.")
-        }
-        val customNetwork = CustomNetwork(distinctNodes)
-        customNetwork.connectFromLinkList(links)
-        return customNetwork
-    }
+    override suspend fun build(): CustomNetwork = CustomNetwork(specs = this)
 
     companion object {
         val log by logger()

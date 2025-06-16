@@ -25,7 +25,6 @@ package org.opendc.simulator.network.repl.cmds
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.arguments.convert
-import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.TimeDelta
 import org.opendc.simulator.network.simscope.NetSimTmSrc
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
@@ -46,11 +45,12 @@ internal class AdvTimeCmd : REPLCmd(name = CMD_STR) {
             "adv-tm" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run() = execREPLCmdCatching {
-        barrier.whileStable(NetSimStabilityMode.ENFORCED) {
-            (tmSrc as NetSimTmSrc.Internal).advanceBy(tmDelta)
-            scope.sync()
+    override fun run() =
+        execREPLCmdCatching {
+            barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+                (tmSrc as NetSimTmSrc.Internal).advanceBy(tmDelta)
+                scope.sync()
+            }
+            echo("| Advanced time by $tmDelta. Time elapsed since start: ${tmSrc.sinceStart}")
         }
-        echo("| Advanced time by $tmDelta. Time elapsed since start: ${tmSrc.sinceStart}")
-    }
 }

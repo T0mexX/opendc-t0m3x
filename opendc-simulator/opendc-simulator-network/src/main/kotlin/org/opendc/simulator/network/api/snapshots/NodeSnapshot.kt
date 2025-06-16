@@ -28,11 +28,9 @@ import org.opendc.common.units.Percentage
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
-import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.internals.flowtable.FlowTable
-import org.opendc.simulator.network.energy.EnConsumer
+import org.opendc.simulator.network.components.node.internalstructs.flowtable.FlowTable
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.Flag
@@ -223,85 +221,11 @@ public class NodeSnapshot internal constructor(
 
         private val cache = ConcurrentHashMap<NodeId, NodeSnapshot>()
 
-        /**
-         * Retrieves a snapshot of [this].
-         * @param[instant]              the instant of the snapshot (needs to be provided externally).
-         * @param[withStableNetwork]    if `true` waits until the network is stable to take the
-         * snapshot (and throws if network becomes unstable while computing it).
-         * @param[noCache]              if `true` prevents the use of cache. Cache use needs to
-         * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
-         */
-//        internal fun Node.snapshot(
-//            instant: Instant,
-//            withStableNetwork: Network? = null,
-//            noCache: Boolean = true,
-//        ): NodeSnapshot {
-//            // If snapshot with same timestamp in cache
-//            if (!noCache) {
-//                cache[id]
-//                    ?.let {
-//                        if (it.instant == instant) return it
-//                    }
-//            }
-//
-//            withStableNetwork?.let {
-//                runBlocking {
-//                    it.awaitStability()
-//                    it.validator.checkIsStableWhile { snapshot(instant = instant) }
-//                }
-//            }
-//
-//            val fh: FlowHandler = this.flowHandler
-//            val flowsById: Collection<OutFlow> = fh.outgoingFlows.values
-//            val totNodeTput: DataRate = DataRate.ofKbps(flowsById.sumOf { it.totRateOut.toKbps() })
-//
-//            return NodeSnapshot(
-//                node = this,
-//                instant = instant,
-//                numIncomingFlows = fh.consumingFlows.size + fh.outgoingFlows.size - fh.generatingFlows.size,
-//                numOutgoingFlows = fh.outgoingFlows.size,
-//                numGeneratingFlows = fh.generatingFlows.size,
-//                numConsumedFlows = fh.consumingFlows.size,
-//                currMinFlowTputPerc =
-//                    if (flowsById.isNotEmpty()) {
-//                        flowsById.minOf { it.totRateOut roundedPercentageOf it.demand }
-//                    } else {
-//                        null
-//                    },
-//                currMaxFlowTputPerc =
-//                    if (flowsById.isNotEmpty()) {
-//                        flowsById.maxOf { it.totRateOut roundedPercentageOf it.demand }
-//                    } else {
-//                        null
-//                    },
-//                currAvrgFlowTputPerc =
-//                    if (flowsById.isNotEmpty()) {
-//                        flowsById.sumOfUnit { it.totRateOut roundedPercentageOf it.demand } / flowsById.size
-//                    } else {
-//                        null
-//                    },
-//                currNodeTputPercAllFlows =
-//                    if (flowsById.isNotEmpty()) {
-//                        flowsById.sumOfUnit { it.totRateOut } roundedPercentageOf flowsById.sumOfUnit { it.demand }
-//                    } else {
-//                        null
-//                    },
-//                currPwrUse = (this as? EnergyConsumer<*>)?.enMonitor?.currPwrUsage ?: Power.zero,
-//                avrgPwrUseOverTime = (this as? EnergyConsumer<*>)?.enMonitor?.avrgPwrUsage ?: Power.zero,
-//                totEnConsumed = (this as? EnergyConsumer<*>)?.enMonitor?.totEnConsumpt ?: Energy.zero,
-//                currNodeTputAllFlows = totNodeTput,
-//                currNodePortUsageAllPorts = totNodeTput roundedPercentageOf ports.sumOfUnit { it.maxSpeed },
-//            ).also { cache[id] = it }
-//        }
-
         context(NetSimScope)
-        internal suspend fun Node<*>.snapshot(
-            stabMode: NetSimStabilityMode = this@NetSimScope.config.stabilityMode,
-        ): NodeSnapshot {
+        internal suspend fun Node<*>.snapshot(stabMode: NetSimStabilityMode = this@NetSimScope.config.stabilityMode): NodeSnapshot {
             // If snapshot with same timestamp in cache
 
             return barrier.whileStable(stabMode) {
-
                 // Note `TreeSet.asIterable()` is O(1).
 
                 // All flowsById entries at this node, hence entries representing each flow traversing the node.
@@ -326,17 +250,21 @@ public class NodeSnapshot internal constructor(
                     numOutgoingFlows = outSz,
                     numGeneratingFlows = genSz,
                     numConsumedFlows = consSz,
-                    currMinFlowTputPerc = out.takeIf { outSz != 0 }?.let {
-                        out.minOf { it.tput() roundedPercentageOf it.rx }
-                    } ?.also { assert(it.value.isNaN().not()) },
-                    currMaxFlowTputPerc = out.takeIf { outSz != 0 }?.let {
-                        out.maxOf { it.tput() roundedPercentageOf it.rx.also { assert(it.value.isNaN().not()) } }
-                    } ?.also { assert(it.value.isNaN().not()) },
+                    currMinFlowTputPerc =
+                        out.takeIf { outSz != 0 }?.let {
+                            out.minOf { it.tput() roundedPercentageOf it.rx }
+                        }?.also { assert(it.value.isNaN().not()) },
+                    currMaxFlowTputPerc =
+                        out.takeIf { outSz != 0 }?.let {
+                            out.maxOf { it.tput() roundedPercentageOf it.rx.also { assert(it.value.isNaN().not()) } }
+                        }?.also { assert(it.value.isNaN().not()) },
                     currAvrgFlowTputPerc = out.averageOfUnitOrNull { it.tput() roundedPercentageOf it.rx },
                     currNodeTputPercAllFlows = out.sumOfUnit { it.tput() } roundedPercentageOf out.sumOfUnit { it.rx },
                     currPwrUse = computePwrDraw(),
-                    avrgPwrUseOverTime = Power.zero, // TODO: change
-                    totEnConsumed = Energy.zero, // TODO: change
+                    // TODO: change
+                    avrgPwrUseOverTime = Power.zero,
+                    // TODO: change
+                    totEnConsumed = Energy.zero,
                     currNodeTputAllFlows = totNodeTput,
                     currNodePortUsageAllPorts = totNodeTput roundedPercentageOf (portSpeed * nPorts),
                 ).also { cache[id] = it }

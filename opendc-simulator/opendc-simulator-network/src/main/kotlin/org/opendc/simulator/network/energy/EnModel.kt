@@ -22,7 +22,6 @@
 
 package org.opendc.simulator.network.energy
 
-import kotlinx.serialization.Serializable
 import org.opendc.common.units.Power
 
 /**

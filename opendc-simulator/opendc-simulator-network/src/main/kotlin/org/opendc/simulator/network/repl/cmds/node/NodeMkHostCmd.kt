@@ -26,8 +26,7 @@ import com.github.ajalt.clikt.core.requireObject
 import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
-import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.HostNode
+import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 private const val CMD_STR: String = "host"
@@ -43,19 +42,20 @@ internal class NodeMkHostCmd : REPLCmd(name = CMD_STR) {
             "h" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run(): Unit = execREPLCmdCatching {
-        barrier.awaitStability()
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.awaitStability()
 
-        addrMngr.claimIp(ip)
+            addrMngr.claimIp(ip)
 
-        val newHost =
-            HostNode(
-                ip = ip,
-                portSpeed = speed,
-                nPorts = nPorts,
-            )
+            val newHost =
+                Terminal(
+                    ip = ip,
+                    portSpeed = speed,
+                    nPorts = nPorts,
+                )
 
-        (net as CustomNetwork).plus(newHost)
-        echo("| Node added successfully")
-    }
+            (net as CustomNetwork).plus(newHost)
+            echo("| Node added successfully")
+        }
 }

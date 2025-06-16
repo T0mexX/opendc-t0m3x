@@ -24,13 +24,9 @@ package org.opendc.simulator.network.repl.cmds
 
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.opendc.simulator.network.simscope.NetSimScope
 import java.io.File
-import java.io.IOException
 import kotlin.io.path.createParentDirectories
 
 private const val CMD_STR: String = "export"
@@ -40,13 +36,14 @@ internal class ExportCmd : REPLCmd(name = CMD_STR) {
         help = "Where the network will be exported",
     ).file()
 
-    override fun run(): Unit = execREPLCmdCatching {
-        scope.barrier.awaitStability()
-        if (targetFile.exists().not()) {
-            targetFile.toPath().normalize().createParentDirectories()
-        }
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            scope.barrier.awaitStability()
+            if (targetFile.exists().not()) {
+                targetFile.toPath().normalize().createParentDirectories()
+            }
 
-        targetFile.writeText(Json.encodeToString(net.toSpecs()))
-        echo("network successfully exported to ${targetFile.absolutePath}")
-    }
+            targetFile.writeText(Json.encodeToString(net.specs))
+            echo("network successfully exported to ${targetFile.absolutePath}")
+        }
 }

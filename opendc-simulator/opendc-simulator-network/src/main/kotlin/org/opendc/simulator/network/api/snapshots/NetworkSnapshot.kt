@@ -29,11 +29,11 @@ import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
+import org.opendc.simulator.network.components.flow.NetFlow
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
-import org.opendc.simulator.network.components.node.GlobalSwitch
-import org.opendc.simulator.network.components.node.HostNode
-import org.opendc.simulator.network.flow.publics.NetFlow
+import org.opendc.simulator.network.components.node.switchh.Switch
+import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
@@ -211,7 +211,7 @@ public class NetworkSnapshot private constructor(
          * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
          */
         context(NetSimScope)
-        internal suspend fun Network.snapshot(): NetworkSnapshot {
+        internal suspend fun Network<*>.snapshot(): NetworkSnapshot {
             check(this@NetSimScope.net === this)
 
             // TODO: STABILITY
@@ -224,18 +224,18 @@ public class NetworkSnapshot private constructor(
             assert(
                 flows.forEach {
                     check(it.demand approxLargerOrEq it.throughput) { "${it.demand} ${it.throughput} ${it.id}" }
-                }.let { true }
+                }.let { true },
             )
-            assert(totDemand approxLargerOrEq  totThroughput) {"$totDemand $totThroughput"}
+            assert(totDemand approxLargerOrEq totThroughput) { "$totDemand $totThroughput" }
 
             barrier.awaitStability()
 
             return NetworkSnapshot(
                 instant = tmSrc.instant(),
                 numNodes = nodesById.size,
-                numHostNodes = getNodesById<HostNode>().size,
-                claimedHostNodes = getNodesById<HostNode>().size,
-                numCoreSwitches = getNodesById<GlobalSwitch>().size,
+                numHostNodes = getNodesById<Terminal>().size,
+                claimedHostNodes = getNodesById<Terminal>().size,
+                numCoreSwitches = getNodesById<Switch>().values.count { it.global },
                 numActiveFlows = activeFlows.size,
                 totTput = totThroughput,
                 totTputPerc = if (activeFlows.isEmpty()) null else totThroughput roundedPercentageOf totDemand,

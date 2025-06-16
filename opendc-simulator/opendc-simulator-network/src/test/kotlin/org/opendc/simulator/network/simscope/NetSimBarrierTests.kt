@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.simscope
 
 import io.kotest.assertions.throwables.shouldNotThrowAny
@@ -26,7 +48,11 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class NetSimBarrierTests : FunSpec({
 
-    suspend fun testStabilityEnforcing(nValidators: Int, nStabilizers: Int, valWithBarrier: Boolean = true) = coroutineScope {
+    suspend fun testStabilityEnforcing(
+        nValidators: Int,
+        nStabilizers: Int,
+        valWithBarrier: Boolean = true,
+    ) = coroutineScope {
         val barrier = NetSimBarrier(NetSimConfig.DEFAULT)
         val stabilizers = 0.rangeTo(nStabilizers).map { barrier.stabilizer() }
         val validators by lazy { 0.rangeTo(nValidators).map { runBlocking { barrier.stabilizer() } } }
@@ -34,25 +60,29 @@ class NetSimBarrierTests : FunSpec({
         val invalidate = MutableStateFlow(false)
         coroutineScope {
             if (valWithBarrier) {
-                repeat(nValidators) { launch {
-                    barrier.whileStable(NetSimStabilityMode.ENFORCED) {
-                        invalidate.emit(true)
-                        repeat(10) {
-                            invalidated.first() shouldBeEqual false
-                            delay(100)
+                repeat(nValidators) {
+                    launch {
+                        barrier.whileStable(NetSimStabilityMode.ENFORCED) {
+                            invalidate.emit(true)
+                            repeat(10) {
+                                invalidated.first() shouldBeEqual false
+                                delay(100)
+                            }
                         }
                     }
-                } }
+                }
             } else {
-                validators.map { stab -> launch {
-                    stab.whileNetStable(NetSimStabilityMode.ENFORCED) {
-                        invalidate.emit(true)
-                        repeat(10) {
-                            invalidated.first() shouldBeEqual false
-                            delay(100)
+                validators.map { stab ->
+                    launch {
+                        stab.whileNetStable(NetSimStabilityMode.ENFORCED) {
+                            invalidate.emit(true)
+                            repeat(10) {
+                                invalidated.first() shouldBeEqual false
+                                delay(100)
+                            }
                         }
                     }
-                } }
+                }
             }
             stabilizers.map {
                 launch {
@@ -74,65 +104,80 @@ class NetSimBarrierTests : FunSpec({
         }
     }
 
-    suspend fun testStabilityChecking(nValidators: Int, nStabilizers: Int, valWithBarrier: Boolean = true) = coroutineScope {
+    suspend fun testStabilityChecking(
+        nValidators: Int,
+        nStabilizers: Int,
+        valWithBarrier: Boolean = true,
+    ) = coroutineScope {
         val barrier = NetSimBarrier(NetSimConfig.DEFAULT)
         val stabilizers = 0.rangeTo(nStabilizers).map { barrier.stabilizer() }
         val validators by lazy { 0.rangeTo(nValidators).map { runBlocking { barrier.stabilizer() } } }
         shouldNotThrowAny {
             if (valWithBarrier) {
-                repeat(nValidators) { launch {
-                    barrier.whileStable(NetSimStabilityMode.CHECKED) {
-                        delay(100)
+                repeat(nValidators) {
+                    launch {
+                        barrier.whileStable(NetSimStabilityMode.CHECKED) {
+                            delay(100)
+                        }
                     }
-                } }
+                }
             } else {
-                validators.map { stab -> launch {
-                    stab.whileNetStable(NetSimStabilityMode.CHECKED) {
-                        delay(100)
+                validators.map { stab ->
+                    launch {
+                        stab.whileNetStable(NetSimStabilityMode.CHECKED) {
+                            delay(100)
+                        }
                     }
-                } }
+                }
             }
         }
         shouldThrow<NetSimStabilityException> {
             val invalidate = MutableStateFlow(false)
             if (valWithBarrier) {
-                repeat(nValidators) { launch {
-                    barrier.whileStable(NetSimStabilityMode.CHECKED) {
-                        invalidate.emit(true)
-                        delay(100)
+                repeat(nValidators) {
+                    launch {
+                        barrier.whileStable(NetSimStabilityMode.CHECKED) {
+                            invalidate.emit(true)
+                            delay(100)
+                        }
                     }
-                } }
+                }
             } else {
-                validators.map { stab -> launch {
-                    stab.whileNetStable(NetSimStabilityMode.CHECKED) {
-                        invalidate.emit(true)
-                        delay(100)
+                validators.map { stab ->
+                    launch {
+                        stab.whileNetStable(NetSimStabilityMode.CHECKED) {
+                            invalidate.emit(true)
+                            delay(100)
+                        }
                     }
-                } }
+                }
             }
             invalidate.first { it }
             stabilizers.random().invalidate()
         }
     }
 
-    suspend fun testStabilityAssumed(nStabilizers: Int) = coroutineScope {
-        val barrier = NetSimBarrier(NetSimConfig.DEFAULT)
-        val stabilizers = 0.rangeTo(nStabilizers).map { barrier.stabilizer() }
-        shouldNotThrowAny {
-            val arbLong = Arb.long(0, 200)
-            stabilizers.map { stab -> launch {
-                delay(arbLong.next())
-                stab.invalidate()
-                delay(arbLong.next())
-                stab.validate()
-                delay(arbLong.next())
-                stab.invalidate()
-                delay(arbLong.next())
-                stab.validate()
-            } }
-            barrier.awaitStability()
+    suspend fun testStabilityAssumed(nStabilizers: Int) =
+        coroutineScope {
+            val barrier = NetSimBarrier(NetSimConfig.DEFAULT)
+            val stabilizers = 0.rangeTo(nStabilizers).map { barrier.stabilizer() }
+            shouldNotThrowAny {
+                val arbLong = Arb.long(0, 200)
+                stabilizers.map { stab ->
+                    launch {
+                        delay(arbLong.next())
+                        stab.invalidate()
+                        delay(arbLong.next())
+                        stab.validate()
+                        delay(arbLong.next())
+                        stab.invalidate()
+                        delay(arbLong.next())
+                        stab.validate()
+                    }
+                }
+                barrier.awaitStability()
+            }
         }
-    }
 
     context("basic (no child barriers)") {
         context("1 stabilizer") {
@@ -169,9 +214,10 @@ class NetSimBarrierTests : FunSpec({
                 test("validate gradually").config(timeout = 50000.milliseconds) {
                     forAll(iterations = 5, Arb.int(1, 50)) { nStabilizers ->
                         val barrier = NetSimBarrier(NetSimConfig.DEFAULT)
-                        val stabilizers = buildList {
-                            repeat(nStabilizers) { add(barrier.stabilizer()) }
-                        }
+                        val stabilizers =
+                            buildList {
+                                repeat(nStabilizers) { add(barrier.stabilizer()) }
+                            }
                         var b = false
                         stabilizers.map { launch { it.invalidate() } }
                         launch {
@@ -195,9 +241,10 @@ class NetSimBarrierTests : FunSpec({
                 test("validate together").config(timeout = 5000.milliseconds) {
                     forAll(iterations = 5, Arb.int(1, 50)) { nStabilizers ->
                         val barrier = NetSimBarrier(NetSimConfig.DEFAULT)
-                        val stabilizers = buildList {
-                            repeat(nStabilizers) { add(barrier.stabilizer()) }
-                        }
+                        val stabilizers =
+                            buildList {
+                                repeat(nStabilizers) { add(barrier.stabilizer()) }
+                            }
                         stabilizers.map { launch { it.invalidate() } }
                         launch { barrier.awaitStability() }
                         stabilizers.map { launch { it.validate() } }
@@ -293,13 +340,15 @@ class NetSimBarrierTests : FunSpec({
             val barrier = NetSimBarrier(NetSimConfig.DEFAULT)
             val stabilizers = 0.rangeTo(100).map { barrier.stabilizer() }
             val await = MutableStateFlow(false)
-            stabilizers.map { stab -> launch {
-                await.emit(true)
-                stab.whileInvalidated {
-                    delay(Arb.long(0, 100).next())
-                    delay(100)
+            stabilizers.map { stab ->
+                launch {
+                    await.emit(true)
+                    stab.whileInvalidated {
+                        delay(Arb.long(0, 100).next())
+                        delay(100)
+                    }
                 }
-            } }
+            }
             await.first { it }
             measureTimeMillis {
                 barrier.awaitStability()

@@ -1,10 +1,31 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.utils.tracker
 
 import org.opendc.simulator.network.utils.IntSz
 import java.util.TreeSet
 
-
-internal interface Tracker<T: Trackable<T>> {
+internal interface Tracker<T : Trackable<T>> {
     var itemsGetter: () -> Iterable<T>
 
     infix operator fun plus(mode: TrackerMode<T>)
@@ -29,12 +50,13 @@ internal interface Tracker<T: Trackable<T>> {
      * should be added (or its order updated) in the sortedSet.
      */
     context(T)
-    fun handleFieldChange(propId: TrackablePropId<T>, fieldChanger: T.() -> Unit)
-
-
+    fun handleFieldChange(
+        propId: TrackablePropId<T>,
+        fieldChanger: T.() -> Unit,
+    )
 
     companion object {
-        operator fun <T: Trackable<T>> invoke(
+        operator fun <T : Trackable<T>> invoke(
             vararg modes: TrackerMode<T>,
             itemsGetter: (() -> Iterable<T>)? = null,
         ) = object : Tracker<T> {
@@ -46,10 +68,8 @@ internal interface Tracker<T: Trackable<T>> {
                 itemsGetter?.let { this.itemsGetter = itemsGetter }
             }
 
-            override operator fun plus(
-                mode: TrackerMode<T>,
-            ) {
-                treesByMode.computeIfAbsent(mode) { mode.setUp(itemsGetter())}
+            override operator fun plus(mode: TrackerMode<T>) {
+                treesByMode.computeIfAbsent(mode) { mode.setUp(itemsGetter()) }
             }
 
             override infix operator fun minus(mode: TrackerMode<T>) {

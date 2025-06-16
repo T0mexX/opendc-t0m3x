@@ -26,8 +26,7 @@ import com.github.ajalt.clikt.core.requireObject
 import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
-import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.Switch
+import org.opendc.simulator.network.components.node.switchh.Switch
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 private const val CMD_STR: String = "switch"
@@ -43,22 +42,22 @@ internal class NodeMkSwitchCmd : REPLCmd(name = CMD_STR) {
             "s" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run(): Unit = execREPLCmdCatching {
-        barrier.awaitStability()
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.awaitStability()
 
-        addrMngr.claimIp(ip)
+            addrMngr.claimIp(ip)
 
-        val newSwitch =
-            Switch(
-                ip = ip,
-                portSpeed = speed,
-                nPorts = nPorts,
-            )
+            val newSwitch =
+                Switch(
+                    ip = ip,
+                    portSpeed = speed,
+                    nPorts = nPorts,
+                )
 
+            (net as? CustomNetwork)?.plus(newSwitch)
+                ?. also { barrier.awaitStability() }
 
-        (net as? CustomNetwork)?.plus(newSwitch)
-            ?. also { barrier.awaitStability() }
-
-        echo("Node added successfully")
-    }
+            echo("Node added successfully")
+        }
 }

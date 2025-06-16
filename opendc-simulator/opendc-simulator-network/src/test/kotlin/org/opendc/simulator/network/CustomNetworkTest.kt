@@ -42,10 +42,9 @@ import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.node.NodeId
 import org.opendc.simulator.network.components.CustomNetwork
 import org.opendc.simulator.network.components.CustomNetwork.CustomNetworkSpecs
-import org.opendc.simulator.network.components.networks.`Network.bak`
 import org.opendc.simulator.network.components.Node
-import org.opendc.simulator.network.components.specs.Specs
 import org.opendc.simulator.network.components.Switch
+import org.opendc.simulator.network.components.specs.Specs
 import java.io.File
 
 @OptIn(ExperimentalSerializationApi::class, ExperimentalKotest::class)

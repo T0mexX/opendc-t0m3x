@@ -25,17 +25,11 @@ package org.opendc.simulator.network.repl.cmds
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.opendc.simulator.network.components.networks.Network
-import org.opendc.simulator.network.components.specs.Specs
-import org.opendc.simulator.network.repl.REPLTmSrc
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
-import java.time.Instant
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.measureTime
 
@@ -47,18 +41,19 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
     ).file()
 
     @OptIn(ExperimentalSerializationApi::class)
-    override fun run(): Unit = execREPLCmdCatching(EmptyCoroutineContext) {
+    override fun run(): Unit =
+        execREPLCmdCatching(EmptyCoroutineContext) {
+            //
+            // Create a new simulation scope.
+            val tm =
+                measureTime {
+                    val newScope = NETWORK_JSON.decodeFromStream<NetSimScope>(targetFile.inputStream())
+                    scope.cancel()
+                    env.scope = newScope
+                    env.network = newScope.net
+                    env.scope.barrier.awaitStability()
+                }
 
-        //
-        // Create a new simulation scope.
-        val tm = measureTime {
-            val newScope = NETWORK_JSON.decodeFromStream<NetSimScope>(targetFile.inputStream())
-            scope.cancel()
-            env.scope = newScope
-            env.network = newScope.net
-            env.scope.barrier.awaitStability()
+            echo("Network simulation scope imported successfully in $tm.")
         }
-
-        echo("Network simulation scope imported successfully in $tm.")
-    }
 }

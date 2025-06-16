@@ -153,12 +153,14 @@ public data class NetworkExportConfig(
                     } ?: error("output folder does not exist and could not create directory")
 
                 return NetworkExportConfig(
-                    networkExportColumns = elem["networkExportColumns"].toFieldList<NetworkSnapshot>().takeIf {
-                        it.isNotEmpty()
-                    } ?: ExportColumn.getAllLoadedColumns(),
-                    nodeExportColumns = elem["nodeExportColumns"].toFieldList<NodeSnapshot>().takeIf {
-                        it.isNotEmpty()
-                    } ?: ExportColumn.getAllLoadedColumns(),
+                    networkExportColumns =
+                        elem["networkExportColumns"].toFieldList<NetworkSnapshot>().takeIf {
+                            it.isNotEmpty()
+                        } ?: ExportColumn.getAllLoadedColumns(),
+                    nodeExportColumns =
+                        elem["nodeExportColumns"].toFieldList<NodeSnapshot>().takeIf {
+                            it.isNotEmpty()
+                        } ?: ExportColumn.getAllLoadedColumns(),
                     outputFolder = outputFolder,
                     exportInterval =
                         elem["exportInterval"]?.toString()?.trim('"')?.let {
@@ -185,7 +187,6 @@ public data class NetworkExportConfig(
         }
     }
 }
-
 
 private inline fun <reified T : Exportable> JsonElement?.toFieldList(): List<ExportColumn<T>> =
     this?.let {

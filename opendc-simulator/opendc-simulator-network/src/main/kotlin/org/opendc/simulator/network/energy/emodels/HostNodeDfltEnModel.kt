@@ -26,7 +26,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.Power
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.components.link.Link
-import org.opendc.simulator.network.components.node.HostNode
+import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.energy.EnModel
 import kotlin.math.pow
 
@@ -35,7 +35,7 @@ import kotlin.math.pow
  * In particular using Energy Efficient Ethernet (EEE). The energy consumption is defined for 100Mbps BASE-TX and 1000Mbps BASE-T NICs,
  * other data rate dynamic and static pwr draw are gathered from a power regression.
  */
-internal object HostNodeDfltEnModel : EnModel<HostNode> {
+internal object HostNodeDfltEnModel : EnModel<Terminal> {
     private val IDLE_PWR_100Mbps: Power = Power.ofWatts(139 / 1e3)
     private val IDLE_PWR_1000Mbps: Power = Power.ofWatts(152 / 1e3)
     private val FULL_LOAD_PWR_100Mbps: Power = Power.ofWatts(208 / 1e3)
@@ -56,7 +56,7 @@ internal object HostNodeDfltEnModel : EnModel<HostNode> {
      */
     private fun activePwrFromCurrRate(currPortSpeed: DataRate): Power = Power.ofWatts(2.23949 * currPortSpeed.toMbps().pow(0.74435) / 1e3)
 
-    override fun computeCurrConsumpt(e: HostNode): Power {
+    override fun computeCurrConsumpt(e: Terminal): Power {
         val activeLinks: Collection<Link> = e.getActiveLinks()
         val idlePwr: Power =
             activeLinks.sumOfUnit { l ->
@@ -72,5 +72,5 @@ internal object HostNodeDfltEnModel : EnModel<HostNode> {
         return idlePwr + activePwr
     }
 
-    private fun HostNode.getActiveLinks(): Collection<Link> = this.links.filterNotNull()
+    private fun Terminal.getActiveLinks(): Collection<Link> = this.links.filterNotNull()
 }

@@ -48,19 +48,20 @@ internal class LinkMkCmd : REPLCmd("mk") {
         names = arrayOf("-n", "--nodes", "--nodeids"),
     ).long().multiple().unique().check("nodes must be 2.") { it.size == 2 }
 
-    override fun run(): Unit = execREPLCmdCatching {
-        barrier.awaitStability()
-        val nodes: List<NodeId> = nodeIds.toList().map { NodeId(it) }
-        val node1: Node<*>? = net.nodesById[nodes[0]]
-        val node2: Node<*>? = net.nodesById[nodes[1]]
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.awaitStability()
+            val nodes: List<NodeId> = nodeIds.toList().map { NodeId(it) }
+            val node1: Node<*>? = net.nodesById[nodes[0]]
+            val node2: Node<*>? = net.nodesById[nodes[1]]
 
-        if (node1 == null || node2 == null) {
-            echo("unable to create link, invalid ids", err = true)
-            return@execREPLCmdCatching
+            if (node1 == null || node2 == null) {
+                echo("unable to create link, invalid ids", err = true)
+                return@execREPLCmdCatching
+            }
+
+            node1.msgSyncConnect(node2)
+            barrier.awaitStability()
+            echo("Successfully connected node $node1 with  node $node2")
         }
-
-        node1.msgSyncConnect(node2)
-        barrier.awaitStability()
-        echo("Successfully connected node $node1 with  node $node2")
-    }
 }

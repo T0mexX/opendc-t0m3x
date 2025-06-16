@@ -26,8 +26,7 @@ import com.github.ajalt.clikt.core.requireObject
 import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
-import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.components.node.GlobalSwitch
+import org.opendc.simulator.network.components.node.switchh.Switch
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 private const val CMD_STR: String = "core-switch"
@@ -51,21 +50,23 @@ internal class NodeMkGlobalSwitchCmd : REPLCmd(name = CMD_STR) {
             "globalswitch" to listOf(CMD_STR),
         ) + super.aliases()
 
-    override fun run(): Unit = execREPLCmdCatching {
-        barrier.awaitStability()
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.awaitStability()
 
-        addrMngr.claimIp(ip)
+            addrMngr.claimIp(ip)
 
-        val newSwitch =
-            GlobalSwitch(
-                ip = ip,
-                portSpeed = speed,
-                nPorts = nPorts,
-            )
+            val newSwitch =
+                Switch(
+                    ip = ip,
+                    portSpeed = speed,
+                    nPorts = nPorts,
+                    global = true,
+                )
 
-        (net as? CustomNetwork)?.plus(newSwitch)
-            ?.also { barrier.awaitStability() }
-            ?.let { echo("| Added node $newSwitch") }
-            ?: issueMessage("Unable to add node.")
-    }
+            (net as? CustomNetwork)?.plus(newSwitch)
+                ?.also { barrier.awaitStability() }
+                ?.let { echo("| Added node $newSwitch") }
+                ?: issueMessage("Unable to add node.")
+        }
 }

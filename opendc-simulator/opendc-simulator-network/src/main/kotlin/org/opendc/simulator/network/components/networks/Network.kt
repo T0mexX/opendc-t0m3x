@@ -1,26 +1,45 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.components.networks
 
 import kotlinx.serialization.Serializable
-import org.opendc.simulator.network.components.node.GlobalSwitch
-import org.opendc.simulator.network.components.node.Internet
+import org.opendc.simulator.network.components.flow.FlowId
+import org.opendc.simulator.network.components.flow.INetFlow
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
-import org.opendc.simulator.network.components.specs.Specs
-import org.opendc.simulator.network.components.specs.WithSpecs
-import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.FlowId
+import org.opendc.simulator.network.components.node.inet.Internet
+import org.opendc.simulator.network.components.node.switchh.Switch
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
-import org.opendc.simulator.network.utils.evntemitter.publics.IEvntEmitter
 
 /**
  * TODO
  */
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
+internal interface Network<Self : Network<Self>> {
     /**
      * TODO
      */
@@ -44,7 +63,7 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
     /**
      * TODO
      */
-    val specs: NetworkSpecs<*>
+    val specs: NetSpecs<Self>
 
     /**
      * TODO
@@ -73,19 +92,21 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
      * TODO
      */
     context(NetSimScope)
-    suspend fun fmtFlows(mode: NetSimStabilityMode = config.stabilityMode, ls: Boolean = true): String
+    suspend fun fmtFlows(
+        mode: NetSimStabilityMode = config.stabilityMode,
+        ls: Boolean = true,
+    ): String
 
     context(NetSimScope)
     suspend fun fmt(mode: NetSimStabilityMode = config.stabilityMode): String =
         barrier.whileStable(mode) {
-            val specs = this.toSpecs() as NetworkSpecs
             """
-               === Network (${this::class.simpleName}) ===
-                | V (nodes/vertices): ${specs.V_}
-                | N (hosts): ${specs.N_}
-                | R (switches/routers): ${specs.R_}
-                | E (links/edges): ${specs.E_}
-                | global switches: ${getNodesById<GlobalSwitch>().size}
+            === Network (${this::class.simpleName}) ===
+             | V (nodes/vertices): ${specs.V_}
+             | N (hosts): ${specs.N_}
+             | R (switches/routers): ${specs.R_}
+             | E (links/edges): ${specs.E_}
+             | global switches: ${nodesById.values.count { it is Switch && it.global }}
             """.trimIndent()
         }
 
@@ -93,7 +114,7 @@ internal interface Network : WithSpecs<Network>, IEvntEmitter<Network> {
         /**
          * TODO
          */
-        internal inline fun <reified T> Network.getNodesById(): Map<NodeId, T> {
+        internal inline fun <reified T> Network<*>.getNodesById(): Map<NodeId, T> {
             return this.nodesById.values.filterIsInstance<T>().associateBy { (it as Node<*>).id }
         }
     }

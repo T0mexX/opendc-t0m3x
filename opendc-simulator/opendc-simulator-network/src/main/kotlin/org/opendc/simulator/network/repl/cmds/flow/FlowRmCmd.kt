@@ -25,8 +25,7 @@ package org.opendc.simulator.network.repl.cmds.flow
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.types.long
-import kotlinx.coroutines.runBlocking
-import org.opendc.simulator.network.flow.publics.FlowId
+import org.opendc.simulator.network.components.flow.FlowId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowRmCmd : REPLCmd("rm") {
@@ -34,12 +33,14 @@ internal class FlowRmCmd : REPLCmd("rm") {
         help = "The id of the flow to be remvoed",
     ).long().check("flow does not exist") { long -> net.flowsById.contains(FlowId(long)) }
 
-    override fun run(): Unit = execREPLCmdCatching {
-        barrier.awaitStability()
-        val f = net.flowsById[FlowId(id)] ?: let {
-            issueMessage("Unable to stop flow")
-            return@execREPLCmdCatching
+    override fun run(): Unit =
+        execREPLCmdCatching {
+            barrier.awaitStability()
+            val f =
+                net.flowsById[FlowId(id)] ?: let {
+                    issueMessage("Unable to stop flow")
+                    return@execREPLCmdCatching
+                }
+            echo("| Stopped flow ${net.stopFlow(f)}") ?: issueMessage("Unable to stop flow")
         }
-        echo("| Stopped flow ${net.stopFlow(f)}") ?: issueMessage("Unable to stop flow")
-    }
 }

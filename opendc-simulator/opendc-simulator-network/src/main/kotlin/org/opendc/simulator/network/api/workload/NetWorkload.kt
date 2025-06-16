@@ -22,12 +22,8 @@
 
 package org.opendc.simulator.network.api.workload
 
-import kotlinx.serialization.Serializer
 import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.api.NetSimExp
-import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
-import org.opendc.simulator.network.components.node.NodeId
 import java.time.Duration
 import java.time.Instant
 import java.util.LinkedList
@@ -36,41 +32,40 @@ import java.util.Queue
 /**
  * Represent a network workload consisting of multiple [NetworkEvent]s.
  *
- * **This class is mutable**, its _events are consumed when executed.
+ * **This class is mutable**, its privEvnts are consumed when executed.
  */
 public class NetWorkload(
     networkEvents: Collection<NetworkEvent>,
 ) {
-
-    internal val events: List<NetworkEvent> get() = _events.toList()
-    private val _events: Queue<NetworkEvent> = LinkedList(networkEvents.sorted())
+    internal val events: List<NetworkEvent> get() = privEvnts.toList()
+    private val privEvnts: Queue<NetworkEvent> = LinkedList(networkEvents.sorted())
 
     /**
      * The instant of the first [NetworkEvent] of the workload.
      */
     public val startInstant: Instant =
-        this._events.peek()?.deadline?.toInstant()
+        this.privEvnts.peek()?.deadline?.toInstant()
             ?: Instant.ofEpochMilli(0L)
 
     /**
      * The instant of the last [NetworkEvent] of the workload.
      */
     public val endInstant: Instant =
-        this._events.lastOrNull()?.deadline?.toInstant()
+        this.privEvnts.lastOrNull()?.deadline?.toInstant()
             ?: Instant.ofEpochMilli(0L)
 
     /**
      * The number of [NetworkEvent]s that have not been executed yet.
      */
-    public val numRemainingEvents: Int = _events.size
+    public val numRemainingEvents: Int = privEvnts.size
 //
 //    private val hostIds: Set<NodeId> =
 //        buildSet {
-//            _events.forEach { addAll(it.involvedIds()) }
+//            privEvnts.forEach { addAll(it.involvedIds()) }
 //        }.filterNot { it == INTERNET_ID }.toSet()
 
     init {
-        check(_events.isNotEmpty()) { "Network workload is empty." }
+        check(privEvnts.isNotEmpty()) { "Network workload is empty." }
     }
 
 //    /**
@@ -98,27 +93,27 @@ public class NetWorkload(
 //     * Executes the next [NetworkEvent].
 //     */
 //    internal suspend fun NetworkController.execNext() {
-//        _events.poll()?.let { with(it) { execIfNotPassed() } }
-//            ?: LOG.error("unable to execute network event, no more _events remaining in the workload")
+//        privEvnts.poll()?.let { with(it) { execIfNotPassed() } }
+//            ?: LOG.error("unable to execute network event, no more privEvnts remaining in the workload")
 //    }
 
     /**
      * @return `true` if there is at least one [NetworkEvent] that has not been executed, `false` otherwise.
      */
-    internal fun hasNext(): Boolean = _events.isNotEmpty()
+    internal fun hasNext(): Boolean = privEvnts.isNotEmpty()
 
 //    internal suspend fun NetworkController.execUntil(
 //        until: Timestamp,
 //        workChl: CoroutineWorkChannel<NetworkEvent>,
 //    ): Long {
 //        var consumed: Long = 0
-//        while ((_events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
-//            workChl.send(_events.poll())
+//        while ((privEvnts.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
+//            workChl.send(privEvnts.poll())
 //            consumed++
 //        }
 //        coroutineScope {
-// //            while ((_events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
-// //                _events.poll()?.let { with(it) { launch { execIfNotPassed() } } }
+// //            while ((privEvnts.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
+// //                privEvnts.poll()?.let { with(it) { launch { execIfNotPassed() } } }
 // //                consumed++
 // //            }
 //            pollUntil(until).map { launch { it.execIfNotPassed() } }.also { consumed += it.size }
@@ -131,14 +126,14 @@ public class NetWorkload(
 
     private fun pollUntil(until: Timestamp): Collection<NetworkEvent> =
         buildList {
-            while ((_events.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
-                add(_events.poll())
+            while ((privEvnts.peek()?.deadline ?: Timestamp.ofEpochMs(Long.MAX_VALUE)) <= until) {
+                add(privEvnts.poll())
             }
         }
 
-    internal fun peek(): NetworkEvent? = _events.peek()
+    internal fun peek(): NetworkEvent? = privEvnts.peek()
 
-    internal fun poll(): NetworkEvent? = _events.poll()
+    internal fun poll(): NetworkEvent? = privEvnts.poll()
 
     public fun fmt(): String =
         """
@@ -146,10 +141,10 @@ public class NetWorkload(
         | start instant: $startInstant
         | end instant: $endInstant
         | duration: ${Duration.ofMillis(endInstant.toEpochMilli() - startInstant.toEpochMilli())}
-        | remaining _events: ${_events.size}
+        | remaining _events: ${privEvnts.size}
         """.trimIndent()
 
-    public fun copy(networkEvents: Collection<NetworkEvent> = _events): NetWorkload = NetWorkload(networkEvents)
+    public fun copy(networkEvents: Collection<NetworkEvent> = privEvnts): NetWorkload = NetWorkload(networkEvents)
 
     public companion object {
         internal val LOG by logger()

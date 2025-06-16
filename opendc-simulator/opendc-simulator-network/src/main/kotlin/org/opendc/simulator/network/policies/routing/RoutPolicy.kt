@@ -1,13 +1,35 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.policies.routing
 
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
-import org.opendc.simulator.network.components.internalstructs.RoutTbl2
-import org.opendc.simulator.network.components.node.Internet
+import org.opendc.simulator.network.components.flow.INetFlow
+import org.opendc.simulator.network.components.flow.NetFlow
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.node.internals.flowtable.NodeFlowEntry
-import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.NetFlow
+import org.opendc.simulator.network.components.node.inet.Internet
+import org.opendc.simulator.network.components.node.internalstructs.flowtable.NodeFlowEntry
+import org.opendc.simulator.network.components.node.internalstructs.routtbl.RoutTbl2
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NonSerializable
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -19,7 +41,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = NonSerializable::class)
 @Polymorphic
-internal sealed class RoutPolicy: AbstractCoroutineContextElement(Key) {
+internal sealed class RoutPolicy : AbstractCoroutineContextElement(Key) {
     /**
      * Determines which core switches flows coming from [Internet] will be routed to.
      */
@@ -65,15 +87,12 @@ internal sealed class RoutPolicy: AbstractCoroutineContextElement(Key) {
     context(NetSimScope)
     internal open suspend fun onNodeAdded(n: Node<*>) { /* NoOps */ }
 
-
     /**
      * It performs necessary actions so that flows that where
      * routed through the removed node are rerouted correctly.
      */
     context(NetSimScope)
     internal open suspend fun onNodeRemoved(n: Node<*>) { /* NoOps */ }
-
-
 
     companion object Key : CoroutineContext.Key<RoutPolicy> {
         /**

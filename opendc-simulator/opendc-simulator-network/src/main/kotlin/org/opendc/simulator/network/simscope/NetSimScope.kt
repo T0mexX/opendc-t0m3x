@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2025 AtLarge Research
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package org.opendc.simulator.network.simscope
 
 import kotlinx.coroutines.CoroutineScope
@@ -15,16 +37,16 @@ import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
-import org.opendc.simulator.network.components.networks.custom.CustomNetwork
+import org.opendc.simulator.network.components.flow.NetFlowVersion
+import org.opendc.simulator.network.components.networks.NetSpecs
 import org.opendc.simulator.network.components.networks.Network
-import org.opendc.simulator.network.components.networks.NetworkSpecs
+import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.node.NodeVersion
-import org.opendc.simulator.network.flow.internals.NetFlowVersion
-import org.opendc.simulator.network.policies.fairness.FairnessPolicy
 import org.opendc.simulator.network.policies.routing.RoutPolicy
-import org.opendc.simulator.network.routing.NetSimAddressManager
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import org.opendc.simulator.network.simscope.fwpool.NetSimFWPool
+import org.opendc.simulator.network.simscope.ip.NetSimAddressManager
 import org.opendc.simulator.network.utils.CoroutineID
 import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
@@ -35,20 +57,19 @@ import kotlin.coroutines.EmptyCoroutineContext
 internal class NetSimScope(
     override var coroutineContext: CoroutineContext = EmptyCoroutineContext,
 ) : CoroutineScope {
-
     val ctx: CoroutineContext get() = coroutineContext
 
     val config: NetSimConfig
     val barrier: NetSimBarrier
     val devConfig: NetSimDevConfig
-    val poolAggr: NetSimPoolAggregator
+    val poolAggr: NetSimFWPool
     val idDispenser: NetSimIdDispenser
     val enRecorder: NetSimEnRecorder
     val tmSrc: NetSimTmSrc<*>
     val routPolicy: RoutPolicy
     val log by logger()
-    val net: Network get() = _net
-    private lateinit var _net: Network
+    val net: Network<*> get() = _net
+    private lateinit var _net: Network<*>
     val addrMngr: NetSimAddressManager
 
     val nodeVersion: NodeVersion
@@ -62,10 +83,10 @@ internal class NetSimScope(
             tmpCtx[Job] ?: let { tmpCtx += Job() }
             tmpCtx[NetSimConfig] ?: let { tmpCtx += NetSimConfig() }
             tmpCtx[NetSimBarrier] ?: let {
-                tmpCtx +=  NetSimBarrier(tmpCtx[NetSimConfig]!!)
+                tmpCtx += NetSimBarrier(tmpCtx[NetSimConfig]!!)
             }
-            tmpCtx[NetSimPoolAggregator] ?: let {
-                tmpCtx += NetSimPoolAggregator()
+            tmpCtx[NetSimFWPool] ?: let {
+                tmpCtx += NetSimFWPool()
             }
             tmpCtx[NetSimIdDispenser] ?: let { tmpCtx += NetSimIdDispenser() }
             tmpCtx[NetSimTmSrc] ?: let { tmpCtx += NetSimTmSrc.Internal() }
@@ -77,7 +98,7 @@ internal class NetSimScope(
         config = tmpCtx[NetSimConfig]!!
         barrier = tmpCtx[NetSimBarrier]!!
         devConfig = config.netSimDevConfig
-        poolAggr = tmpCtx[NetSimPoolAggregator]!!
+        poolAggr = tmpCtx[NetSimFWPool]!!
         idDispenser = tmpCtx[NetSimIdDispenser]!!
         tmSrc = tmpCtx[NetSimTmSrc]!!
         enRecorder = tmpCtx[NetSimEnRecorder]!!
@@ -89,9 +110,10 @@ internal class NetSimScope(
         runBlocking { initDispensers() }
     }
 
-    private suspend fun checkRequirements() = with(this) {
-        routPolicy.checkRequirements()
-    }
+    private suspend fun checkRequirements() =
+        with(this) {
+            routPolicy.checkRequirements()
+        }
 
     private suspend fun initDispensers() {
         nodeVersion.initDispensers()
@@ -101,7 +123,7 @@ internal class NetSimScope(
     /**
      * TODO
      */
-    internal fun registerNetwork(net: Network) {
+    internal fun registerNetwork(net: Network<*>) {
         require(::_net.isInitialized.not()) {
             "A network was already registered for this scope"
         }
@@ -119,12 +141,10 @@ internal class NetSimScope(
         // TODO: net.sync
     }
 
-    fun launch(
-        block: suspend NetSimScope.() -> Unit
-    ): Job = launch(ctx) {
-        block()
-    }
-
+    fun launch(block: suspend NetSimScope.() -> Unit): Job =
+        launch(ctx) {
+            block()
+        }
 
     companion object {
 //        internal fun <T> CoroutineScope.launchNetworkSim(
@@ -143,7 +163,7 @@ internal class NetSimScope(
     /**
      * TODO
      */
-    internal class NetSimScopeSerializer: KSerializer<NetSimScope> {
+    internal class NetSimScopeSerializer : KSerializer<NetSimScope> {
         @Serializable
         private data class Surr(
             val initialTmStamp: Timestamp? = null,
@@ -154,37 +174,39 @@ internal class NetSimScope(
         override val descriptor: SerialDescriptor = serialDescriptor<Surr>()
 
         @OptIn(ExperimentalSerializationApi::class)
-        override fun deserialize(
-            decoder: Decoder
-        ): NetSimScope = with(decoder.decodeSerializableValue(serializer<Surr>())) {
-            var ctx: CoroutineContext = EmptyCoroutineContext
+        override fun deserialize(decoder: Decoder): NetSimScope =
+            with(decoder.decodeSerializableValue(serializer<Surr>())) {
+                var ctx: CoroutineContext = EmptyCoroutineContext
 
-            initialTmStamp?.let {
-                ctx += NetSimTmSrc.Internal(initialTmStamp = it)
-            }
+                initialTmStamp?.let {
+                    ctx += NetSimTmSrc.Internal(initialTmStamp = it)
+                }
 
-            netSimConfig?.let {
-                ctx += it
-            }
+                netSimConfig?.let {
+                    ctx += it
+                }
 
-            return NetSimScope(ctx).also { scope ->
+                return NetSimScope(ctx).also { scope ->
 
-                with(scope) {
-                    runBlocking(scope.ctx) {
-                        // If a path to a network topology defined then try to build it.
-                        netPath?.let {
-                            NETWORK_JSON.decodeFromStream<NetworkSpecs<Network>>(File(netPath).inputStream()).build()
+                    with(scope) {
+                        runBlocking(scope.ctx) {
+                            // If a path to a network topology defined then try to build it.
+                            netPath?.let {
+                                NETWORK_JSON.decodeFromStream<NetSpecs<*>>(File(netPath).inputStream()).build()
 
-                        // Else build an empty modifiable `CustomNetwork` in the scope.
-                        } ?: CustomNetwork()
+                                // Else build an empty modifiable `CustomNetwork` in the scope.
+                            } ?: CustomNetwork()
 
-                        scope.checkRequirements()
+                            scope.checkRequirements()
+                        }
                     }
                 }
             }
-        }
 
-        override fun serialize(encoder: Encoder, value: NetSimScope) {
+        override fun serialize(
+            encoder: Encoder,
+            value: NetSimScope,
+        ) {
             throw UnsupportedOperationException()
         }
     }

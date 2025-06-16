@@ -27,11 +27,10 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.NetSimWlRunner
+import org.opendc.simulator.network.components.flow.FlowId
+import org.opendc.simulator.network.components.flow.INetFlow
+import org.opendc.simulator.network.components.flow.NetFlow
 import org.opendc.simulator.network.components.node.NodeId
-import org.opendc.simulator.network.flow.internals.INetFlow
-import org.opendc.simulator.network.flow.publics.FlowId
-import org.opendc.simulator.network.flow.publics.NetFlow
-import org.opendc.simulator.network.simscope.NetSimScope
 
 /**
  * Represents a single network event occurring at [deadline].
@@ -113,10 +112,11 @@ public sealed class NetworkEvent : Comparable<NetworkEvent> {
         override var targetFlowGetter: () -> INetFlow,
     ) : NetworkEvent() {
         context(NetSimWlRunner)
-        override suspend fun exec() = with(netScope) {
-            val flow = targetFlow
-            flow.setDemand(newDemand)
-        }
+        override suspend fun exec() =
+            with(netScope) {
+                val flow = targetFlow
+                flow.setDemand(newDemand)
+            }
     }
 
     /**
@@ -131,16 +131,18 @@ public sealed class NetworkEvent : Comparable<NetworkEvent> {
         val id: FlowId? = null,
     ) : NetworkEvent() {
         context(NetSimWlRunner)
-        override suspend fun exec() = with(netScope) {
-            val newFlow: INetFlow = devConfig.netFlowConfig.version(
-                senderId = from,
-                destId = to,
-                demand = demand,
-                id = id,
-            )
-            targetFlowGetter = { newFlow }
-            net.startFlow(newFlow)
-        }
+        override suspend fun exec() =
+            with(netScope) {
+                val newFlow: INetFlow =
+                    devConfig.netFlowConfig.version(
+                        senderId = from,
+                        destId = to,
+                        demand = demand,
+                        id = id,
+                    )
+                targetFlowGetter = { newFlow }
+                net.startFlow(newFlow)
+            }
     }
 
     /**
@@ -151,8 +153,9 @@ public sealed class NetworkEvent : Comparable<NetworkEvent> {
         override var targetFlowGetter: () -> INetFlow,
     ) : NetworkEvent() {
         context(NetSimWlRunner)
-        override suspend fun exec() = with(netScope) {
-            net.stopFlow(targetFlowGetter())
-        }
+        override suspend fun exec() =
+            with(netScope) {
+                net.stopFlow(targetFlowGetter())
+            }
     }
 }

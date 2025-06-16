@@ -28,7 +28,7 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
 internal data class REPLEnv(
-    var network: Network,
+    var network: Network<*>,
 //    var energyRecorder: NetEnRecorder,
 //    var tmSrc: REPLTmSrc,
     var scope: NetSimScope,
