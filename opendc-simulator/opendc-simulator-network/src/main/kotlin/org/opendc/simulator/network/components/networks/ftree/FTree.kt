@@ -96,7 +96,7 @@ internal class FTree private constructor(
                     buildList {
                         repeat(k * k / 4) {
                             add(
-                                specs.crSwSpecs.build().also { it.msgSyncConnect(inet, updtRoutTbl = false) },
+                                specs.crSwSpecs.buildAsGlobal(inet = inet, updtRoutTbl = false),
                             )
                         }
                     }.chunked(k / 2)

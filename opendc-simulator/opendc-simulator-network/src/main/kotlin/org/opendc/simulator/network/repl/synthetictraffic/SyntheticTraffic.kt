@@ -32,6 +32,8 @@ import org.opendc.simulator.network.components.networks.Network.Companion.getNod
 import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.NETWORK_JSON
+import org.opendc.simulator.network.utils.SerialSTraffic
 import org.opendc.simulator.network.utils.increaseMax
 import kotlin.math.log2
 
@@ -39,7 +41,7 @@ import kotlin.math.log2
  * TODO
  */
 @Serializable
-internal abstract class SyntheticTraffic<in T : Network<*>> {
+internal abstract class SyntheticTraffic<in T : Network<*>> : SerialSTraffic {
     /**
      * Needs to be implemented if `getDest(Int, Map<Int, HostNode>)` is not.
      */
@@ -110,6 +112,12 @@ internal abstract class SyntheticTraffic<in T : Network<*>> {
         require(1 shl lg == nNodes) {
             "Error: traffic pattern requires the number of hosts to be a power of 2"
         }
+    }
+
+    companion object {
+        @Suppress("UNCHECKED_CAST")
+        fun fromString(str: String): SyntheticTraffic<Network<*>> =
+            NETWORK_JSON.decodeFromString<SerialSTraffic>(str) as SyntheticTraffic<Network<*>>
     }
 }
 

@@ -91,7 +91,7 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule =
             subclass(TerminalSpecs::class)
         }
 
-        polymorphic(NetSpecs::class) {
+        polymorphic(SerialNetSpecs::class) {
             subclass(FatTreeSpecs::class)
             subclass(DFSpecs::class)
             subclass(CustomNetworkSpecs::class)
@@ -118,7 +118,7 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule =
         // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Synthetic Workload
         // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        polymorphic(SyntheticTraffic::class) {
+        polymorphic(SerialSTraffic::class) {
             subclass(STrafficBitComplement::class)
             subclass(STrafficBitReversal::class)
             subclass(STrafficBitShuffle::class)
@@ -141,3 +141,7 @@ public val NETWORK_JSON: Json =
     Json {
         serializersModule = NETWORK_SERIALIZERS_MODULE
     }
+
+internal interface SerialNetSpecs
+internal interface SerialNodeSpecs
+internal interface SerialSTraffic

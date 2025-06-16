@@ -31,6 +31,7 @@ import org.opendc.common.units.Unit
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.repl.synthetictraffic.SyntheticTraffic
+import org.opendc.simulator.network.utils.NETWORK_JSON
 import org.opendc.simulator.network.utils.NETWORK_SERIALIZERS_MODULE
 import org.opendc.simulator.network.utils.withProgressBar
 import kotlin.time.measureTime
@@ -45,9 +46,7 @@ internal class FlowSynthWlCmd : REPLCmd(name = CMD_STR) {
         help = "",
     ).convert { str ->
         // Wrap into JSON object to use built in polymorphic deserialization.
-        Json {
-            serializersModule = NETWORK_SERIALIZERS_MODULE
-        }.decodeFromString("""{ "type": "$str" } """)
+        SyntheticTraffic.fromString("""{ "type": "$str" } """)
     }
 
     private val demand: Unit<*> by argument(

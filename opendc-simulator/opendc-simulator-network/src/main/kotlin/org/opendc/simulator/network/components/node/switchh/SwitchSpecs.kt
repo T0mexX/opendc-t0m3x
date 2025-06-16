@@ -64,7 +64,7 @@ internal data class SwitchSpecs(
         }
 
         return Switch(
-            ip = subnet,
+            ip = ip,
             portSpeed = portSpeed,
             nPorts = nPorts,
             global = global,
@@ -82,5 +82,5 @@ internal data class SwitchSpecs(
         subnet: IPv4Address? = null,
         inet: Internet? = null,
         updtRoutTbl: Boolean,
-    ): Switch = this.copy(global = true).build(subnet, inet, updtRoutTbl)
+    ): Switch = this.copy(global = true, nPorts = nPorts!! + 1).build(subnet, inet, updtRoutTbl)
 }

@@ -1,6 +1,7 @@
 import resources/my/scope.jsonc
 net info
-f mk -s 0.0.0.4 -d 0.0.0.5 -b 800Mbps
+f synth bit-complement 100%
+f info --ls
 q
 
 f info

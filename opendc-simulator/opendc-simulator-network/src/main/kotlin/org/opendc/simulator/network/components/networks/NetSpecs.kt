@@ -28,9 +28,10 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NETWORK_JSON
+import org.opendc.simulator.network.utils.SerialNetSpecs
 import java.io.File
 
-internal interface NetSpecs<T : Network<T>> {
+internal interface NetSpecs<T : Network<T>>: SerialNetSpecs {
     /**
      * Number of routers (switches) in the network.
      */
@@ -58,10 +59,14 @@ internal interface NetSpecs<T : Network<T>> {
     context(NetSimScope)
     suspend fun build(): T
 
+
     companion object {
+
         @OptIn(ExperimentalSerializationApi::class)
-        fun fromFile(file: File): NetSpecs<*> = NETWORK_JSON.decodeFromStream(file.inputStream())
+        fun fromFile(file: File): NetSpecs<*> =
+            NETWORK_JSON.decodeFromStream<SerialNetSpecs>(file.inputStream()) as NetSpecs<*>
 
         fun fromFile(filePath: String): NetSpecs<*> = fromFile(File(filePath))
     }
 }
+

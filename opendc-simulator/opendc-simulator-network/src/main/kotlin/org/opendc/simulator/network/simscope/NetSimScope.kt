@@ -192,7 +192,7 @@ internal class NetSimScope(
                         runBlocking(scope.ctx) {
                             // If a path to a network topology defined then try to build it.
                             netPath?.let {
-                                NETWORK_JSON.decodeFromStream<NetSpecs<*>>(File(netPath).inputStream()).build()
+                                NetSpecs.fromFile(File(netPath)).build()
 
                                 // Else build an empty modifiable `CustomNetwork` in the scope.
                             } ?: CustomNetwork()
