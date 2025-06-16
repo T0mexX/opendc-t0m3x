@@ -23,7 +23,6 @@
 package org.opendc.simulator.network.components.node
 
 import inet.ipaddr.ipv4.IPv4Address
-import kotlinx.serialization.Serializable
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.inet.Internet
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -32,7 +31,7 @@ import org.opendc.simulator.network.utils.SerialNodeSpecs
 /**
  * TODO
  */
-internal interface NodeSpecs<T : Node<T>>: SerialNodeSpecs {
+internal interface NodeSpecs<T : Node<T>> : SerialNodeSpecs {
     /**
      * TODO
      */

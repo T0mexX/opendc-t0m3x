@@ -33,7 +33,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.serialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
 import org.opendc.common.units.Timestamp
@@ -48,7 +47,6 @@ import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.simscope.fwpool.NetSimFWPool
 import org.opendc.simulator.network.simscope.ip.NetSimAddressManager
 import org.opendc.simulator.network.utils.CoroutineID
-import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext

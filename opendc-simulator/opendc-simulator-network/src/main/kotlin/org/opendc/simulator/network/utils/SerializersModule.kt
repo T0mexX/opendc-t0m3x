@@ -27,12 +27,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import org.opendc.simulator.network.components.networks.NetSpecs
 import org.opendc.simulator.network.components.networks.custom.CustomNetworkSpecs
 import org.opendc.simulator.network.components.networks.dragonfly.DFSpecs
 import org.opendc.simulator.network.components.networks.flatfly.FlatFlySpecs
 import org.opendc.simulator.network.components.networks.ftree.FatTreeSpecs
-import org.opendc.simulator.network.components.node.NodeSpecs
 import org.opendc.simulator.network.components.node.switchh.SwitchSpecs
 import org.opendc.simulator.network.components.node.terminal.TerminalSpecs
 import org.opendc.simulator.network.policies.fairness.FairnessPolicy
@@ -49,7 +47,6 @@ import org.opendc.simulator.network.repl.synthetictraffic.STrafficBitTranspose
 import org.opendc.simulator.network.repl.synthetictraffic.STrafficRandom
 import org.opendc.simulator.network.repl.synthetictraffic.STrafficRandomPerm
 import org.opendc.simulator.network.repl.synthetictraffic.STrafficUniform
-import org.opendc.simulator.network.repl.synthetictraffic.SyntheticTraffic
 import org.opendc.simulator.network.repl.synthetictraffic.df.STrafficDFAdv
 import org.opendc.simulator.network.repl.synthetictraffic.ftree.STrafficFTreeAdv
 import org.opendc.simulator.network.repl.synthetictraffic.ftree.STrafficFTreePodShift
@@ -86,7 +83,7 @@ public val NETWORK_SERIALIZERS_MODULE: SerializersModule =
 //        subclass(HostNodeSpecs::class)
 //    }
 
-        polymorphic(NodeSpecs::class) {
+        polymorphic(SerialNodeSpecs::class) {
             subclass(SwitchSpecs::class)
             subclass(TerminalSpecs::class)
         }
@@ -143,5 +140,7 @@ public val NETWORK_JSON: Json =
     }
 
 internal interface SerialNetSpecs
+
 internal interface SerialNodeSpecs
+
 internal interface SerialSTraffic

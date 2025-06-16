@@ -31,8 +31,6 @@ import org.opendc.common.units.Unit
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.repl.synthetictraffic.SyntheticTraffic
-import org.opendc.simulator.network.utils.NETWORK_JSON
-import org.opendc.simulator.network.utils.NETWORK_SERIALIZERS_MODULE
 import org.opendc.simulator.network.utils.withProgressBar
 import kotlin.time.measureTime
 

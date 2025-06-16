@@ -31,7 +31,7 @@ import org.opendc.simulator.network.utils.NETWORK_JSON
 import org.opendc.simulator.network.utils.SerialNetSpecs
 import java.io.File
 
-internal interface NetSpecs<T : Network<T>>: SerialNetSpecs {
+internal interface NetSpecs<T : Network<T>> : SerialNetSpecs {
     /**
      * Number of routers (switches) in the network.
      */
@@ -59,14 +59,10 @@ internal interface NetSpecs<T : Network<T>>: SerialNetSpecs {
     context(NetSimScope)
     suspend fun build(): T
 
-
     companion object {
-
         @OptIn(ExperimentalSerializationApi::class)
-        fun fromFile(file: File): NetSpecs<*> =
-            NETWORK_JSON.decodeFromStream<SerialNetSpecs>(file.inputStream()) as NetSpecs<*>
+        fun fromFile(file: File): NetSpecs<*> = NETWORK_JSON.decodeFromStream<SerialNetSpecs>(file.inputStream()) as NetSpecs<*>
 
         fun fromFile(filePath: String): NetSpecs<*> = fromFile(File(filePath))
     }
 }
-
