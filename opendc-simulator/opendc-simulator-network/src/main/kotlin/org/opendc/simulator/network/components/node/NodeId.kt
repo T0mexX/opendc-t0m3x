@@ -27,8 +27,8 @@ import kotlinx.serialization.Serializable
 
 @JvmInline
 @Serializable
-public value class NodeId(public val value: Long) : Comparable<NodeId> {
-    internal operator fun inc(): NodeId = NodeId(this.value + 1)
+public value class NodeId(public val value: UInt) : Comparable<NodeId> {
+    internal operator fun inc(): NodeId = NodeId(this.value + 1U)
 
     override operator fun compareTo(other: NodeId): Int = this.value.compareTo(other.value)
 
@@ -37,8 +37,9 @@ public value class NodeId(public val value: Long) : Comparable<NodeId> {
     internal fun toIp(): IPv4Address = IPv4Address(value.toInt())
 
     public companion object {
-        public val INVALID: NodeId = NodeId(-1)
+//        public val INVALID: NodeId = NodeId(-1)
+        public operator fun invoke(value: Long): NodeId = NodeId(value.toUInt())
 
-        public fun IPv4Address.toNId(): NodeId = NodeId(this.intValue().toLong())
+        public fun IPv4Address.toNId(): NodeId = NodeId(this.longValue().toUInt())
     }
 }

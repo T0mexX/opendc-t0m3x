@@ -86,7 +86,7 @@ internal class NetSimEnRecorder(
 
         // Time passed from the start of simulation virtual time up to the last synchronization.
         val startToSync = sinceStart - sinceSync
-        check(startToSync >= TimeDelta.zero)
+        check(startToSync >= TimeDelta.zero) { "$startToSync" }
 
         barrier.whileStable {
             currPwrDraw = compCurrPwrDraw()

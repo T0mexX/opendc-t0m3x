@@ -24,6 +24,7 @@ package org.opendc.simulator.network.components.node.internalstructs.flowtable
 
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
+import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.components.flow.INetFlow
 import org.opendc.simulator.network.components.link.Link
 import org.opendc.simulator.network.components.node.Node
@@ -69,12 +70,12 @@ internal class NodeFlowEntry private constructor(
         }
     }
 
-    fun tput(): DataRate = TODO()
-//        txlinks.keys.sumOfUnit { p ->
-//            p.getTxTput(linkFlowEntryIds[p.portIdx])
-//        }.also {
-//            assert(it >= DataRate.zero)
-//        }
+    fun tput(): DataRate =
+        txlinks.keys.sumOfUnit { l ->
+            l.getTx(linkFlowEntryIds[l.linkIdx])
+        }.also {
+            assert(it >= DataRate.zero)
+        }
 
     companion object : FWId<NodeFlowEntry> {
         // TODO setup dispenser beforehand

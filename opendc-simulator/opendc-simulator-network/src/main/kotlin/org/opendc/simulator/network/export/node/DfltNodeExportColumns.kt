@@ -51,7 +51,7 @@ public object DfltNodeExportColumns {
     public val NODE_ID: ExportColumn<NodeSnapshot> =
         ExportColumn(
             field = Types.required(INT64).named("node_id"),
-        ) { it.nodeId.value }
+        ) { it.nodeId.value.toLong() }
 
     /**
      * The name of the node (if any).

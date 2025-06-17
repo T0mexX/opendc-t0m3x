@@ -32,6 +32,7 @@ import kotlinx.coroutines.sync.withLock
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.flow.INetFlow
+import org.opendc.simulator.network.components.flow.NetFlow
 import org.opendc.simulator.network.components.msgable.Msg
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -92,6 +93,9 @@ internal class LinkImpl private constructor(
             assert(usedBw approxSmallerOrEq maxBw) { "usedBw:$usedBw  maxBw:$maxBw" }
         }
 
+    private val TO_DEL = mutableMapOf<NetFlow, MutableList<DataRate>>()
+    private val TO_DEL2 = mutableMapOf<NetFlow, MutableList<Int>>()
+
     override suspend fun setTentativeTx(
         dr: DataRate,
         f: INetFlow,
@@ -99,50 +103,68 @@ internal class LinkImpl private constructor(
     ): Int =
         mtx.withLock {
             assert(dr >= DataRate.zero)
+            TO_DEL.getOrPut(f) { mutableListOf() } += dr
 
             // Invalidate the port until `attemptTx`
             // is called and updates are propagated to `receiverN`.
             stabilizer.invalidate()
 
             @Suppress("NAME_SHADOWING")
-            val entryId = entryId ?: newEntry()
-            val entry = entries[entryId]
-            assert(entry.used)
+            var entryId = entryId ?: newEntry(f)
+            val entry = entries[entryId].takeUnless {
+                it.used.not() || (it.TO_BE_DEL_IS_INIT() && it.netF !== f)
 
-            entry.netF = f
+            // If entry was removed because the tentative tx at this link was 0, then get a new one.
+            } ?: entries[newEntry(f)].also { entryId = it.idx }
+
+
+
+            TO_DEL2.getOrPut(f) { mutableListOf() } += entryId
+            assert(entry.TO_BE_DEL_IS_INIT().not() || entry.netF === f) { "${TO_DEL[f]} \n ${TO_DEL2[f]}" }
+            assert(entry.used)  { "${TO_DEL[f]} \n ${TO_DEL2[f]}" }
+
             totTentativeTx += dr - entry.demand
             entry.demand = dr
 
             return entryId
         }
 
+    override fun getTx(entryId: Int): DataRate = entries[entryId].tput
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Link Internal Implementation
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private val entries: MutableList<LinkEntry> =
-        0.rangeUntil(initialCapacity).map {
+        (0 ..< initialCapacity).map {
             LinkEntry(it)
         }.toMutableList()
 
+    /**
+     * Used for calls to [rmEntry] which may happen in different coroutines.
+     */
+    private val freeIdxMtx = Mutex()
     private val freeIdxs: IntArrayQueue =
         IntArrayQueue(initialCapacity = initialCapacity).also { q ->
-            (0 until initialCapacity).forEach { q.add(it) }
+            (0 ..< initialCapacity).forEach { q.add(it) }
         }
 
-    private fun newEntry(): Idx =
+    private fun newEntry(f: INetFlow): Idx =
         let {
             freeIdxs.poll() ?: grow1()
-        }.also { idx -> entries[idx].used = true }
+        }.also { idx ->
+            entries[idx].used = true
+            entries[idx].netF = f
+        }
 
     private fun grow1(): Idx {
-        entries.add(LinkEntry(idx = entries.size - 1))
+        entries.add(LinkEntry(idx = entries.size))
         return entries.size - 1
     }
 
-    private fun rmEntry(idx: Idx) {
-        freeIdxs.add(idx)
+    private suspend fun rmEntry(idx: Idx) = freeIdxMtx.withLock {
         entries[idx].used = false
+        freeIdxs.add(idx)
     }
 
     companion object {

@@ -51,7 +51,7 @@ internal class LinkMkCmd : REPLCmd("mk") {
     override fun run(): Unit =
         execREPLCmdCatching {
             barrier.awaitStability()
-            val nodes: List<NodeId> = nodeIds.toList().map { NodeId(it) }
+            val nodes: List<NodeId> = nodeIds.toList().map { NodeId(it.toUInt()) }
             val node1: Node<*>? = net.nodesById[nodes[0]]
             val node2: Node<*>? = net.nodesById[nodes[1]]
 

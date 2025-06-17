@@ -37,7 +37,7 @@ import org.opendc.simulator.network.utils.NonSerializable
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(NonSerializable::class)
-internal class CustomNetwork(
+internal class CustomNetwork private constructor(
     nodes: Collection<Node<*>>,
     override val inet: Internet,
 ) : NetworkImpl<CustomNetwork>() {
@@ -157,6 +157,13 @@ internal class CustomNetwork(
         }
 
         context(NetSimScope)
-        suspend operator fun invoke(): CustomNetwork = CustomNetwork(emptyList(), Internet())
+        suspend operator fun invoke(): CustomNetwork =
+            CustomNetwork(emptyList(), Internet()).also { net ->
+                // Setup global routing policy if needed.
+                this@NetSimScope.config.routPolicy.setUp()
+
+                // Register the network in the simulation scope.
+                this@NetSimScope.registerNetwork(net)
+            }
     }
 }

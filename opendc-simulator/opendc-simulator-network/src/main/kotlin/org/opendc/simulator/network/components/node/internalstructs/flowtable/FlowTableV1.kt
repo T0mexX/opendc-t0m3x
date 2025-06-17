@@ -65,13 +65,14 @@ internal class FlowTableV1 private constructor(
         assert(entry.rx >= DataRate.zero) { entry.rx.value }
 
         entry.txlinks.forEach { (l, perc) ->
-            // The data-rate sent to port `p` of this flow.
+            // The data-rate sent to link `l` for this flow.
             val portDemand = entry.rx * perc
             if (new) {
                 entry.linkFlowEntryIds[l.linkIdx] =
                     l.setTentativeTx(portDemand, entry.netFlow)
             } else {
-                l.setTentativeTx(portDemand, entry.netFlow, entry.linkFlowEntryIds[l.linkIdx])
+                entry.linkFlowEntryIds[l.linkIdx] =
+                    l.setTentativeTx(portDemand, entry.netFlow, entry.linkFlowEntryIds[l.linkIdx])
             }
         }
         if (entry.rx approx DataRate.zero) rmEntry(entry)

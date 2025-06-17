@@ -53,14 +53,14 @@ internal class ImprintMaterializer(rqstSchema: MessageType) : RecordMaterializer
                     TRANSMITTER_ID_FIELD ->
                         object : PrimitiveConverter() {
                             override fun addLong(value: Long) {
-                                imprintBuilder.transmitterId = NodeId(value)
+                                imprintBuilder.transmitterId = NodeId(value.toUInt())
                             }
                         }
 
                     DEST_ID_FIELD ->
                         object : PrimitiveConverter() {
                             override fun addLong(value: Long) {
-                                imprintBuilder.destId = NodeId(value)
+                                imprintBuilder.destId = NodeId(value.toUInt())
                             }
                         }
 

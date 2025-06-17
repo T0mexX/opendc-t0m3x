@@ -79,6 +79,8 @@ internal interface Link : SendChannel<Msg<Node<*>, *>>, IInvalidatable {
         entryId: Int? = null,
     ): Int
 
+    fun getTx(entryId: Int): DataRate
+
 //    /**
 //     * Increases the current bandwidth usage on this link by the specified amount, [bw],
 //     * and notifies the receiver node with a delta bandwidth update, attributing the change to [netF].

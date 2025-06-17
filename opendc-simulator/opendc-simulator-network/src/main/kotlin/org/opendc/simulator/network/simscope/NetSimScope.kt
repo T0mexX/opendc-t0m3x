@@ -35,6 +35,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.serializer
 import org.opendc.common.logger.logger
+import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.components.flow.NetFlowVersion
 import org.opendc.simulator.network.components.networks.NetSpecs
@@ -62,8 +63,10 @@ internal class NetSimScope(
     val devConfig: NetSimDevConfig
     val poolAggr: NetSimFWPool
     val idDispenser: NetSimIdDispenser
-    val enRecorder: NetSimEnRecorder
-    val tmSrc: NetSimTmSrc<*>
+    var enRecorder: NetSimEnRecorder
+        private set
+    var tmSrc: NetSimTmSrc<*>
+        private set
     val routPolicy: RoutPolicy
     val log by logger()
     val net: Network<*> get() = _net
@@ -106,6 +109,14 @@ internal class NetSimScope(
         nodeVersion = devConfig.nodeConfig.version
         netFlowVersion = devConfig.netFlowConfig.version
         runBlocking { initDispensers() }
+    }
+
+    internal fun setTmSrc(tmSrc: NetSimTmSrc<*>) {
+        require(tmSrc.sinceStart == TimeDelta.zero)
+        this.tmSrc = tmSrc
+        coroutineContext += tmSrc
+        this.enRecorder = NetSimEnRecorder(tmSrc)
+        coroutineContext += enRecorder
     }
 
     private suspend fun checkRequirements() =

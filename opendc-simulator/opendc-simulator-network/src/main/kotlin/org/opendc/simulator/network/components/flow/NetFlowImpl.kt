@@ -71,23 +71,23 @@ internal class NetFlowImpl private constructor(
     override suspend fun setDemand(demand: DataRate) {
         assert(demand >= DataRate.zero)
 
-        val msg = setDemandDisp.acquire().reset()
-        msg.newDemand = demand
-        msg.sendTo(this)
+        setDemandDisp.acquire().reset {
+            this.newDemand = demand
+        }.sendTo(this)
     }
 
     override suspend fun msgAsyncSetTput(newTput: DataRate) {
         assert(newTput >= DataRate.zero)
 
-        val msg = setTputDisp.acquire().reset()
-        msg.newThroughput = newTput.roundToIfWithinEpsilon(demand, epsilon = 1e-3)
-        msg.sendTo(this)
+        setTputDisp.acquire().reset {
+            this.newTput = newTput.roundToIfWithinEpsilon(demand, epsilon = 1e-3)
+        }.sendTo(this)
     }
 
     override suspend fun msgAsyncIncreaseTputBy(amount: DataRate) {
-        val msg = increaseTputDisp.acquire().reset()
-        msg.amount = amount
-        msg.sendTo(this)
+        increaseTputDisp.acquire().reset {
+            this.amount = amount
+        }.sendTo(this)
     }
 
     override fun hashCode(): Int = id.hashCode()
@@ -142,7 +142,7 @@ internal class NetFlowImpl private constructor(
     // Other
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    override fun toString(): String = "NetFlow(id=$id)"
+    override fun toString(): String = "NetFlow(id=$id,src=${senderId.toIp()},dest=${destId.toIp()},dmnd=$demand,tput=$throughput)"
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NetFlowVersion
@@ -260,13 +260,13 @@ internal class NetFlowImpl private constructor(
                     val stab = barrier.stabilizer()
                     object : INetFlow.SetThroughput, IInvalidatable, MsgImpl<INetFlow, INetFlow.SetThroughput>(pool, idx) {
                         override val stabilizer: NetSimStabilizer = stab
-                        override var newThroughput: DataRate = DataRate.zero
+                        override var newTput: DataRate = DataRate.zero
 
                         context(NetFlow)
                         override suspend fun handle() {
                             val f = this@NetFlow as NetFlowImpl
                             val old: DataRate = throughput
-                            f.throughput = newThroughput
+                            f.throughput = newTput
 
                             // If there are collectors listening to this `NetFlow` events,
                             // then emit events to those collectors.

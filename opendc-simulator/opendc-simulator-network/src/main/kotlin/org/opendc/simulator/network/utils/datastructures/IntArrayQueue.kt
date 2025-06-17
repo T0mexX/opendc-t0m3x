@@ -25,7 +25,7 @@ package org.opendc.simulator.network.utils.datastructures
 internal class IntArrayQueue(initialCapacity: Int) {
     private var array = IntArray(initialCapacity)
     private var front = 0
-    private var rear = -1
+    private var rear = initialCapacity - 1
     private var size = 0
 
     fun isEmpty(): Boolean = size == 0

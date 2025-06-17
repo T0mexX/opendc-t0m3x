@@ -38,7 +38,7 @@ internal interface INetFlow : NetFlow, Msgable<INetFlow>, Launchable, IInvalidat
     suspend fun msgAsyncIncreaseTputBy(amount: DataRate)
 
     interface SetThroughput : Msg<INetFlow, SetThroughput> {
-        var newThroughput: DataRate
+        var newTput: DataRate
 
         companion object : FWId<SetThroughput>
     }

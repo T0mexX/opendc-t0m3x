@@ -32,4 +32,6 @@ internal class LinkEntry(
     var tput: DataRate = DataRate.zero,
 ) {
     lateinit var netF: INetFlow
+
+    fun TO_BE_DEL_IS_INIT(): Boolean = ::netF.isInitialized
 }

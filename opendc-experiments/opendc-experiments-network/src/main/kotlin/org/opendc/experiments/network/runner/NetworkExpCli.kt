@@ -28,21 +28,20 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.simulator.network.api.NetSimExp
-import org.opendc.simulator.network.utils.NETWORK_SERIALIZERS_MODULE
+import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
 
 /**
  * Main entrypoint of the application.
  */
-public fun main(args: Array<String>): Unit = NetScenarioCmd().main(args)
+public fun main(args: Array<String>): Unit = NetExpCmd().main(args)
 
 /**
  * Represents the command for the Scenario experiments.
  */
-internal class NetScenarioCmd : CliktCommand(name = "scenario") {
+internal class NetExpCmd : CliktCommand(name = "scenario") {
     /**
      * The path to the environment directory.
      */
@@ -52,8 +51,7 @@ internal class NetScenarioCmd : CliktCommand(name = "scenario") {
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {
-        val exp: NetSimExp = Json { serializersModule = NETWORK_SERIALIZERS_MODULE }
-            .decodeFromStream(expPath.inputStream())
+        val exp: NetSimExp = NETWORK_JSON.decodeFromStream(expPath.inputStream())
 
         runBlocking {
             val runner = exp.runner()

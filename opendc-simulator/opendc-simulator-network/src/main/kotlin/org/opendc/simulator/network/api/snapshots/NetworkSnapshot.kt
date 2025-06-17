@@ -32,6 +32,7 @@ import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.HDR
 import org.opendc.simulator.network.components.flow.NetFlow
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
+import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.switchh.Switch
 import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimScope
@@ -39,6 +40,7 @@ import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.trace.util.parquet.exporter.Exportable
 import java.time.Instant
+import kotlin.system.exitProcess
 
 /**
  * A snapshot containing information of network collected at [instant].
@@ -221,9 +223,12 @@ public class NetworkSnapshot private constructor(
             val totDemand: DataRate = flows.sumOfUnit { it.demand }
             val totThroughput: DataRate = flows.sumOfUnit { it.throughput }
 
+
             assert(
                 flows.forEach {
-                    check(it.demand approxLargerOrEq it.throughput) { "${it.demand} ${it.throughput} ${it.id}" }
+                    assert(barrier.isStable())
+                    check(it.demand approxLargerOrEq it.throughput) { "${it.demand} ${it.throughput} ${it.id}  ${it}" }
+//                    if (it.senderId == NetworkImpl.INTERNET_ID && it.demand > DataRate.zero) exitProcess(1)
                 }.let { true },
             )
             assert(totDemand approxLargerOrEq totThroughput) { "$totDemand $totThroughput" }

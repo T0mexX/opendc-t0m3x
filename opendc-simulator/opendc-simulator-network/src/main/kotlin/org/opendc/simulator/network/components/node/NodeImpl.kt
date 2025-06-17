@@ -67,6 +67,8 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
     override val routTbl: RoutTbl2 = RoutTbl2(owner = this)
     override lateinit var job: Job
 
+    override fun getFreeLinkIdx(): Int = links.indexOfFirst { it == null }.takeIf { it != -1 } ?: error("port not available")
+
     override suspend fun msgAsyncRxUpdt(
         deltaRate: DataRate,
         f: INetFlow,
@@ -78,8 +80,6 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
             this.netF = f
         }.sendTo(this)
     }
-
-    override fun getFreeLinkIdx(): Int = links.indexOfFirst { it == null }.takeIf { it != -1 } ?: error("port not available")
 
     override suspend fun msgSyncConnect(
         other: Node<*>,
@@ -93,9 +93,9 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
     }
 
     override suspend fun msgSyncDisconnect(other: Node<*>) {
-        val notif = disconnectDisp.acquire().reset()
-        notif.other = other
-        notif.sendTo(this)
+        disconnectDisp.acquire().reset {
+            this.other = other
+        }.sendTo(this)
     }
 
     override suspend fun msgAsyncShareRoutVect() {

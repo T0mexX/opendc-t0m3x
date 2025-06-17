@@ -56,7 +56,7 @@ internal interface Node<Self : Node<Self>> : IInvalidatable, Msgable<Node<*>>, L
      * ID of the node. Uniquely identifies the node in the [Network].
      */
     val id: NodeId
-        get() = NodeId(ip.intValue().toLong())
+        get() = NodeId(ip.longValue().toUInt())
 
     /**
      * Port speed in Kbps full duplex.

@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.components.networks
 
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
@@ -158,6 +159,6 @@ internal abstract class NetworkImpl<Self : Network<Self>> : Network<Self> {
          *
          * Corresponds to ip address 255.255.255.255.
          */
-        val INTERNET_ID: NodeId = NodeId(UInt.MAX_VALUE.toLong())
+        val INTERNET_ID: NodeId = NodeId(UInt.MAX_VALUE)
     }
 }

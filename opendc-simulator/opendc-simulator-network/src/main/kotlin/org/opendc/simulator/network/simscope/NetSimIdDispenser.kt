@@ -34,7 +34,7 @@ internal class NetSimIdDispenser : AbstractCoroutineContextElement(Key) {
     // NodeId Dispensing
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private var nextNodeId = NodeId(0)
+    private var nextNodeId = NodeId(0L)
     private val nodeIdMtx = Mutex()
     private val claimedNodeIds = mutableSetOf<NodeId>()
 

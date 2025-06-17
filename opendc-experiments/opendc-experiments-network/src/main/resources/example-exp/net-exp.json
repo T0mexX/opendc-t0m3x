@@ -1,11 +1,14 @@
 {
-    "networkSpecsPath": "resources/example-topologies/dragonfly-spec.json",
     "wlPath": "resources/example-traces/bb_net_wl54.parquet",
-    "netSimConfig": {
-        "netSimExportConfig": {
-            "exportInterval": "5min",
-            "outputFolder": "output/ignored/tobedel"
+    "netSimScope": {
+        "netSimConfig": {
+            "netSimExportConfig": {
+                "exportInterval": "5min",
+                "outputFolder": "output/ignored/tobedel"
+            },
+            "routingPolicy": { "type": "min" }
         },
-        "routingPolicy": { "type":  "ugal-l" }
-    }
+        "netPath": "../../../../opendc-simulator/opendc-simulator-network/src/main/resources/examples/topologies/ftree/ftree(k:6).json"
+    },
+    "virtualMapping": true
 }

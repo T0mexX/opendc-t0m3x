@@ -30,9 +30,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.workload.NetWorkload
-import org.opendc.simulator.network.components.networks.NetSpecs
 import org.opendc.simulator.network.input.readNetworkWl
-import org.opendc.simulator.network.simscope.NetSimConfig
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimTmSrc
 import javax.naming.OperationNotSupportedException
@@ -42,32 +40,34 @@ import javax.naming.OperationNotSupportedException
  */
 @Serializable(with = NetSimExp.NetSimExpSerializer::class)
 public data class NetSimExp internal constructor(
-    internal val networkSpecs: NetSpecs<*>,
+    internal val scope: NetSimScope,
     internal val wl: NetWorkload,
-    internal val netSimConfig: NetSimConfig = NetSimConfig(),
+    internal val virtualMapping: Boolean,
 ) {
     /**
      * TODO
      */
-    public suspend fun runner(): NetSimWlRunner {
+    public fun runner(): NetSimWlRunner {
         // Create simulation scope.
-        val scope =
-            NetSimScope(
-                // Add configurations to scope (including `NetSimDevConfig`).
-                netSimConfig +
-                    // Add an internally managed simulation virtual time source,
-                    // starting at the first deadline of the workload.
-                    NetSimTmSrc.Internal(
-                        initialTmStamp = Timestamp.ofInstant(wl.startInstant),
-                    ),
-            )
+//        val scope =
+//            NetSimScope(
+//                // Add configurations to scope (including `NetSimDevConfig`).
+//                netSimConfig +
+//                    // Add an internally managed simulation virtual time source,
+//                    // starting at the first deadline of the workload.
+//                    NetSimTmSrc.Internal(
+//                        initialTmStamp = Timestamp.ofInstant(wl.startInstant),
+//                    ),
+//            )
+//
+//        with(scope) {
+//            // Build network in the scope of the simulation,
+//            // so that all coroutines running the network components
+//            // are in the simulation scope and can be canceled hierarchically.
+//            networkSpecs.build()
+//        }
 
-        with(scope) {
-            // Build network in the scope of the simulation,
-            // so that all coroutines running the network components
-            // are in the simulation scope and can be canceled hierarchically.
-            networkSpecs.build()
-        }
+        // TODO Use `virtualMapping`
 
         return NetSimWlRunner(scope, wl)
     }
@@ -78,9 +78,9 @@ public data class NetSimExp internal constructor(
     internal class NetSimExpSerializer : KSerializer<NetSimExp> {
         @Serializable
         private data class NetSimExpSurrogate(
-            val networkSpecsPath: String,
             val wlPath: String,
-            val netSimConfig: NetSimConfig = NetSimConfig(),
+            val netSimScope: NetSimScope = NetSimScope(),
+            val virtualMapping: Boolean = true,
         )
 
         private val surrogateSerial: KSerializer<NetSimExpSurrogate> = kotlinx.serialization.serializer()
@@ -89,11 +89,19 @@ public data class NetSimExp internal constructor(
 
         override fun deserialize(decoder: Decoder): NetSimExp {
             val surrogate: NetSimExpSurrogate = decoder.decodeSerializableValue(surrogateSerial)
+            val wl = readNetworkWl(surrogate.wlPath)
+            surrogate.netSimScope.setTmSrc(
+                    // Add an internally managed simulation virtual time source,
+                    // starting at the first deadline of the workload.
+                    NetSimTmSrc.Internal(
+                        initialTmStamp = Timestamp.ofInstant(wl.startInstant),
+                    ),
+            )
 
             return NetSimExp(
-                networkSpecs = NetSpecs.fromFile(surrogate.networkSpecsPath),
                 wl = readNetworkWl(surrogate.wlPath),
-                netSimConfig = surrogate.netSimConfig,
+                scope = surrogate.netSimScope,
+                virtualMapping = surrogate.virtualMapping,
             )
         }
 

@@ -170,6 +170,11 @@ internal class NetSimBarrier internal constructor(
     }
 
     /**
+     * TODO
+     */
+    internal fun isStable(): Boolean = stabilityMtx.isLocked.not()
+
+    /**
      * Executes [block] while the network should be stable,
      * following the [netSimStabilityMode] rules.
      *
