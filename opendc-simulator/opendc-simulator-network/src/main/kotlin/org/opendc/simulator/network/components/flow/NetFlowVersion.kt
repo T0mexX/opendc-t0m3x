@@ -50,13 +50,13 @@ internal sealed interface NetFlowVersion {
 
     val increaseTputDisp: FWDispenser<INetFlow.IncreaseThroughput>
 
-    val reqTmRmDisp: FWDispenser<INetFlow.ReqTmRm>
+    val reqTmRmDisp: FWDispenser<INetFlow.ReqFragComplEstimate>
 
     val fragInitDisp: FWDispenser<INetFlow.FragInit>
 
     val fragComplDisp: FWDispenser<NetFlow.FragCompl>
 
-    val tmRmChangedDisp: FWDispenser<NetFlow.TmRmChanged>
+    val tmRmChangedDisp: FWDispenser<NetFlow.FragComplEstimateChanged>
 
     context(NetSimScope)
     suspend fun initDispensers()

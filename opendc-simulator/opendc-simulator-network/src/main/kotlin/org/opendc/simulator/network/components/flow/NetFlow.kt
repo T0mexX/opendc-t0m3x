@@ -25,6 +25,7 @@ package org.opendc.simulator.network.components.flow
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.DataSize
 import org.opendc.common.units.TimeDelta
+import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.integration.NetFTracker
 import org.opendc.simulator.network.components.NetCo
 import org.opendc.simulator.network.components.NonOwnerMethod
@@ -99,7 +100,7 @@ public interface NetFlow : Invalidatable, EvntEmitter<NetFlow> {
      * @property f The flow whose throughput changed.
      * @property old The old throughput.
      * @property new The new throughput.
-     * @property newTmRm The new time remaining to complete the current fragment [TimeDelta.zero]
+     * @property newComplEstimate The new time remaining to complete the current fragment [TimeDelta.zero]
      * if no target [DataSize] was set for the current fragment.
      * For now, only used in compute-network combined simulation.
      *
@@ -111,7 +112,7 @@ public interface NetFlow : Invalidatable, EvntEmitter<NetFlow> {
         public abstract var f: NetFlow
         public abstract var old: DataRate
         public abstract var new: DataRate
-        public abstract var newTmRm: TimeDelta
+        public abstract var newComplEstimate: Timestamp
 
         override fun toString(): String = "TPutChanged(f=${f.id}, old=$old, new=$new)"
 
@@ -119,9 +120,9 @@ public interface NetFlow : Invalidatable, EvntEmitter<NetFlow> {
     }
 
     /**
-     * Event emitted when the end-to-end throughput changes during simulation.
-     * @property f The flow whose throughput changed.
-     * @property new The new time remaining to complete the current fragment [TimeDelta.zero]
+     * Event emitted when the timestamp at which the fragment is expected to be completed changes.
+     * @property f The flow whose completion estimate changed.
+     * @property new The new estimated timestamp for to complete the current fragment [TimeDelta.zero]
      * if no target [DataSize] was set for the current fragment.
      * For now, only used in compute-network combined simulation.
      *
@@ -129,13 +130,13 @@ public interface NetFlow : Invalidatable, EvntEmitter<NetFlow> {
      * @see NetFTracker
      * @see INetFlow.msgAsyncFragInit
      */
-    public abstract class TmRmChanged : Evnt<NetFlow, TmRmChanged>(), Invalidatable {
+    public abstract class FragComplEstimateChanged : Evnt<NetFlow, FragComplEstimateChanged>(), Invalidatable {
         public abstract var f: NetFlow
-        public abstract var old: TimeDelta
-        public abstract var new: TimeDelta
+        public abstract var old: Timestamp
+        public abstract var new: Timestamp
         public abstract var fragId: Any?
 
-        public companion object : FWId<TmRmChanged>
+        public companion object : FWId<FragComplEstimateChanged>
     }
 
     /**

@@ -40,16 +40,28 @@ public class JNetFTracker private constructor(
 
     private val jController = scope.jNetController
 
-    public var onTmRmIncrease: BiConsumer<Long, Long> = BiConsumer { _, _ -> }
+    public var onAllComplTsIncreased: BiConsumer<Long, Long> = BiConsumer { _, _ -> }
         set(callback) {
-            tracker.onTmRmIncrease = { old, new ->
-                jController!!.callbacksChl.send { callback.accept(old.toMsLong(), new.toMsLong()) }
+            tracker.onAllComplTsIncreased = { old, new ->
+                jController!!.callbacksChl.send { callback.accept(old.toEpochMsLong(), new.toEpochMsLong()) }
             }
         }
-    public var onTmRmDecrease: BiConsumer<Long, Long> = BiConsumer { _, _ -> }
+    public var onAllComplTsDecreased: BiConsumer<Long, Long> = BiConsumer { _, _ -> }
         set(callback) {
-            tracker.onTmRmDecrease = { old, new ->
-                jController!!.callbacksChl.send { callback.accept(old.toMsLong(), new.toMsLong()) }
+            tracker.onAllComplTsDecreased = { old, new ->
+                jController!!.callbacksChl.send { callback.accept(old.toEpochMsLong(), new.toEpochMsLong()) }
+            }
+        }
+    public var on1ComplTsIncreased: BiConsumer<Long, Long> = BiConsumer { _, _ -> }
+        set(callback) {
+            tracker.on1ComplTsIncreased = { old, new ->
+                jController!!.callbacksChl.send { callback.accept(old.toEpochMsLong(), new.toEpochMsLong()) }
+            }
+        }
+    public var on1ComplTsDecreased: BiConsumer<Long, Long> = BiConsumer { _, _ -> }
+        set(callback) {
+            tracker.on1ComplTsDecreased = { old, new ->
+                jController!!.callbacksChl.send { callback.accept(old.toEpochMsLong(), new.toEpochMsLong()) }
             }
         }
     public var on1FFragCompl: BiConsumer<JNetFlow, Any?> = BiConsumer { _, _ -> }
@@ -66,10 +78,18 @@ public class JNetFTracker private constructor(
             }
         }
 
-    public fun tmRmMs(): Long =
-        latched(scope) {
-            tracker.tmRm().toMsLong()
-        }
+    public suspend fun tsFor1Compl(): Long = latched(scope) {
+        tracker.tsFor1Compl().toEpochMsLong()
+    }
+    public suspend fun tmRmFor1Compl(): Long = latched(scope) {
+        tracker.tmRmFor1Compl().toMsLong()
+    }
+    public suspend fun tsForAllCompl(): Long = latched(scope) {
+        tracker.tsForAllCompl().toEpochMsLong()
+    }
+    public suspend fun tmRmForAllCompl(): Long = latched(scope) {
+        tracker.tmRmForAllCompl().toMsLong()
+    }
 
     /**
      * TODO

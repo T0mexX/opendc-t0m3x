@@ -25,6 +25,7 @@ package org.opendc.simulator.network.components.flow
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.DataSize
 import org.opendc.common.units.TimeDelta
+import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.integration.JNetFlow
 import org.opendc.simulator.network.components.NetRunnable
 import org.opendc.simulator.network.components.invalidatable.IInvalidatable
@@ -47,7 +48,7 @@ internal interface INetFlow : NetFlow, Msgable<INetFlow>, NetRunnable, IInvalida
 
     suspend fun msgAsyncIncreaseTputBy(amount: DataRate)
 
-    suspend fun msgSyncReqTmRm(): TimeDelta
+    suspend fun msgSyncReqFragComplEstimate(): Timestamp
 
     interface SetThroughput : Msg<INetFlow, SetThroughput> {
         var newTput: DataRate
@@ -68,8 +69,8 @@ internal interface INetFlow : NetFlow, Msgable<INetFlow>, NetRunnable, IInvalida
         companion object : FWId<SetDemand>
     }
 
-    interface ReqTmRm : ReqMsg<INetFlow, TimeDelta, ReqTmRm> {
-        companion object : FWId<ReqTmRm>
+    interface ReqFragComplEstimate : ReqMsg<INetFlow, Timestamp, ReqFragComplEstimate> {
+        companion object : FWId<ReqFragComplEstimate>
     }
 
     interface FragInit : Msg<INetFlow, FragInit> {

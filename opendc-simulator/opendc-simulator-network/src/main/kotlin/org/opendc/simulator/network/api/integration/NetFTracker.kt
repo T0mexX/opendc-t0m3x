@@ -31,6 +31,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.common.annotations.ProtectedUse
 import org.opendc.common.units.TimeDelta
+import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.components.NetCo
 import org.opendc.simulator.network.components.NetRunnable
 import org.opendc.simulator.network.components.evntemitter.EvntListener
@@ -46,11 +47,15 @@ public class NetFTracker private constructor(
     private val listeners: List<EvntListener<NetFlow>>,
 ) : AutoCloseable, NetRunnable {
     private var remaining: Int = flows.size
-    private val tmRm = flows.map { TimeDelta.zero }.toMutableList()
-    private var maxTmRmIdx: Int = 0
+    private val estimateComplTs = flows.map { Timestamp.max }.toMutableList()
 
-    public var onTmRmIncrease: suspend (old: TimeDelta, new: TimeDelta) -> Unit = { _, _ -> }
-    public var onTmRmDecrease: suspend (old: TimeDelta, new: TimeDelta) -> Unit = { _, _ -> }
+    private var latestTsIdx: Int = 0
+    private var earliestTsIdx: Int = 0
+
+    public var onAllComplTsIncreased: suspend (old: Timestamp, new: Timestamp) -> Unit = { _, _ -> }
+    public var onAllComplTsDecreased: suspend (old: Timestamp, new: Timestamp) -> Unit = { _, _ -> }
+    public var on1ComplTsIncreased: suspend (old: Timestamp, new: Timestamp) -> Unit = { _, _ -> }
+    public var on1ComplTsDecreased: suspend (old: Timestamp, new: Timestamp) -> Unit = { _, _ -> }
     public var on1FFragCompl: suspend (f: NetFlow, fId: Any?) -> Unit = { _, _ -> }
     public var onAllFFragCompl: suspend () -> Unit = {}
     private val mtx = Mutex()
@@ -58,10 +63,35 @@ public class NetFTracker private constructor(
 
     @ProtectedUse override var job: Job by SetOnce()
 
-    public suspend fun tmRm(): TimeDelta =
+    /**
+     * @return The estimated earliest timestamp at which a flow will complete its fragment.
+     */
+    public suspend fun tsFor1Compl(): Timestamp =
         mtx.withLock {
-            tmRm[maxTmRmIdx]
+            estimateComplTs[earliestTsIdx]
         }
+
+    /**
+     * @return The estimated time remaining until a flow completes its fragment.
+     */
+    context(NetSimScope)
+    public suspend fun tmRmFor1Compl(): TimeDelta =
+        tsFor1Compl() timeDelta tmSrc.tmstamp
+
+    /**
+     * @return The estimated timestamp at which all flows will have completed their fragments.
+     */
+    public suspend fun tsForAllCompl(): Timestamp =
+        mtx.withLock {
+            estimateComplTs[latestTsIdx]
+        }
+
+    /**
+     * @return The estimated time remaining until all flows complete their fragment.
+     */
+    context(NetSimScope)
+    public suspend fun tmRmForAllCompl(): TimeDelta =
+        tsForAllCompl() timeDelta tmSrc.tmstamp
 
     /**
      * TODO
@@ -70,11 +100,11 @@ public class NetFTracker private constructor(
     public suspend fun reset(): Unit =
         mtx.withLock {
             remaining = flows.size
-            maxTmRmIdx = 0
-            tmRm.indices.forEach { i ->
+            latestTsIdx = 0
+            estimateComplTs.indices.forEach { i ->
                 val f = flows[i]
-                tmRm[i] = f.msgSyncReqTmRm()
-                if (tmRm[i] > tmRm[maxTmRmIdx]) maxTmRmIdx = i
+                estimateComplTs[i] = f.msgSyncReqFragComplEstimate()
+                if (estimateComplTs[i] > estimateComplTs[latestTsIdx]) latestTsIdx = i
             }
             fragCount++
         }
@@ -103,6 +133,7 @@ public class NetFTracker private constructor(
 //        } finally { drainListeners() }
 //    }
 
+    context(NetSimScope)
     private suspend fun handle1() {
         select {
             listeners.onEachIndexed { idx, l ->
@@ -112,7 +143,7 @@ public class NetFTracker private constructor(
                             when (e) {
                                 is NetFlow.TPutChanged -> handleTputChange(e, idx)
                                 is NetFlow.FragCompl -> handleFragCompl(e, idx)
-                                is NetFlow.TmRmChanged -> handleTmRmChange(e, idx)
+                                is NetFlow.FragComplEstimateChanged -> handleFragComplEstimateChanged(e, idx)
                             }
                         }
                     } finally {
@@ -136,39 +167,54 @@ public class NetFTracker private constructor(
         }
     }
 
-    private suspend fun handleTmRmDecreased(
-        newTmRm: TimeDelta,
+    private suspend fun handleEstimateComplTsDecreased(
+        newTs: Timestamp,
         fIdx: Int,
     ) {
-        val old = tmRm[maxTmRmIdx]
-        tmRm[fIdx] = newTmRm
-        if (maxTmRmIdx == fIdx) {
-            maxTmRmIdx = tmRm.withIndex().maxBy { it.value }.index
-            val new = tmRm[maxTmRmIdx]
-            if (new != old) onTmRmDecrease(old, tmRm[maxTmRmIdx])
+        val oldLatest = estimateComplTs[latestTsIdx]
+        val oldEarliest = estimateComplTs[earliestTsIdx]
+        estimateComplTs[fIdx] = newTs
+
+        if (latestTsIdx == fIdx) {
+            latestTsIdx = estimateComplTs.withIndex().maxBy { it.value }.index
+            val new = estimateComplTs[latestTsIdx]
+            if (new != oldLatest) onAllComplTsDecreased(oldLatest, new)
+        }
+
+        if (earliestTsIdx == fIdx || newTs < oldEarliest) {
+            earliestTsIdx = fIdx
+            on1ComplTsDecreased(oldEarliest, newTs)
         }
     }
 
-    private suspend fun handleTmRmIncreased(
-        newTmRm: TimeDelta,
+    private suspend fun handleEstimateComplTsIncreased(
+        newTs: Timestamp,
         fIdx: Int,
     ) {
-        val old = tmRm[maxTmRmIdx]
-        tmRm[fIdx] = newTmRm
-        if (maxTmRmIdx == fIdx || newTmRm > tmRm[maxTmRmIdx]) {
-            maxTmRmIdx = fIdx
-            onTmRmIncrease(old, tmRm[maxTmRmIdx])
+        val oldLatest = estimateComplTs[latestTsIdx]
+        val oldEarliest = estimateComplTs[earliestTsIdx]
+        estimateComplTs[fIdx] = newTs
+
+        if (latestTsIdx == fIdx || newTs > oldLatest) {
+            latestTsIdx = fIdx
+            onAllComplTsIncreased(oldLatest, newTs)
+        }
+
+        if (earliestTsIdx == fIdx) {
+            earliestTsIdx = estimateComplTs.withIndex().minBy { it.value}.index
+            val new = estimateComplTs[earliestTsIdx]
+            if (new != oldEarliest) on1ComplTsIncreased(oldEarliest, new)
         }
     }
 
-    private suspend fun handleTmRmChange(
-        e: NetFlow.TmRmChanged,
+    private suspend fun handleFragComplEstimateChanged(
+        e: NetFlow.FragComplEstimateChanged,
         fIdx: Int,
     ) {
         if (e.new < e.old) {
-            handleTmRmDecreased(e.new, fIdx)
+            handleEstimateComplTsDecreased(e.new, fIdx)
         } else {
-            handleTmRmIncreased(e.new, fIdx)
+            handleEstimateComplTsIncreased(e.new, fIdx)
         }
     }
 
@@ -177,19 +223,35 @@ public class NetFTracker private constructor(
         fIdx: Int,
     ) {
         if (e.new > e.old) {
-            handleTmRmDecreased(e.newTmRm, fIdx = fIdx)
+            handleEstimateComplTsDecreased(e.newComplEstimate, fIdx = fIdx)
         } else {
-            handleTmRmIncreased(e.newTmRm, fIdx = fIdx)
+            handleEstimateComplTsIncreased(e.newComplEstimate, fIdx = fIdx)
         }
     }
 
+    context(NetSimScope)
     private suspend fun handleFragCompl(
         e: NetFlow.FragCompl,
         fIdx: Int,
     ) {
         remaining -= 1
         assert(remaining >= 0)
-        tmRm[fIdx] = TimeDelta.zero
+        estimateComplTs[fIdx] = tmSrc.tmstamp
+
+//        if (latestTsIdx == fIdx) {
+//            val old = estimateComplTs[latestTsIdx]
+//            latestTsIdx = estimateComplTs.withIndex().maxBy { it.value }.index
+//            val new = estimateComplTs[latestTsIdx]
+//            if (new != old) onAllComplTsDecreased(old, new)
+//        }
+
+
+        if (earliestTsIdx == fIdx && remaining > 0) {
+            earliestTsIdx = estimateComplTs.withIndex().minBy { it.value}.index
+            val new = estimateComplTs[earliestTsIdx]
+            if (new != tmSrc.tmstamp) on1ComplTsIncreased(tmSrc.tmstamp, new)
+        }
+
         on1FFragCompl(e.f, e.fragId)
         if (remaining == 0) onAllFFragCompl()
     }

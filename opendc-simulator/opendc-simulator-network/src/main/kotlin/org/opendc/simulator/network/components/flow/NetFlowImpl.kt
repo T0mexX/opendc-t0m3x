@@ -101,12 +101,15 @@ internal class NetFlowImpl private constructor(
     }
 
     override suspend fun msgAsyncIncreaseTputBy(amount: DataRate) {
+        assert(amount != DataRate.zero)
+
         increaseTputDisp.acquire().reset {
             this.amount = amount
         }.sendTo(this)
     }
 
-    override suspend fun msgSyncReqTmRm(): TimeDelta = reqTmRmDisp.acquire().reset().sendTo(this).awaitResponse()
+    override suspend fun msgSyncReqFragComplEstimate(): Timestamp =
+        reqTmRmDisp.acquire().reset().sendTo(this).awaitResponse()
 
     override suspend fun msgAsyncFragInit(
         target: DataSize,
@@ -143,17 +146,13 @@ internal class NetFlowImpl private constructor(
         val sinceSync = tmSrc.tmstamp timeDelta lastSync
         check(sinceSync >= TimeDelta.zero)
 
-        val oldFragTmRm = (fragTarget - fragCurr).max(fragTarget) / throughput
         fragCurr += throughput * sinceSync
-        val newFragTmRm = (fragTarget - fragCurr).max(fragTarget) / throughput
 
         if (complEvntEmitted.not() && fragCurr approxLargerOrEq fragTarget) {
             // If the current fragment is completed, then emit the corresponding event.
             fragCurr = fragTarget
+            assert(fragComplEstimate == tmSrc.tmstamp)
             evntFragCompleted()
-        } else if (newFragTmRm != oldFragTmRm) {
-            // Else if the expected remaining time to complete the fragment changed, then emit the corresponding event.
-            evntTmRmChanged(new = newFragTmRm, old = oldFragTmRm)
         }
 
         lastSync = tmSrc.tmstamp
@@ -169,6 +168,14 @@ internal class NetFlowImpl private constructor(
     private var fragCurr: DataSize = DataSize.zero
     private var complEvntEmitted: Boolean = false
     private var fragId: Any? = null
+    private val fragRemaining get() = fragTarget - fragCurr
+    private var fragComplEstimate: Timestamp = Timestamp.max
+    context(NetSimScope)
+    private fun computeFragComplEstimate(): Timestamp {
+        val tmRm = fragRemaining / throughput
+        return if (tmRm.value.isNaN()) Timestamp.max
+        else tmSrc.tmstamp + tmRm
+    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NetRunnable
@@ -219,6 +226,7 @@ internal class NetFlowImpl private constructor(
     /**
      * TODO
      */
+    context(NetSimScope)
     private suspend fun evntTputChanged(
         old: DataRate,
         new: DataRate,
@@ -228,14 +236,11 @@ internal class NetFlowImpl private constructor(
                 this.f = this@NetFlowImpl
                 this.old = old
                 this.new = new
-                this.newTmRm = (fragTarget - fragCurr) / throughput
+                this.newComplEstimate = computeFragComplEstimate()
             }.emit(from = this@NetFlowImpl)
         }
     }
 
-    /**
-     * TODO
-     */
     private suspend fun evntFragCompleted() {
         if (nListeners > 0) {
             fragComplDisp.acquire().reset {
@@ -246,9 +251,9 @@ internal class NetFlowImpl private constructor(
         complEvntEmitted = true
     }
 
-    private suspend fun evntTmRmChanged(
-        new: TimeDelta,
-        old: TimeDelta,
+    private suspend fun evntFragComplEstimateChanged(
+        new: Timestamp,
+        old: Timestamp,
     ) {
         if (nListeners > 0) {
             tmRmChangedDisp.acquire().reset {
@@ -325,8 +330,8 @@ internal class NetFlowImpl private constructor(
         override val increaseTputDisp: FWDispenser<INetFlow.IncreaseThroughput> get() = _increaseTputDisp
         private lateinit var _increaseTputDisp: FWDispenser<INetFlow.IncreaseThroughput>
 
-        override val reqTmRmDisp: FWDispenser<INetFlow.ReqTmRm> get() = _reqTmRmDisp
-        private lateinit var _reqTmRmDisp: FWDispenser<INetFlow.ReqTmRm>
+        override val reqTmRmDisp: FWDispenser<INetFlow.ReqFragComplEstimate> get() = _reqTmRmDisp
+        private lateinit var _reqTmRmDisp: FWDispenser<INetFlow.ReqFragComplEstimate>
 
         override val fragInitDisp: FWDispenser<INetFlow.FragInit> get() = _fragInitDisp
         private lateinit var _fragInitDisp: FWDispenser<INetFlow.FragInit>
@@ -334,8 +339,8 @@ internal class NetFlowImpl private constructor(
         override val fragComplDisp: FWDispenser<NetFlow.FragCompl> get() = _fragComplDisp
         private lateinit var _fragComplDisp: FWDispenser<NetFlow.FragCompl>
 
-        override val tmRmChangedDisp: FWDispenser<NetFlow.TmRmChanged> get() = _tmRmChangedDisp
-        private lateinit var _tmRmChangedDisp: FWDispenser<NetFlow.TmRmChanged>
+        override val tmRmChangedDisp: FWDispenser<NetFlow.FragComplEstimateChanged> get() = _tmRmChangedDisp
+        private lateinit var _tmRmChangedDisp: FWDispenser<NetFlow.FragComplEstimateChanged>
 
         context(NetSimScope)
         override suspend fun initDispensers() {
@@ -350,20 +355,14 @@ internal class NetFlowImpl private constructor(
                         context(NetFlow)
                         override suspend fun handle() {
                             val f = this@NetFlow as NetFlowImpl
-                            if (f.fragId !== fragId) return handled()
 
-                            // If the requested demand is the same no changes made.
+                            if (f.fragId !== fragId) return handled()
                             if (newDemand approx f.demand) return handled()
 
                             val old: DataRate = f.demand
                             f.demand = newDemand
                             val deltaDemand = newDemand - old
-                            // TODO
-//                        val evnt = _demandChangedDisp.acquire()
-//                        evnt.netFlow = f
-//                        evnt.old = old
-//                        evnt.new = f.demand
-//                        f._eventFlow.emit(evnt)
+
                             f.senderNode.msgAsyncRxUpdt(deltaDemand, f)
 
                             handled()
@@ -383,18 +382,6 @@ internal class NetFlowImpl private constructor(
 //
 //
 //
-
-//
-//
-//
-//            _fragmentCompletedDisp = poolAggr.getOrAdd(NetFlow.FragmentCompleted as FWId<NetFlow.FragmentCompleted>) { pool, idx ->
-//                object : NetFlow.FragmentCompleted, IFW<NetFlow.FragmentCompleted> {
-//                    override val pool: FWPool<NetFlow.FragmentCompleted, FWId<NetFlow.FragmentCompleted>> = pool
-//                    override val poolIdx: Idx = idx
-//                    override lateinit var netFlow: NetFlow
-//                }
-//            }.dispenser()
-
             _setTputDisp =
                 poolAggr.getOrAdd(INetFlow.SetThroughput as FWId<INetFlow.SetThroughput>) { pool, idx ->
                     val stab = barrier.stabilizer(INetFlow.SetThroughput::class)
@@ -405,12 +392,18 @@ internal class NetFlowImpl private constructor(
                         context(NetFlow)
                         override suspend fun handle() {
                             val f = this@NetFlow as NetFlowImpl
-                            val old: DataRate = throughput
+                            if (newTput approx f.throughput) return handled()
+
+                            val oldTput: DataRate = throughput
+                            val oldFragComplEstimate = f.fragComplEstimate
+
                             f.throughput = newTput
+                            f.fragComplEstimate = f.computeFragComplEstimate()
 
                             // If there are collectors listening to this `NetFlow` events,
                             // then emit events to those collectors.
-                            this@NetFlow.evntTputChanged(old = old, new = f.throughput)
+                            f.evntTputChanged(old = oldTput, new = f.throughput)
+                            f.evntFragComplEstimateChanged(old = oldFragComplEstimate, new = f.fragComplEstimate)
 
                             handled()
                         }
@@ -428,12 +421,18 @@ internal class NetFlowImpl private constructor(
                         context(NetFlow)
                         override suspend fun handle() {
                             val f = this@NetFlow as NetFlowImpl
-                            val old: DataRate = throughput
+                            if (amount == DataRate.zero) return handled()
+
+                            val oldTput: DataRate = throughput
+                            val oldFragComplEstimate = f.fragComplEstimate
+
                             f.throughput += amount
+                            f.fragComplEstimate = f.computeFragComplEstimate()
 
                             // If there are collectors listening to this `NetFlow` events,
                             // then emit events to those collectors.
-                            this@NetFlow.evntTputChanged(old = old, new = f.throughput)
+                            f.evntTputChanged(old = oldTput, new = f.throughput)
+                            f.evntFragComplEstimateChanged(old = oldFragComplEstimate, new = f.fragComplEstimate)
 
                             handled()
                         }
@@ -441,15 +440,13 @@ internal class NetFlowImpl private constructor(
                 }
 
             _reqTmRmDisp =
-                poolAggr.getOrAdd(INetFlow.ReqTmRm as FWId<INetFlow.ReqTmRm>) { pool, idx ->
-                    object : INetFlow.ReqTmRm, ReqMsgImpl<INetFlow, TimeDelta, INetFlow.ReqTmRm>(pool, idx) {
+                poolAggr.getOrAdd(INetFlow.ReqFragComplEstimate as FWId<INetFlow.ReqFragComplEstimate>) { pool, idx ->
+                    object : INetFlow.ReqFragComplEstimate, ReqMsgImpl<INetFlow, Timestamp, INetFlow.ReqFragComplEstimate>(pool, idx) {
                         context(INetFlow)
                         override suspend fun handle() {
                             val f = this@INetFlow as NetFlowImpl
 
-                            respond(
-                                ((f.fragTarget - f.fragCurr) / f.throughput) max TimeDelta.zero,
-                            )
+                            respond(f.computeFragComplEstimate())
                         }
                     }
                 }
@@ -467,11 +464,8 @@ internal class NetFlowImpl private constructor(
                             f.fragCurr = DataSize.zero
                             f.fragId = fragId
                             f.fragTarget = fragTarget
-                            if (fragTarget != DataSize.zero) {
-                                f.complEvntEmitted = false
-                            } else {
-                                f.complEvntEmitted = true
-                            }
+                            f.fragComplEstimate = f.computeFragComplEstimate()
+                            f.complEvntEmitted = fragTarget == DataSize.zero
 
                             handled()
                         }
@@ -480,7 +474,7 @@ internal class NetFlowImpl private constructor(
 
             _fragComplDisp =
                 poolAggr.getOrAdd(NetFlow.FragCompl as FWId<NetFlow.FragCompl>) { pool, idx ->
-                    val stab = barrier.stabilizer(NetFlow.TmRmChanged::class)
+                    val stab = barrier.stabilizer(NetFlow.FragComplEstimateChanged::class)
                     object : NetFlow.FragCompl(), IFW<NetFlow.FragCompl>, IInvalidatable {
                         override val pool = pool
                         override val poolIdx: Idx = idx
@@ -491,14 +485,14 @@ internal class NetFlowImpl private constructor(
                 }
 
             _tmRmChangedDisp =
-                poolAggr.getOrAdd(NetFlow.TmRmChanged as FWId<NetFlow.TmRmChanged>) { pool, idx ->
-                    val stab = barrier.stabilizer(NetFlow.TmRmChanged::class)
-                    object : NetFlow.TmRmChanged(), IFW<NetFlow.TmRmChanged>, IInvalidatable {
+                poolAggr.getOrAdd(NetFlow.FragComplEstimateChanged as FWId<NetFlow.FragComplEstimateChanged>) { pool, idx ->
+                    val stab = barrier.stabilizer(NetFlow.FragComplEstimateChanged::class)
+                    object : NetFlow.FragComplEstimateChanged(), IFW<NetFlow.FragComplEstimateChanged>, IInvalidatable {
                         override val pool = pool
                         override val poolIdx: Idx = idx
                         override lateinit var f: NetFlow
-                        override var new: TimeDelta = TimeDelta.zero
-                        override var old: TimeDelta = TimeDelta.zero
+                        override var new: Timestamp = Timestamp.max
+                        override var old: Timestamp = Timestamp.max
                         override var fragId: Any? = null
                         override val stabilizer: NetSimStabilizer = stab
                     }
@@ -506,13 +500,13 @@ internal class NetFlowImpl private constructor(
 
             _tputChangedDisp =
                 poolAggr.getOrAdd(NetFlow.TPutChanged as FWId<NetFlow.TPutChanged>) { pool, idx ->
-                    val stab = barrier.stabilizer(NetFlow.TmRmChanged::class)
+                    val stab = barrier.stabilizer(NetFlow.FragComplEstimateChanged::class)
                     object : NetFlow.TPutChanged(), IFW<NetFlow.TPutChanged>, IInvalidatable {
                         override val pool: FWPool<NetFlow.TPutChanged, FWId<NetFlow.TPutChanged>> = pool
                         override val poolIdx: Idx = idx
                         override var old: DataRate = DataRate.zero
                         override var new: DataRate = DataRate.zero
-                        override var newTmRm: TimeDelta = TimeDelta.zero
+                        override var newComplEstimate: Timestamp = Timestamp.max
                         override lateinit var f: NetFlow
                         override val stabilizer: NetSimStabilizer = stab
                     }

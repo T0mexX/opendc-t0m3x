@@ -48,7 +48,6 @@ internal open class InvalidatorChl<T> private constructor(
     var pending: Int = 1
     private val pendingMtx = Mutex()
 
-    private val open: MutableStateFlow<Boolean> = MutableStateFlow(true)
 
     /**
      * Suspending implementation of [tryReceive]
