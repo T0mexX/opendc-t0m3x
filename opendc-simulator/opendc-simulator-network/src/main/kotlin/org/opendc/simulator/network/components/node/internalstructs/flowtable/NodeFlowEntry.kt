@@ -47,8 +47,8 @@ internal class NodeFlowEntry private constructor(
     val txlinks: MutableMap<Link, Percentage>,
     var linkFlowEntryIds: IntArray,
 ) : IFW<NodeFlowEntry>, Trackable<NodeFlowEntry> {
-    lateinit var node: Node<*>
-    lateinit var netFlow: INetFlow
+    lateinit var n: Node<*>
+    lateinit var f: INetFlow
 
     override var tracker: Tracker<NodeFlowEntry>? = null
     var rx: DataRate = DataRate.zero

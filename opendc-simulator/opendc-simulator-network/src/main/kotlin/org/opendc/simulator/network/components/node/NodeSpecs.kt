@@ -46,7 +46,7 @@ internal interface NodeSpecs<T : Node<T>> : SerialNodeSpecs {
 
     context(NetSimScope)
     suspend fun build(
-        subnet: IPv4Address? = null,
+        subnet: IPv4Address? = addrMngr.globalPrefix,
         inet: Internet? = null,
         updtRoutTbl: Boolean = true,
     ): T

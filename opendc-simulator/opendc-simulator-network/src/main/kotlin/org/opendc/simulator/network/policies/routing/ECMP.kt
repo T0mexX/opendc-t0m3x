@@ -39,7 +39,7 @@ internal class ECMP : RoutPolicy() {
 
     context(NetSimScope, Node<*>)
     override suspend fun onNodeNewFReceived(nodeFEntry: NodeFlowEntry): Boolean {
-        val f = nodeFEntry.netFlow
+        val f = nodeFEntry.f
         nodeFEntry.txlinks.clear()
 
         // Ports the flow will be forwarded to.

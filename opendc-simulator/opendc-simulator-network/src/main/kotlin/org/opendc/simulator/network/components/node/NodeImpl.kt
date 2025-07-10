@@ -75,7 +75,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
 
         rxUpdateDisp.acquire().reset {
             this.deltaRate = deltaRate
-            this.netF = f
+            this.f = f
         }.sendTo(this)
     }
 
@@ -198,10 +198,11 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                         override suspend fun handle() {
                             require(this@Node is SenderNode<*>)
                             assert(f.srcId == this@Node.id)
+                            val self = this
 
                             // The new flow is initialized through an [RxUpdate] with the original demand.
                             rxUpdateDisp.acquire().reset {
-                                this.netF = f
+                                this.f = self.f
                                 this.deltaRate = ogDmnd
                             }.handle()
 
@@ -237,7 +238,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
             _rxUpdateDisp =
                 poolAggr.getOrAdd(Node.RxUpdt as FWId<Node.RxUpdt>) { pool, idx ->
                     object : Node.RxUpdt, MsgImpl<Node<*>, Node.RxUpdt>(pool, idx) {
-                        override lateinit var netF: INetFlow
+                        override lateinit var f: INetFlow
                         override var deltaRate: DataRate = DataRate.zero
                         override var toIntermediate: Boolean = false
 

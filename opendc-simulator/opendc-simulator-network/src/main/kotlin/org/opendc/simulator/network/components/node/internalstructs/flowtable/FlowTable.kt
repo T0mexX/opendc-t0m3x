@@ -67,7 +67,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
             override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> =
                 setOf(NodeFlowEntry.Companion.RxProp)
 
-            override fun NodeFlowEntry.shouldBeTracked(): Boolean = rx > DataRate.zero || netFlow.srcId == node.id
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = rx > DataRate.zero || f.srcId == n.id
 
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int = rx.tobps().toInt() - other.rx.tobps().toInt()
         }
@@ -94,7 +94,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
         object Generated : TrackerMode<NodeFlowEntry> {
             override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> = emptySet()
 
-            override fun NodeFlowEntry.shouldBeTracked(): Boolean = node.id == netFlow.srcId
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = n.id == f.srcId
 
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int = 0
         }
@@ -102,7 +102,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
         object Consumed : TrackerMode<NodeFlowEntry> {
             override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> = emptySet()
 
-            override fun NodeFlowEntry.shouldBeTracked(): Boolean = node.id == netFlow.destId
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = n.id == f.destId
 
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int = 0
         }
@@ -110,7 +110,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
         object Outgoing : TrackerMode<NodeFlowEntry> {
             override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> = emptySet()
 
-            override fun NodeFlowEntry.shouldBeTracked(): Boolean = node.id != netFlow.destId
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = n.id != f.destId
 
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int = 0
         }
@@ -118,7 +118,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
         object Incoming : TrackerMode<NodeFlowEntry> {
             override val trackedProps: Set<TrackablePropId<NodeFlowEntry>> = emptySet()
 
-            override fun NodeFlowEntry.shouldBeTracked(): Boolean = node.id != netFlow.srcId
+            override fun NodeFlowEntry.shouldBeTracked(): Boolean = n.id != f.srcId
 
             override fun NodeFlowEntry.compare(other: NodeFlowEntry): Int = 0
         }

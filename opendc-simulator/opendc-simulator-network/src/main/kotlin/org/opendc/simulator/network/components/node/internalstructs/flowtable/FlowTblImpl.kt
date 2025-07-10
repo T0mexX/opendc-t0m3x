@@ -55,32 +55,44 @@ internal class FlowTblImpl private constructor(
     context(NetSimScope, Node<*>)
     override suspend fun rxUpdt(updt: Node.RxUpdt) {
         assert(updt.deltaRate.approx(DataRate.zero).not())
+        val f = updt.f
 
         var new = false
-        val entry =
-            flows.getOrPut(updt.netF) {
+        val e =
+            flows.getOrPut(updt.f) {
                 assert(updt.deltaRate > DataRate.zero) { updt.deltaRate }
                 new = true
                 newEntry(updt)
             }
-        entry.rx = (entry.rx + updt.deltaRate).roundDR(min = DataRate.zero)
-        entry.node = this@Node
-        if (updt.netF.destId == this@Node.id) {
-            tputChanged.add(entry)
+        assert(f == e.f)
 
-            return
+        e.rx = (e.rx + updt.deltaRate).roundDR(min = DataRate.zero)
+        e.n = this@Node
+
+        // If this is the destination node, update end-to-end throughput.
+        if (f.destId == this@Node.id) {
+            tputChanged.add(e)
+
+        // Else, set new tentative tx on the ports, considering the new updt received.
+        } else {
+            assert(e.rx >= DataRate.zero) { e.rx.value }
+
+            val setTempTx =
+                if (new) {
+                    config.routPolicy.onNodeNewFReceived(e)
+                } else {
+                    config.routPolicy.onNodeFUpdt(updt, e)
+                }
+
+            if (setTempTx) setTentativeTx(e, new)
         }
 
-        assert(entry.rx >= DataRate.zero) { entry.rx.value }
 
-        val setTempTx =
-            if (new) {
-                config.routPolicy.onNodeNewFReceived(entry)
-            } else {
-                config.routPolicy.onNodeFUpdt(updt, entry)
-            }
-
-        if (setTempTx) setTentativeTx(entry, new)
+        // If incoming data rate for flow is zero, and this is not the src node,
+        // then remove the corresponding entry.
+        if (f.srcId != this@Node.id && e.rx approx DataRate.zero) {
+            rmEntry(e)
+        }
     }
 
     /**
@@ -97,19 +109,18 @@ internal class FlowTblImpl private constructor(
             val portDemand = e.rx * perc
             if (new) {
                 e.linkFlowEntryIds[l.linkIdx] =
-                    l.setTentativeTx(portDemand, e.netFlow)
+                    l.setTentativeTx(portDemand, e.f)
             } else {
                 e.linkFlowEntryIds[l.linkIdx] =
-                    l.setTentativeTx(portDemand, e.netFlow, e.linkFlowEntryIds[l.linkIdx])
+                    l.setTentativeTx(portDemand, e.f, e.linkFlowEntryIds[l.linkIdx])
             }
         }
-        if (e.rx approx DataRate.zero) rmEntry(e)
     }
 
     context(NetSimScope)
     override suspend fun updtTputs() {
         tputChanged.forEach { entry ->
-            entry.netFlow.msgAsyncSetTput(entry.rx)
+            entry.f.msgAsyncSetTput(entry.rx)
         }
         tputChanged.clear()
     }
@@ -120,7 +131,7 @@ internal class FlowTblImpl private constructor(
         // Reset current port outgoing data-rates.
         entriesFlow.collect { entry ->
             entry.txlinks.keys.forEach { l ->
-                l.setTentativeTx(DataRate.zero, f = entry.netFlow, entryId = entry.linkFlowEntryIds[l.linkIdx])
+                l.setTentativeTx(DataRate.zero, f = entry.f, entryId = entry.linkFlowEntryIds[l.linkIdx])
             }
         }
 
@@ -135,13 +146,13 @@ internal class FlowTblImpl private constructor(
      */
     context(NetSimScope)
     override suspend fun reset(f: NetFlow) {
-        val entry = flows[f] ?: return log.warn("Flow likely stopped twice")
-        entry.rx = DataRate.zero
-        entry.txlinks.keys.forEach { l ->
-            entry.linkFlowEntryIds[l.linkIdx] =
-                l.setTentativeTx(DataRate.zero, entry.netFlow) ?: -1
+        val e = flows[f] ?: return log.warn("Flow likely stopped twice")
+        e.rx = DataRate.zero
+        e.txlinks.keys.forEach { l ->
+            val linkEntryId = e.linkFlowEntryIds[l.linkIdx]
+            l.setTentativeTx(DataRate.zero, e.f, entryId = linkEntryId)
         }
-        rmEntry(entry)
+        rmEntry(e)
     }
 
     context(NetSimScope, Node<*>)
@@ -149,18 +160,18 @@ internal class FlowTblImpl private constructor(
         val entry = nodeFlowEntryDispenser.acquire()
         entry.tracker = this
         entry.resizeIfNeeded()
-        entry.netFlow = updt.netF
-        entry.node = this@Node
+        entry.f = updt.f
+        entry.n = this@Node
         entry.rx = DataRate.zero
         entry.txlinks.clear()
-        if (entry.netFlow.destId != this@Node.id) {
+        if (entry.f.destId != this@Node.id) {
             this@NetSimScope.routPolicy.onNodeNewFReceived(entry)
         }
         return entry
     }
 
     override suspend fun rmEntry(e: NodeFlowEntry) {
-        flows.remove(e.netFlow)!!.untrack().dispose()
+        flows.remove(e.f)!!.untrack().dispose()
     }
 
     companion object : FlowTableVersion {

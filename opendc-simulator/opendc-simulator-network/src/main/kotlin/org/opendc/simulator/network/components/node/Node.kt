@@ -176,7 +176,7 @@ internal interface Node<Self : Node<Self>> : IInvalidatable, Msgable<Node<*>>, N
     }
 
     /**
-     * A [Msg] that informs the receiving node that the incoming data rate for flow [netF]
+     * A [Msg] that informs the receiving node that the incoming data rate for flow [f]
      * has changed by [deltaRate].
      *
      * This message is used to propagate bandwidth updates and is processed to adjust the
@@ -186,7 +186,7 @@ internal interface Node<Self : Node<Self>> : IInvalidatable, Msgable<Node<*>>, N
      * For an explanation of flyweight objects used during simulation, see [FW].
      */
     interface RxUpdt : Msg<Node<*>, RxUpdt> {
-        var netF: INetFlow
+        var f: INetFlow
         var deltaRate: DataRate
         var toIntermediate: Boolean
 

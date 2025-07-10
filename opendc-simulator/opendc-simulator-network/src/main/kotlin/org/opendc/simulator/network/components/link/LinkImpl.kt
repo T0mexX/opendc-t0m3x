@@ -86,6 +86,7 @@ internal class LinkImpl private constructor(
                 usedBw = (usedBw + delta).roundDR(min = DataRate.zero)
                 e.tput = (e.tput + delta).roundDR(max = e.demand)
                 receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.f)
+                if (e.demand approx DataRate.zero) rmEntry(e.idx)
             }.launchIn(this@coroutineScope).join()
         }
 

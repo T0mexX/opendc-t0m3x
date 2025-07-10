@@ -41,6 +41,8 @@ internal class FlowRmCmd : REPLCmd("rm") {
                     issueMessage("Unable to stop flow")
                     return@execREPLCmdCatching
                 }
-            echo("| Stopped flow ${net.stopFlow(f)}") ?: issueMessage("Unable to stop flow")
+            net.stopFlow(f)
+
+            echo("| Stopped flow ${f}") ?: issueMessage("Unable to stop flow")
         }
 }

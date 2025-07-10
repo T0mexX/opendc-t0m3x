@@ -38,7 +38,7 @@ internal class MIN : RoutPolicy() {
 
     context(Node<*>)
     override suspend fun onNodeNewFReceived(nodeFEntry: NodeFlowEntry): Boolean {
-        val f = nodeFEntry.netFlow
+        val f = nodeFEntry.f
         assert(nodeFEntry.txlinks.isEmpty())
 
         this@Node.routTbl.getPossiblePathsTo(f.destId)

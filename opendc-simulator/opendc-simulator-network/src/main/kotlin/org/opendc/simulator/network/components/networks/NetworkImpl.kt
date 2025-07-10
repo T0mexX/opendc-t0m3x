@@ -135,20 +135,22 @@ internal abstract class NetworkImpl<Self : Network<Self>> : Network<Self> {
                 )
                 appendLine(
                     " | " +
-                        f.averageOfUnitOrNull { it.demand }?.fmtValue("%.3f")?.padEnd(15) +
-                        f.averageOfUnitOrNull { it.throughput }?.fmtValue("%.3f")?.padEnd(15) +
-                        f.maxOfOrNull { it.demand }?.fmtValue("%.3f")?.padEnd(15) +
-                        f.maxOfOrNull { it.throughput }?.fmtValue("%.3f")?.padEnd(15) +
-                        f.minOfOrNull { it.demand }?.fmtValue("%.3f")?.padEnd(15) +
-                        f.minOfOrNull { it.throughput }?.fmtValue("%.3f")?.padEnd(15) +
-                        snap.avrgTputPerc?.fmtValue("%.3f")?.padEnd(15) +
-                        snap.worstTputPerc?.fmtValue("%.3f")?.padEnd(15) +
+                        f.averageOfUnitOrNull { it.demand }?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15) +
+                        f.averageOfUnitOrNull { it.throughput }?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15) +
+                        f.maxOfOrNull { it.demand }?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15) +
+                        f.maxOfOrNull { it.throughput }?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15) +
+                        f.minOfOrNull { it.demand }?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15) +
+                        f.minOfOrNull { it.throughput }?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15) +
+                        snap.avrgTputPerc?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15) +
+                        snap.worstTputPerc?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15) +
                         f.sumOfUnit { it.demand }.fmtValue("%.3f").padEnd(15) +
                         f.sumOfUnit { it.throughput }.fmtValue("%.3f").padEnd(15) +
-                        snap.totTputPerc?.fmtValue("%.3f")?.padEnd(15),
+                        snap.totTputPerc?.fmtValue("%.3f").ifNullThenEmpty().padEnd(15),
                 )
             }
         }
+
+    private fun String?.ifNullThenEmpty(): String = this ?: ""
 
     companion object {
         internal inline fun <reified T : Node<*>> NetworkImpl<*>.getNodesById(): Map<NodeId, T> {
