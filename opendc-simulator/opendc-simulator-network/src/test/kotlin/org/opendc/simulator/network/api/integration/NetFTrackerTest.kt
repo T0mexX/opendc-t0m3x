@@ -174,7 +174,7 @@ class NetFTrackerTest : FunSpec({
 
             // Set up tracker.
             val tracker = NetFTracker(f)
-            tracker.onTmRmDecrease = { _, new -> newTmRm = new }
+            tracker.onAllComplTsDecreased = { _, new -> newTmRm = new }
 
             // Set up flows.
             f.msgAsyncSetDemand(DataRate.ofGbps(1))
@@ -183,14 +183,14 @@ class NetFTrackerTest : FunSpec({
             barrier.awaitStability()
 
             // Initial time remaining.
-            tracker.tmRm() shouldBeEqual TimeDelta.ofSec(4)
+            tracker.tsFor1Compl() shouldBeEqual TimeDelta.ofSec(4)
 
             // Time remaining decrease.
             f.msgAsyncSetDemand(DataRate.ofGbps(2))
             delay(1000)
             barrier.awaitStability()
             newTmRm shouldBeEqual TimeDelta.ofSec(2)
-            tracker.tmRm() shouldBeEqual TimeDelta.ofSec(2)
+            tracker.tsFor1Compl() shouldBeEqual TimeDelta.ofSec(2)
         }
         netTest("time remaining increase") {
             var newTmRm = TimeDelta.zero
@@ -198,7 +198,7 @@ class NetFTrackerTest : FunSpec({
 
             // Set up tracker.
             val tracker = NetFTracker(f)
-            tracker.onTmRmIncrease = { _, new -> newTmRm = new }
+            tracker.onAllComplTsIncreased = { _, new -> newTmRm = new }
 
             // Set up flows.
             f.msgAsyncSetDemand(DataRate.ofGbps(1))
@@ -207,13 +207,13 @@ class NetFTrackerTest : FunSpec({
             barrier.awaitStability()
 
             // Initial time remaining.
-            tracker.tmRm() shouldBeEqual TimeDelta.ofSec(4)
+            tracker.tsFor1Compl() shouldBeEqual TimeDelta.ofSec(4)
 
             // Time remaining increase.
             f.msgAsyncSetDemand(DataRate.ofGbps(0.5))
             barrier.awaitStability()
             newTmRm shouldBeEqual TimeDelta.ofSec(8)
-            tracker.tmRm() shouldBeEqual TimeDelta.ofSec(8)
+            tracker.tsFor1Compl() shouldBeEqual TimeDelta.ofSec(8)
         }
     }
 })

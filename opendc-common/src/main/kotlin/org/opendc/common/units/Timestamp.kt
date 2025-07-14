@@ -65,6 +65,11 @@ public value class Timestamp private constructor(
 
     public fun toEpochMs(): Double = value
 
+    /**
+     * It is potentially clamped within [[Long.MIN_VALUE], [Long.MAX_VALUE]] range.
+     */
+    public fun toEpochMsLong(): Long = value.toLong()
+
     public fun toEpochSec(): Double = value / 1000.0
 
     public fun toEpochMin(): Double = toEpochSec() / 60

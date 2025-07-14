@@ -44,7 +44,9 @@ internal interface Msg<in T, Self : Msg<T, Self>> : IFW<Self>
      * TODO
      * Should be called outside of subclasses only on channel closed exceptions
      */
-    suspend fun handled()
+    suspend fun markHandled()
+
+    suspend fun markUndelivered()
 
     /**
      * TODO
@@ -64,5 +66,6 @@ internal interface Msg<in T, Self : Msg<T, Self>> : IFW<Self>
         HANDLED,
         PENDING,
         UNTRACKED,
+        UNDELIVERED,
     }
 }

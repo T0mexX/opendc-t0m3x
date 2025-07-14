@@ -46,7 +46,7 @@ internal class ExperimentCommand : CliktCommand(name = "experiment") {
      */
     private val experimentPath by option("--experiment-path", help = "path to experiment file")
         .file(canBeDir = false, canBeFile = true)
-        .defaultLazy { File("resources/env/experiments/experiment.json") }
+        .defaultLazy { File("resources/ignored/env/experiments/experiment.json") }
 
     override fun run() {
         NetSimGlobal.WITH_COMPUTE = true

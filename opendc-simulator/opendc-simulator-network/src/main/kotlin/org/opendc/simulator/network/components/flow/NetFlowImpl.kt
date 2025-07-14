@@ -29,9 +29,11 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.annotations.ProtectedUse
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.DataSize
@@ -50,6 +52,7 @@ import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimTmSrc
+import org.opendc.simulator.network.simscope.barrier.NetSimBarrier.Key.getInvalidated
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.simscope.fwpool.FWDispenser
 import org.opendc.simulator.network.simscope.fwpool.FWId
@@ -58,6 +61,7 @@ import org.opendc.simulator.network.simscope.fwpool.IFW
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.InternalODCNetworkApi
 import org.opendc.simulator.network.utils.NetCoId
+import org.opendc.simulator.network.utils.SetOnce
 import kotlin.coroutines.CoroutineContext
 
 internal class NetFlowImpl private constructor(
@@ -151,7 +155,7 @@ internal class NetFlowImpl private constructor(
         if (complEvntEmitted.not() && fragCurr approxLargerOrEq fragTarget) {
             // If the current fragment is completed, then emit the corresponding event.
             fragCurr = fragTarget
-            assert(fragComplEstimate == tmSrc.tmstamp)
+//            assert(fragComplEstimate approx tmSrc.tmstamp) { "estimate: $fragComplEstimate, tmstamp: ${tmSrc.tmstamp}" }
             evntFragCompleted()
         }
 
@@ -172,6 +176,7 @@ internal class NetFlowImpl private constructor(
     private var fragComplEstimate: Timestamp = Timestamp.max
     context(NetSimScope)
     private fun computeFragComplEstimate(): Timestamp {
+        if (fragRemaining == DataSize.zero) return tmSrc.tmstamp
         val tmRm = fragRemaining / throughput
         return if (tmRm.value.isNaN()) Timestamp.max
         else tmSrc.tmstamp + tmRm
@@ -182,42 +187,78 @@ internal class NetFlowImpl private constructor(
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @ProtectedUse
-    override lateinit var job: Job
+    override var job: Job by SetOnce()
+//
+//    context(NetSimScope)
+//    @ProtectedUse
+//    override fun netRun(additionalCtx: CoroutineContext) {
+//        job =
+//            launchInRoot(additionalCtx) {
+//                try {
+//                    while (isActive) {
+//                        val msg = _msgChl.receive()
+//                        try {
+//                            msg.handle()
+//                        } catch (ex: CancellationException) {
+//                            msg.markHandled()
+//                        }
+//                    }
+//                } finally {
+//                    drainMsgChl()
+//                }
+//            }
+//    }
 
-    context(NetSimScope)
-    @ProtectedUse
-    override fun netRun(additionalCtx: CoroutineContext) {
-        job =
-            launchInRoot(additionalCtx) {
-                try {
-                    while (isActive) {
-                        val msg = _msgChl.receive()
-                        try {
-                            msg.handle()
-                        } catch (ex: CancellationException) {
-                            msg.handled()
-                        }
-                    }
-                } finally {
-                    drainMsgChl()
-                }
-            }
+    /**
+     * The [Msg] that is currently being handled.
+     * This property is used to mark the message as undelivered if coroutine is cancelled while handling it.
+     *
+     * Alternative would be to use `NetSimScope.wthContext(NonCancellable)`
+     * to avoid cancellation during handling, but introducing overhead.
+     */
+    private var currMsg: Msg<INetFlow, *>? = null
+
+    context(NetSimScope) @OptIn(ProtectedUse::class)
+    override suspend fun netRunnableMain() {
+        while (isActive) {
+            //
+            // Receive and handle one [Msg] at the time.
+            currMsg = _msgChl.receive()
+            currMsg!!.handle()
+            currMsg = null
+        }
     }
 
-    context(NetSimScope)
-    @OptIn(DelicateCoroutinesApi::class)
-    private suspend fun drainMsgChl() {
-        // Close the msg channel so that no more [Msg]s can be received.
-        _msgChl.close()
-
-        // Handled the [Msg]s that are still in [msgChl].
-        while (_msgChl.isClosedForReceive.not()) {
-            _msgChl.receive().handle()
-        }
-
+    context(NetSimScope) @OptIn(ProtectedUse::class, DebuggingUse::class)
+    override suspend fun netRunnableCancellationCleanup() {
+        // If a message was received but not yet handled (coroutine canceled while handling it)
+        // then mark it as undelivered.
+        currMsg?.markUndelivered()
+        // Drain all [Msg]s currently in the [msgChl] marking them as [Msg.State.UNDELIVERED]
+        drainMsgChl()
         // Validate this [NetFlow] the last time to avoid deadlocks.
         this.validate()
+        log.debug("{} was cancelled", this@NetFlowImpl) // TODO: rmln
+        log.debug("{}", barrier.getInvalidated())
     }
+//
+//    context(NetSimScope) @OptIn(DelicateCoroutinesApi::class, DebuggingUse::class)
+//    private suspend fun drainMsgChl() {
+//        // Close the msg channel so that no more [Msg]s can be received.
+//        _msgChl.close()
+//        var nDrained = 0
+//
+//        // Handled the [Msg]s that are still in [msgChl].
+//        while (_msgChl.isClosedForReceive.not()) {
+//            _msgChl.tryReceiveValidate().getOrThrow().markUndelivered()
+//            nDrained++
+//        }
+//        log.debug("{} was cancelled with {} drained msgs", this, nDrained)
+//        log.debug("{}", barrier.getInvalidated()) // TODO: rmln
+//
+//        // Validate this [NetFlow] the last time to avoid deadlocks.
+//        this.validate()
+//    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // EventEmitter
@@ -237,6 +278,7 @@ internal class NetFlowImpl private constructor(
                 this.old = old
                 this.new = new
                 this.newComplEstimate = computeFragComplEstimate()
+                this.fragId = this@NetFlowImpl.fragId
             }.emit(from = this@NetFlowImpl)
         }
     }
@@ -276,7 +318,7 @@ internal class NetFlowImpl private constructor(
     // Other
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    override fun toString(): String = "NetFlow(id=$id,src=${srcId.toIp()},dest=${destId.toIp()},ogDmnd=$demand,tput=$throughput)"
+    override fun toString(): String = "NetFlow(id=$id,src=${srcId.toIp()},dest=${destId.toIp()},dmnd=$demand,tput=$throughput)"
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NetFlowVersion
@@ -286,7 +328,7 @@ internal class NetFlowImpl private constructor(
     @SerialName("V1")
     internal companion object : NetFlowVersion {
         context(NetSimScope)
-        @OptIn(ProtectedUse::class)
+        @OptIn(ProtectedUse::class, DebuggingUse::class)
         override suspend operator fun invoke(
             srcId: NodeId,
             destId: NodeId,
@@ -301,14 +343,22 @@ internal class NetFlowImpl private constructor(
                 dmnd = dmnd,
                 stabilizer = barrier.stabilizer(NetFlow::class),
                 tmSrc = tmSrc,
-            ).also {
-                it.invalidate()
+            ).also { f ->
+                f.invalidate()
 
                 //
                 // Start the coroutine that runs the flow.
                 val coId = NetCoId.new(NetCo.FLOW)
                 val coName = CoroutineName("NetFlow(id:${coId.value})")
-                it.netRun(coId + coName)
+                f.netRun(coId + coName)
+
+                // For debugging.
+                f.stabilizer.owner = f
+//                f.job.invokeOnCompletion { cause ->
+//                    cause?.let {
+//                        throw it
+//                    }
+//                }
             }
         }
 
@@ -356,8 +406,8 @@ internal class NetFlowImpl private constructor(
                         override suspend fun handle() {
                             val f = this@NetFlow as NetFlowImpl
 
-                            if (f.fragId !== fragId) return handled()
-                            if (newDemand approx f.demand) return handled()
+                            if (f.fragId !== fragId) return markHandled()
+                            if (newDemand approx f.demand) return markHandled()
 
                             val old: DataRate = f.demand
                             f.demand = newDemand
@@ -365,8 +415,10 @@ internal class NetFlowImpl private constructor(
 
                             f.senderNode.msgAsyncRxUpdt(deltaDemand, f)
 
-                            handled()
+                            markHandled()
                         }
+
+                        override fun toString(): String = "SetDemand"
                     }
                 }
 
@@ -392,7 +444,7 @@ internal class NetFlowImpl private constructor(
                         context(NetFlow)
                         override suspend fun handle() {
                             val f = this@NetFlow as NetFlowImpl
-                            if (newTput approx f.throughput) return handled()
+                            if (newTput approx f.throughput) return markHandled()
 
                             val oldTput: DataRate = throughput
                             val oldFragComplEstimate = f.fragComplEstimate
@@ -403,10 +455,13 @@ internal class NetFlowImpl private constructor(
                             // If there are collectors listening to this `NetFlow` events,
                             // then emit events to those collectors.
                             f.evntTputChanged(old = oldTput, new = f.throughput)
-                            f.evntFragComplEstimateChanged(old = oldFragComplEstimate, new = f.fragComplEstimate)
+                            if (f.fragComplEstimate > tmSrc.tmstamp)
+                                f.evntFragComplEstimateChanged(old = oldFragComplEstimate, new = f.fragComplEstimate)
 
-                            handled()
+                            markHandled()
                         }
+
+                        override fun toString(): String = "SetTput"
                     }
                 }
 
@@ -421,7 +476,7 @@ internal class NetFlowImpl private constructor(
                         context(NetFlow)
                         override suspend fun handle() {
                             val f = this@NetFlow as NetFlowImpl
-                            if (amount == DataRate.zero) return handled()
+                            if (amount == DataRate.zero) return markHandled()
 
                             val oldTput: DataRate = throughput
                             val oldFragComplEstimate = f.fragComplEstimate
@@ -432,9 +487,10 @@ internal class NetFlowImpl private constructor(
                             // If there are collectors listening to this `NetFlow` events,
                             // then emit events to those collectors.
                             f.evntTputChanged(old = oldTput, new = f.throughput)
-                            f.evntFragComplEstimateChanged(old = oldFragComplEstimate, new = f.fragComplEstimate)
+                            if (f.fragComplEstimate > tmSrc.tmstamp)
+                                f.evntFragComplEstimateChanged(old = oldFragComplEstimate, new = f.fragComplEstimate)
 
-                            handled()
+                            markHandled()
                         }
                     }
                 }
@@ -448,6 +504,8 @@ internal class NetFlowImpl private constructor(
 
                             respond(f.computeFragComplEstimate())
                         }
+
+                        override fun toString(): String = "ReqFragComplEstimate"
                     }
                 }
 
@@ -465,10 +523,16 @@ internal class NetFlowImpl private constructor(
                             f.fragId = fragId
                             f.fragTarget = fragTarget
                             f.fragComplEstimate = f.computeFragComplEstimate()
-                            f.complEvntEmitted = fragTarget == DataSize.zero
+                            if (fragTarget == DataSize.zero) {
+                                f.evntFragCompleted()
+                            } else {
+                                f.complEvntEmitted = false
+                            }
 
-                            handled()
+                            markHandled()
                         }
+
+                        override fun toString(): String = "FragInit"
                     }
                 }
 
@@ -507,6 +571,7 @@ internal class NetFlowImpl private constructor(
                         override var old: DataRate = DataRate.zero
                         override var new: DataRate = DataRate.zero
                         override var newComplEstimate: Timestamp = Timestamp.max
+                        override var fragId: Any? = null
                         override lateinit var f: NetFlow
                         override val stabilizer: NetSimStabilizer = stab
                     }

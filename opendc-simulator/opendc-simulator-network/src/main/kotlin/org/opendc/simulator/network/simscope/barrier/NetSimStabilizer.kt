@@ -24,6 +24,7 @@ package org.opendc.simulator.network.simscope.barrier
 
 import org.opendc.common.annotations.DebuggingUse
 import org.opendc.simulator.network.simscope.NetSimConfig
+import org.opendc.simulator.network.utils.SetOnce
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
@@ -35,10 +36,11 @@ import kotlin.reflect.KClass
  * A [NetSimStabilizer] is bounded to the [NetSimBarrier] it was created for.
  */
 internal abstract class NetSimStabilizer internal constructor(
-    @DebuggingUse internal val owner: KClass<*>? = null,
+    @DebuggingUse internal val ownerClass: KClass<*>? = null,
 ) : AbstractCoroutineContextElement(Key) {
     protected abstract val netSimConfig: NetSimConfig
     internal abstract val isValidated: Boolean
+    @DebuggingUse internal var owner: Any? = null
 
     /**
      * Manages the validation state of the component.

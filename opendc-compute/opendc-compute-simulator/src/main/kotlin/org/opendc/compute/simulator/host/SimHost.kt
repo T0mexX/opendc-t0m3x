@@ -146,6 +146,8 @@ public class SimHost(
 
     override fun close() {
         reset(HostState.DOWN)
+        println("HOST CLOSEEDD ==============") // TODO: rmln
+        netIface?.close()
     }
 
     public fun fail() {

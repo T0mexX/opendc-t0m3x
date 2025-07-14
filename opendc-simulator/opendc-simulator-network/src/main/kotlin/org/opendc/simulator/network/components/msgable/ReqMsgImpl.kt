@@ -23,6 +23,7 @@
 package org.opendc.simulator.network.components.msgable
 
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import org.opendc.simulator.network.simscope.fwpool.FWId
 import org.opendc.simulator.network.simscope.fwpool.FWPool
@@ -44,9 +45,13 @@ internal abstract class ReqMsgImpl<T : Msgable<T>, A, Self : ReqMsg<T, A, Self>>
      * TODO
      */
     override suspend fun awaitResponse(): A =
-        resp.first {
-            it != null
-        }!!.also { dispose() }
+        combine(resp, state) {
+            s1, s2 -> s1 to s2
+        }.first { (resp, state) ->
+            resp != null || state == Msg.State.UNDELIVERED
+        }.let { (resp, _) ->
+            resp ?: throw IllegalStateException("`ReqMsg` $this was undelivered and unanswered")
+        }.also { dispose() }
 
     /**
      * TODO
@@ -56,13 +61,16 @@ internal abstract class ReqMsgImpl<T : Msgable<T>, A, Self : ReqMsg<T, A, Self>>
         this as Self
 
         state.emit(Msg.State.UNTRACKED)
-        sender = null
+        senderCoId = null
         resp.emit(null)
 
         builderBlock?.invoke(this)
 
         return this
     }
+
+    final override suspend fun sendTo(to: T, dispose: Boolean): Self =
+        super.sendTo(to, false)
 
     /**
      * TODO

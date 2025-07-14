@@ -210,7 +210,7 @@ public class ComputeMetricReader(
                 loggString += "\t\t\t\t\t\tTasks Completed: ${this.serviceTableReader.tasksCompleted}\n"
                 loggString += "\t\t\t\t\t\tTasks Terminated: ${this.serviceTableReader.tasksTerminated}\n"
 
-                this.logger.warn { loggString }
+//                this.logger.info { loggString }
             }
         } catch (cause: Throwable) {
             this.logger.warn(cause) { "Exporter threw an Exception" }

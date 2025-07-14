@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.api.integration
 
+import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.NetIFace
 import org.opendc.simulator.network.components.flow.INetFlow
@@ -68,4 +69,11 @@ public class JNetIFace internal constructor(
         latched(scope) {
             iFace.stopFlow(f.f)
         }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Debugging/Testing
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @DebuggingUse
+    public fun netSimTmstampLong(): Long = scope.tmSrc.tmstamp.toEpochMsLong()
 }

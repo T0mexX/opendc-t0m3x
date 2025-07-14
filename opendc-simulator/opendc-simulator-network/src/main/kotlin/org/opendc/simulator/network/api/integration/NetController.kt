@@ -24,6 +24,7 @@ package org.opendc.simulator.network.api.integration
 
 import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
 import org.opendc.common.annotations.DebuggingUse
 import org.opendc.simulator.network.api.NetIFace
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
@@ -34,13 +35,14 @@ import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.simscope.NetSimRootScope
 import org.opendc.simulator.network.simscope.NetSimScopeSpec
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import org.slf4j.Logger
 import java.lang.Thread.sleep
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
 public class NetController internal constructor(
     internal val rootScope: NetSimRootScope,
-) : AutoCloseable, AbstractCoroutineContextElement(Key) {
+) : AutoCloseable, Logger by rootScope.log, AbstractCoroutineContextElement(Key) {
     public val jNetController: JNetController by lazy { JNetController(this) }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,7 +56,7 @@ public class NetController internal constructor(
     public fun claimTerminal(id: NodeId): NetIFace =
         with(rootScope) {
             val t = net[id] as? Terminal
-            t ?: error("Terminal with ip ${id.toIp()} not found")
+            t ?: throw IllegalStateException("Terminal with ip ${id.toIp()} not found")
             if (t in claimedTerminals) error("Terminal with ip ${id.toIp()} already claimed")
 
             claimedTerminals += t
@@ -67,7 +69,7 @@ public class NetController internal constructor(
             val t =
                 terms.find {
                     it !in claimedTerminals
-                } ?: error("Not enough available terminals (${terms.size})")
+                } ?: throw IllegalStateException("Not enough available terminals (${terms.size})")
 
             claimedTerminals += t
             val bo = NetIFace(t)
@@ -130,7 +132,8 @@ public class NetController internal constructor(
 
     @OptIn(DebuggingUse::class)
     override fun close() {
-        println("=== before closing:\n" + rootScope.fmtCoTree())
+        println("=== before closing(already canceled=${rootScope.isActive.not()}):\n" + rootScope.fmtCoTree())
+        sleep(1000)
         rootScope.cancel()
         sleep(1000)
         println("=== after closing:\n" + rootScope.fmtCoTree())

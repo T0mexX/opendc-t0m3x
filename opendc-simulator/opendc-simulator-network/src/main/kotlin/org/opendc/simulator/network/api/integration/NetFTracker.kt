@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.api.integration
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Job
@@ -29,15 +30,18 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.annotations.ProtectedUse
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.components.NetCo
 import org.opendc.simulator.network.components.NetRunnable
+import org.opendc.simulator.network.components.evntemitter.Evnt
 import org.opendc.simulator.network.components.evntemitter.EvntListener
 import org.opendc.simulator.network.components.flow.INetFlow
 import org.opendc.simulator.network.components.flow.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.simscope.barrier.NetSimBarrier.Key.getInvalidated
 import org.opendc.simulator.network.utils.NetCoId
 import org.opendc.simulator.network.utils.SetOnce
 import kotlin.coroutines.CoroutineContext
@@ -46,8 +50,12 @@ public class NetFTracker private constructor(
     private val flows: List<INetFlow>,
     private val listeners: List<EvntListener<NetFlow>>,
 ) : AutoCloseable, NetRunnable {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // NetFTracker Properties
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private var remaining: Int = flows.size
-    private val estimateComplTs = flows.map { Timestamp.max }.toMutableList()
+    private val estimateComplTs = flows.map { Timestamp.zero }.toMutableList()
 
     private var latestTsIdx: Int = 0
     private var earliestTsIdx: Int = 0
@@ -59,16 +67,27 @@ public class NetFTracker private constructor(
     public var on1FFragCompl: suspend (f: NetFlow, fId: Any?) -> Unit = { _, _ -> }
     public var onAllFFragCompl: suspend () -> Unit = {}
     private val mtx = Mutex()
-    private var fragCount: Int = 0
+    private var fragId: Any = this
 
-    @ProtectedUse override var job: Job by SetOnce()
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // NetFTracker Methods
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * @return The estimated earliest timestamp at which a flow will complete its fragment.
      */
+    context(NetSimScope)
     public suspend fun tsFor1Compl(): Timestamp =
         mtx.withLock {
-            estimateComplTs[earliestTsIdx]
+            estimateComplTs[earliestTsIdx].takeIf {
+                it > tmSrc.tmstamp
+            } ?: (
+                let {
+                    earliestTsIdx = compMinTsIdx()
+                    estimateComplTs[earliestTsIdx]
+                } max tmSrc.tmstamp
+            )
         }
 
     /**
@@ -76,14 +95,17 @@ public class NetFTracker private constructor(
      */
     context(NetSimScope)
     public suspend fun tmRmFor1Compl(): TimeDelta =
-        tsFor1Compl() timeDelta tmSrc.tmstamp
+        mtx.withLock {
+            tsFor1Compl() timeDelta tmSrc.tmstamp max TimeDelta.zero
+        }
 
     /**
      * @return The estimated timestamp at which all flows will have completed their fragments.
      */
+    context(NetSimScope)
     public suspend fun tsForAllCompl(): Timestamp =
         mtx.withLock {
-            estimateComplTs[latestTsIdx]
+            estimateComplTs[latestTsIdx] max tmSrc.tmstamp
         }
 
     /**
@@ -91,37 +113,80 @@ public class NetFTracker private constructor(
      */
     context(NetSimScope)
     public suspend fun tmRmForAllCompl(): TimeDelta =
-        tsForAllCompl() timeDelta tmSrc.tmstamp
+        mtx.withLock {
+            tsForAllCompl() timeDelta tmSrc.tmstamp max TimeDelta.zero
+        }
 
     /**
      * TODO
      * To be called after flows have been msged with the new frag msg.
      */
-    public suspend fun reset(): Unit =
+    context(NetSimScope)
+    @OptIn(ProtectedUse::class)
+    public suspend fun newFrag(fragId: Any): Unit {
+//        println("1")
+        assert(job.isActive)
         mtx.withLock {
+//            println("2")
             remaining = flows.size
+            this.fragId = fragId
             latestTsIdx = 0
+            earliestTsIdx = 0
             estimateComplTs.indices.forEach { i ->
                 val f = flows[i]
-                estimateComplTs[i] = f.msgSyncReqFragComplEstimate()
-                if (estimateComplTs[i] > estimateComplTs[latestTsIdx]) latestTsIdx = i
-            }
-            fragCount++
-        }
-
-    context(NetSimScope)
-    @ProtectedUse
-    override fun netRun(additionalCtx: CoroutineContext) {
-        job =
-            launch(additionalCtx) {
-                try {
-                    while (coroutineContext.isActive) {
-                        handle1()
-                    }
-                } finally {
-                    drainListeners()
+                try { // TODO: rm try
+                    estimateComplTs[i] = f.msgSyncReqFragComplEstimate()
+                } catch (e: IllegalStateException) {
+//                    if (job.isCancelled) return
+//                    else throw e
+                    return
                 }
+//                println("3")
+                if (estimateComplTs[i] > estimateComplTs[latestTsIdx]) latestTsIdx = i
+                if (estimateComplTs[i] < estimateComplTs[earliestTsIdx] && estimateComplTs[i] > tmSrc.tmstamp)
+                    earliestTsIdx = i
             }
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // NetRunnable
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    @ProtectedUse override var job: Job by SetOnce()
+
+//    context(NetSimScope)
+//    @ProtectedUse
+//    override fun netRun(additionalCtx: CoroutineContext) {
+//        job =
+//            launch(additionalCtx) {
+//                try {
+//                    while (isActive) {
+//                        handle1()
+//                    }
+//                } finally {
+//                    drainListeners()
+//                }
+//            }
+//    }
+    private var currEvnt: Evnt<NetFlow, *>? = null
+
+    context(NetSimScope) @OptIn(ProtectedUse::class)
+    override suspend fun netRunnableMain() {
+        while (isActive) {
+            handle1()
+        }
+    }
+
+    context(NetSimScope) @OptIn(ProtectedUse::class)
+    override suspend fun netRunnableCancellationCleanup() {
+        log.debug("{} initiating closure", this)
+        // If an evnt was received but not yet handled (coroutine canceled while handling it)
+        // then mark it as handled.
+        currEvnt?.handled()
+        // Drain all [Evnt]s currently in the [listeners] marking them as handled.
+        drainListeners()
     }
 
 //    context(NetSimCtxOld)
@@ -133,29 +198,35 @@ public class NetFTracker private constructor(
 //        } finally { drainListeners() }
 //    }
 
+    /**
+     * TODO
+     */
     context(NetSimScope)
     private suspend fun handle1() {
+        // TODO: docs
         select {
             listeners.onEachIndexed { idx, l ->
                 l.onReceive { e ->
-                    try {
-                        mtx.withLock {
-                            when (e) {
-                                is NetFlow.TPutChanged -> handleTputChange(e, idx)
-                                is NetFlow.FragCompl -> handleFragCompl(e, idx)
-                                is NetFlow.FragComplEstimateChanged -> handleFragComplEstimateChanged(e, idx)
-                            }
+                    currEvnt = e
+                    mtx.withLock {
+                        when (e) {
+                            is NetFlow.TPutChanged -> handleTputChange(e, idx)
+                            is NetFlow.FragCompl -> handleFragCompl(e, idx)
+                            is NetFlow.FragComplEstimateChanged -> handleFragComplEstimateChanged(e, idx)
                         }
-                    } finally {
-                        e.handled()
                     }
+                    e.handled().also { currEvnt = null }
                 }
             }
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
+
+
+    context(NetSimScope)
+    @OptIn(DelicateCoroutinesApi::class, DebuggingUse::class)
     private suspend fun drainListeners() {
+        var nDrained = 0
         listeners.forEach {
             it.close()
         }
@@ -163,20 +234,25 @@ public class NetFTracker private constructor(
             while (l.isClosedForReceive.not()) {
                 val e = l.tryReceive().getOrNull()!!
                 e.handled()
+                nDrained++
             }
         }
+        log.debug("{} was closed with {} drained evnts", this, nDrained)
+        log.debug("{}", barrier.getInvalidated()) // TODO: rmln
     }
 
+    context(NetSimScope)
     private suspend fun handleEstimateComplTsDecreased(
         newTs: Timestamp,
         fIdx: Int,
     ) {
+        assert(newTs > tmSrc.tmstamp)
         val oldLatest = estimateComplTs[latestTsIdx]
         val oldEarliest = estimateComplTs[earliestTsIdx]
         estimateComplTs[fIdx] = newTs
 
         if (latestTsIdx == fIdx) {
-            latestTsIdx = estimateComplTs.withIndex().maxBy { it.value }.index
+            latestTsIdx = compMaxTsIdx()
             val new = estimateComplTs[latestTsIdx]
             if (new != oldLatest) onAllComplTsDecreased(oldLatest, new)
         }
@@ -187,6 +263,7 @@ public class NetFTracker private constructor(
         }
     }
 
+    context(NetSimScope)
     private suspend fun handleEstimateComplTsIncreased(
         newTs: Timestamp,
         fIdx: Int,
@@ -201,16 +278,19 @@ public class NetFTracker private constructor(
         }
 
         if (earliestTsIdx == fIdx) {
-            earliestTsIdx = estimateComplTs.withIndex().minBy { it.value}.index
+            earliestTsIdx = compMinTsIdx()
             val new = estimateComplTs[earliestTsIdx]
             if (new != oldEarliest) on1ComplTsIncreased(oldEarliest, new)
         }
     }
 
+    context(NetSimScope)
     private suspend fun handleFragComplEstimateChanged(
         e: NetFlow.FragComplEstimateChanged,
         fIdx: Int,
     ) {
+        if (e.fragId !== this.fragId) return
+
         if (e.new < e.old) {
             handleEstimateComplTsDecreased(e.new, fIdx)
         } else {
@@ -218,11 +298,14 @@ public class NetFTracker private constructor(
         }
     }
 
+    context(NetSimScope)
     private suspend fun handleTputChange(
         e: NetFlow.TPutChanged,
         fIdx: Int,
     ) {
-        if (e.new > e.old) {
+        if (e.fragId !== this.fragId) return
+
+        if (e.new > e.old && e.newComplEstimate > tmSrc.tmstamp) {
             handleEstimateComplTsDecreased(e.newComplEstimate, fIdx = fIdx)
         } else {
             handleEstimateComplTsIncreased(e.newComplEstimate, fIdx = fIdx)
@@ -234,6 +317,8 @@ public class NetFTracker private constructor(
         e: NetFlow.FragCompl,
         fIdx: Int,
     ) {
+        if (e.fragId !== this.fragId) return
+
         remaining -= 1
         assert(remaining >= 0)
         estimateComplTs[fIdx] = tmSrc.tmstamp
@@ -247,7 +332,7 @@ public class NetFTracker private constructor(
 
 
         if (earliestTsIdx == fIdx && remaining > 0) {
-            earliestTsIdx = estimateComplTs.withIndex().minBy { it.value}.index
+            earliestTsIdx = compMinTsIdx()
             val new = estimateComplTs[earliestTsIdx]
             if (new != tmSrc.tmstamp) on1ComplTsIncreased(tmSrc.tmstamp, new)
         }
@@ -256,10 +341,32 @@ public class NetFTracker private constructor(
         if (remaining == 0) onAllFFragCompl()
     }
 
+    /**
+     * Needs to be invoked before tracked [NetFlow]s are cancelled.
+     */
     @OptIn(ProtectedUse::class)
     override fun close() {
         job.cancel()
     }
+
+    context(NetSimScope)
+    private fun compMinTsIdx(): Int =
+        estimateComplTs.withIndex().minBy {
+            it.value.takeIf { ts -> ts > tmSrc.tmstamp } ?: Timestamp.max
+        }.index
+
+    context(NetSimScope)
+    private fun compMaxTsIdx(): Int =
+        estimateComplTs.withIndex().maxBy {
+            it.value
+        }.index
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Other
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    override fun toString(): String = "NetFTracker($flows)"
 
     public companion object {
         context(NetSimScope)

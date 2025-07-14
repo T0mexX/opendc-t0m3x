@@ -23,9 +23,12 @@
 package org.opendc.simulator.network.api
 
 import inet.ipaddr.ipv4.IPv4Address
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.integration.JNetIFace
+import org.opendc.simulator.network.api.integration.latched
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
 import org.opendc.simulator.network.components.flow.FlowId
@@ -70,7 +73,7 @@ public open class NetIFace private constructor(
      * @return a snapshot of the [Node] this interface belongs to.
      * @see[NodeSnapshot]
      */
-    public suspend fun nodeSnapshot(): NodeSnapshot = with(scope) { t.snapshot() }
+    public suspend fun nodeSnapshot(): NodeSnapshot = scope.async { t.snapshot() }.await()
 
     /**
      * Starts a network flow ([NetFlow]) from this node to the node with id [destId].
@@ -88,7 +91,7 @@ public open class NetIFace private constructor(
         destId: NodeId = INTERNET_ID,
         dmnd: DataRate = DataRate.zero,
     ): NetFlow =
-        with(scope) {
+        scope.asyncInRoot {
             val newF =
                 scope.devConfig.netFlowConfig.version(
                     srcId = this@NetIFace.nodeId,
@@ -100,11 +103,11 @@ public open class NetIFace private constructor(
             flowsById[newF.id] = newF
 
             newF
-        }
+        }.await()
 
     @JvmSynthetic
     public suspend fun startFlowFromInet(dmnd: DataRate = DataRate.zero): NetFlow =
-        with(scope) {
+        scope.asyncInRoot {
             val newF =
                 scope.devConfig.netFlowConfig.version(
                     srcId = INTERNET_ID,
@@ -116,21 +119,24 @@ public open class NetIFace private constructor(
             genFromInternet[newF.id] = newF
 
             newF
-        }
+        }.await()
+
 
     public suspend fun stopFlow(f: NetFlow): Unit =
-        with(scope) {
+        scope.launchInRoot {
+            require(
+                genFromInternet.remove(f.id) != null
+                    || flowsById.remove(f.id) != null
+            ) { "$f cannot be stopped, was not started by this ${this@NetIFace} " }
             net.stopFlow(f as INetFlow)
-        }
+        }.join()
 
     override fun close(): Unit =
-        runBlocking {
-            with(scope) {
-                flowsById.values.forEach { net.stopFlow(it as INetFlow) }
-                flowsById.clear()
-                genFromInternet.values.forEach { net.stopFlow(it as INetFlow) }
-                genFromInternet.clear()
-            }
+        latched(scope) {
+            flowsById.values.forEach { net.stopFlow(it as INetFlow) }
+            flowsById.clear()
+            genFromInternet.values.forEach { net.stopFlow(it as INetFlow) }
+            genFromInternet.clear()
         }
 
     internal companion object {

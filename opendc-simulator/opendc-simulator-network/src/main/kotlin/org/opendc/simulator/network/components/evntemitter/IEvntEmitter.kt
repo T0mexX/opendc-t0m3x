@@ -31,7 +31,7 @@ import org.opendc.simulator.network.utils.InternalODCNetworkApi
 /**
  * TODO
  */
-public open class IEvntEmitter<Self : EvntEmitter<Self>> : EvntEmitter<Self> {
+internal open class IEvntEmitter<Self : EvntEmitter<Self>> : EvntEmitter<Self> {
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Private Implementation
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +39,7 @@ public open class IEvntEmitter<Self : EvntEmitter<Self>> : EvntEmitter<Self> {
     /**
      * The list containing all the [EvntListener]s listening to this [EvntEmitter].
      */
-    private val collectors = mutableListOf<EvntListener<Self>>()
+    private val listeners = mutableListOf<EvntListener<Self>>()
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Public
@@ -48,7 +48,7 @@ public open class IEvntEmitter<Self : EvntEmitter<Self>> : EvntEmitter<Self> {
     /**
      * Retrieves a new [EvntListener] to listen to events emitter by this [EvntEmitter].
      */
-    public override fun evntListener(): EvntListener<Self> = EvntListener<Self>().also { collectors.add(it) }
+    override fun evntListener(): EvntListener<Self> = EvntListener<Self>().also { listeners.add(it) }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Internal (public with Opt-in)
@@ -57,22 +57,22 @@ public open class IEvntEmitter<Self : EvntEmitter<Self>> : EvntEmitter<Self> {
     /**
      * The number of [EvntListener]s that are listening to this [EvntEmitter].
      */
-    public final override val nListeners: Int get() = collectors.size
+    final override val nListeners: Int get() = listeners.size
 
     /**
      * Emits [evnt] to all [EvntListener]s that are listening to this [EvntEmitter].
      * @param evnt The event to be emitted.
      */
-    public override suspend fun emit(evnt: Evnt<Self, *>) {
+    override suspend fun emit(evnt: Evnt<Self, *>) {
         // `nListeners` collectors will need to call `handled` on this event.
         evnt.nCollectors = nListeners
         // If the fact that the event has not been handled yet invalidates
         // network stability (hence evt is `invalidatable`),
         // then invalidate.
         // The event will be validated again once all collectors handled the event.
-        if (collectors.isNotEmpty()) (evnt as? Invalidatable)?.invalidate()
+        if (listeners.isNotEmpty()) (evnt as? Invalidatable)?.invalidate()
         // Send the event to all collectors.
-        collectors.forEach { c ->
+        listeners.forEach { c ->
             try {
                 c.sendChl.send(evnt)
             } catch (e: ClosedSendChannelException) {

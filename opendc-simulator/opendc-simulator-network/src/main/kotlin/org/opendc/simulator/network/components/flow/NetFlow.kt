@@ -113,6 +113,7 @@ public interface NetFlow : Invalidatable, EvntEmitter<NetFlow> {
         public abstract var old: DataRate
         public abstract var new: DataRate
         public abstract var newComplEstimate: Timestamp
+        public abstract var fragId: Any?
 
         override fun toString(): String = "TPutChanged(f=${f.id}, old=$old, new=$new)"
 

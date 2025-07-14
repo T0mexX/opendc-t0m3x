@@ -22,13 +22,12 @@
 
 package org.opendc.simulator.network.components.invalidatable
 
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
 import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.opendc.simulator.network.components.msgable.Msg
 
 /**
  * TODO
@@ -87,21 +86,28 @@ internal open class InvalidatorChl<T> private constructor(
         }
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     override suspend fun send(element: T) {
-        receiver?.let { receiver ->
-            pendingMtx.withLock {
-                if (++pending == 1) receiver.invalidate()
-            }
-        }
-
         try {
+            // If channel is already closed, skip invalidation of the receiver.
+            if (delegatedChl.isClosedForSend) throw ClosedSendChannelException(null)
+
+
+            receiver?.let { receiver ->
+                pendingMtx.withLock {
+                    if (++pending == 1) receiver.invalidate()
+                }
+            }
+
             delegatedChl.send(element)
-        } catch (ex: ClosedSendChannelException) {
+        } catch (e: ClosedSendChannelException) {
             pendingMtx.withLock {
-                if (--pending == 0) receiver?.validate()
+                if (--pending <= 0) receiver?.validate()
             }
             (element as? Invalidatable)?.validate()
-            (element as? Msg<*, *>)?.handled()
+
+            // Msg handling and disposition should be handled by the sender on propagation of the exception.
+            throw e
         }
     }
 }

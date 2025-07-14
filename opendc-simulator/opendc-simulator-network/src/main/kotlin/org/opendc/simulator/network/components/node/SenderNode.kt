@@ -49,8 +49,6 @@ internal abstract class SenderNode<Self : SenderNode<Self>>(
         // TODO: maybe check that flow does not exist
         f.senderNode = this
 
-        if (f.demand.isZero()) return
-
         this@NetSimScope.devConfig.nodeConfig.version.startFlowDisp.acquire().reset {
             this.f = f
             this.ogDmnd = f.demand

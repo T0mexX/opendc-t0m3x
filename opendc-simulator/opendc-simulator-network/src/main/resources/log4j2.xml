@@ -23,14 +23,14 @@
   ~ SOFTWARE.
   -->
 
-<Configuration status="WARN">
+<Configuration status="DEBUG">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%highlight{%-5level}] %logger{36} - %msg%n" disableAnsi="false"/>
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="org.opendc" level="warn" additivity="false">
+        <Logger name="org.opendc" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="org.apache.hadoop" level="warn" additivity="false">

@@ -24,6 +24,8 @@ package org.opendc.simulator.network.components
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import org.opendc.common.annotations.ProtectedUse
 import org.opendc.simulator.network.components.evntemitter.Evnt
 import org.opendc.simulator.network.components.evntemitter.EvntEmitter
@@ -33,6 +35,7 @@ import org.opendc.simulator.network.components.msgable.Msgable
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import org.opendc.simulator.network.utils.NetCoId
+import org.opendc.simulator.network.utils.SetOnce
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -64,9 +67,21 @@ internal interface NetRunnable {
      * It is launched by [netRun] and controls the coroutine lifecycle.
      */
     @ProtectedUse
-    val job: Job
+    var job: Job
 
     /**
+     * The main function of this [NetRunnable]. Likely to run until [netCancel] is invoked.
+     */
+    context(NetSimScope)
+    @ProtectedUse
+    suspend fun netRunnableMain()
+
+    context(NetSimScope)
+    @ProtectedUse
+    suspend fun netRunnableCancellationCleanup()
+
+    /**
+     * TODO: change
      * Starts the component’s coroutine logic as a child of the current [NetSimCtxOld] job.
      *
      * @param additionalCtx Additional coroutine context elements to add,
@@ -74,7 +89,20 @@ internal interface NetRunnable {
      */
     context(NetSimScope)
     @ProtectedUse
-    fun netRun(additionalCtx: CoroutineContext = EmptyCoroutineContext)
+    fun netRun(additionalCtx: CoroutineContext = EmptyCoroutineContext) {
+        job = launchInRoot(additionalCtx) runnableScope@ {
+            try {
+                // Run the main [NetRunnable] function.
+                netRunnableMain()
+            } finally {
+                // On cancellation/completion run a suspending cleanup in the same [NetSimScope].
+                // ([job.invokeOnCompletion] is not a suspend callback).
+                withContext(NonCancellable) {
+                    netRunnableCancellationCleanup()
+                }
+            }
+        }
+    }
 
     /**
      * Cancels the coroutine running this component’s logic.

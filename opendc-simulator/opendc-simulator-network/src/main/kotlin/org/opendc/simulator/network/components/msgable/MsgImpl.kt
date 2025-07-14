@@ -22,12 +22,16 @@
 
 package org.opendc.simulator.network.components.msgable
 
+import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import org.opendc.common.logger.logger
+import org.opendc.simulator.network.components.invalidatable.Invalidatable
+import org.opendc.simulator.network.simscope.barrier.NetSimBarrier.Key.getInvalidated
 import org.opendc.simulator.network.simscope.fwpool.FWId
 import org.opendc.simulator.network.simscope.fwpool.FWPool
 import org.opendc.simulator.network.utils.Idx
-import kotlin.coroutines.CoroutineContext
+import org.opendc.simulator.network.utils.NetCoId
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -46,7 +50,7 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
     /**
      * TODO
      */
-    protected var sender: CoroutineContext? = null
+    protected var senderCoId: NetCoId? = null
 
     /**
      * TODO
@@ -55,8 +59,8 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
         state.first {
             // If `state` is `null`, msg was sent with `dispose = true` which means
             // the message flyweight object might have been reused by now.
-            check(sender == coroutineContext) { "await on recycled msg" }
-            it == Msg.State.HANDLED
+            assert(senderCoId === coroutineContext[NetCoId]!!) { "await on recycled msg" }
+            it == Msg.State.HANDLED || it == Msg.State.UNDELIVERED
         }
         @Suppress("UNCHECKED_CAST")
         return this as Self
@@ -65,18 +69,28 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
     /**
      * TODO
      */
-    final override suspend fun sendTo(
+    override suspend fun sendTo(
         to: T,
         dispose: Boolean,
     ): Self {
         // If dispose is false, `sender` wants to wait for the msg to be handled;
         // hence `state` is going to be tracked, and this `msg` is not going to be disposed by the receiver.
         if (dispose.not()) {
-            sender = coroutineContext
+            senderCoId = coroutineContext[NetCoId]!!
             state.emit(Msg.State.PENDING)
         }
 
-        to.msgChl.send(this)
+        try {
+            to.msgChl.send(this)
+        } catch (e: ClosedSendChannelException) {
+            log.debug("{} undelivered", this)
+            // If unable to send message because the receiver channel has been closed.
+            // If the message was tracked, then emit [Undelivered], else just dispose.
+            (this as? Invalidatable)?.validate()
+            if (state.value == Msg.State.PENDING) state.emit(Msg.State.UNDELIVERED)
+            else dispose()
+        }
+
         @Suppress("UNCHECKED_CAST")
         return this as Self
     }
@@ -89,7 +103,7 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
         this as Self
 
         state.emit(Msg.State.UNTRACKED)
-        sender = null
+        senderCoId = null
 
         builderBlock?.invoke(this)
 
@@ -99,7 +113,7 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
     /**
      * TODO
      */
-    override suspend fun handled() {
+    final override suspend fun markHandled() {
         assert(this !is ReqMsg<*, *, *>)
         assert(state.value != Msg.State.HANDLED)
 
@@ -108,9 +122,24 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
         if (state.value == Msg.State.PENDING) {
             state.emit(Msg.State.HANDLED)
 
-            // Else, after msg is handled, it can safely be disposed of.
+        // Else, after msg is handled, it can safely be disposed of.
         } else {
             dispose()
         }
+    }
+
+    final override suspend fun markUndelivered() {
+        assert(state.value != Msg.State.HANDLED)
+
+        if (state.value == Msg.State.PENDING) {
+            state.emit(Msg.State.UNDELIVERED)
+
+        } else {
+            dispose()
+        }
+    }
+
+    private companion object {
+        val log by logger()
     }
 }

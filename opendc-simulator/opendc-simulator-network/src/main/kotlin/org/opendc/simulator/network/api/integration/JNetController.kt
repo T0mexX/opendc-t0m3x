@@ -26,12 +26,13 @@ import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.channels.Channel
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.export.NetworkExportConfig
+import org.slf4j.Logger
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
 public class JNetController internal constructor(
     private val netController: NetController,
-) : AutoCloseable, AbstractCoroutineContextElement(Key) {
+) : AutoCloseable, AbstractCoroutineContextElement(Key), Logger by netController {
     init {
         // Add this adapter in the network simulation scope so that
         // callbacks can be queued to [callbacksChl] and executed

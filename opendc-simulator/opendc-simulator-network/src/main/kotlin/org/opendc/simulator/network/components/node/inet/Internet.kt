@@ -84,6 +84,13 @@ internal class Internet(
                 val coId = NetCoId.new(NetCo.NODE)
                 val coName = CoroutineName("Inet(id:${coId.value})")
                 inet.netRun(coId + coName)
+
+                // Debugging
+                inet.job.invokeOnCompletion { cause ->
+                    cause?.let {
+                        throw it
+                    }
+                }
             }
         }
     }

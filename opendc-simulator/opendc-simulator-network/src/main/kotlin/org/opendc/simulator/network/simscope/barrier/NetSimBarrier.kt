@@ -22,12 +22,15 @@
 
 package org.opendc.simulator.network.simscope.barrier
 
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import org.opendc.common.annotations.DebuggingUse
 import org.opendc.simulator.network.simscope.NetSimConfig
+import org.opendc.simulator.network.utils.NetCoId
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
@@ -165,9 +168,19 @@ internal class NetSimBarrier internal constructor(
      * Suspends until the network is stable (All components
      * with an [NetSimStabilizer] validated their status).
      */
+    @OptIn(DebuggingUse::class) // TODO: delete ln
     internal suspend fun awaitStability() {
-        stabilityMtx.lock()
-        stabilityMtx.unlock()
+        withTimeout(10000L) {
+            try {
+                stabilityMtx.lock()
+            } catch (e: TimeoutCancellationException) {
+                println(getInvalidated())
+                println(coroutineContext[NetCoId]!!.owner)
+                error("AA")
+            } finally {
+                stabilityMtx.unlock()
+            }
+        }
     }
 
     /**
@@ -263,8 +276,8 @@ internal class NetSimBarrier internal constructor(
          * @see NetSimStabilizer
          */
         private inner class NetSimStabilizerImpl(
-            owner: KClass<*>? = null,
-        ) : NetSimStabilizer(owner) {
+            ownerClass: KClass<*>? = null,
+        ) : NetSimStabilizer(ownerClass) {
             override val netSimConfig: NetSimConfig = this@NetSimBarrier.netSimConfig
 
             /**
@@ -329,14 +342,15 @@ internal class NetSimBarrier internal constructor(
         // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         @DebuggingUse
-        internal fun NetSimBarrier.getInvalidated(): List<KClass<*>?> = this.childBarrier.getInvalidated()
+        internal fun NetSimBarrier.getInvalidated(): List<Pair<KClass<*>?, Any?>> = this.childBarrier.getInvalidated()
 
         @DebuggingUse
-        private fun ChildBarrier.getInvalidated(): List<KClass<*>?> =
+        private fun ChildBarrier.getInvalidated(): List<Pair<KClass<*>?, Any?>> =
             this.invalidators.filter {
                 it.isValidated.not()
-            }.map {
-                it.owner
+            }.map  {
+                Pair(it.ownerClass, it.owner)
+
             } +
                 try {
                     this.childBarrier.getInvalidated()

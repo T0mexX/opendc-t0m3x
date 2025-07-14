@@ -156,7 +156,9 @@ public final class FlowEngine implements Runnable {
             active = true;
 
             // Sync network with simulation virtual time.
+//            System.out.print("C"); // TODO: delete ln
             if (netController != null) netController.sync();
+//            System.out.print("D\n"); // TODO: delete ln
 
             // Execute all scheduled updates at current timestamp
             while (true) {
@@ -173,9 +175,9 @@ public final class FlowEngine implements Runnable {
                 final FlowNode ctx = cycleQueue.poll();
                 if (ctx == null) {
                     if (netController != null) {
-                        //                        System.out.print("A");
+//                                                System.out.print("A");
                         netController.sync(); // Wait until the network is stable.
-                        //                        System.out.print("B\n");
+//                                                System.out.print("B\n");
                         // Execute observers' handlers sequentially, since node invalidation must be sequential.
                         int callbacksExecuted = netController.execCallbacks();
                         // If at least one callback has been executed, there may be an invalidated node.

@@ -24,12 +24,16 @@ package org.opendc.simulator.network.simscope
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.annotations.ProtectedUse
 import org.opendc.simulator.network.api.integration.JNetController
 import org.opendc.simulator.network.api.integration.JNetFTracker
+import org.opendc.simulator.network.components.NetCo
 import org.opendc.simulator.network.components.evntemitter.Evnt
 import org.opendc.simulator.network.components.invalidatable.Invalidatable
 import org.opendc.simulator.network.components.msgable.Msg
@@ -207,15 +211,17 @@ internal interface NetSimScope : CoroutineScope {
     fun launch(
         ctx: CoroutineContext = EmptyCoroutineContext,
         block: suspend NetSimScope.() -> Unit,
-    ): Job =
+    ): Job {
+        assert(this.isActive)
         // Cast to call extension function [CoroutineScope.launch] instead of this.
-        (this as CoroutineScope).launch(coroutineContext + ctx) scopeToWrap@{
+        return (this as CoroutineScope).launch(ctx) scopeToWrap@ {
             // Wrapp the newly created child [CoroutineScope] with [NetSimScope].
             NetSimSubScope(
                 rootScope = root,
                 wrappedScope = this@scopeToWrap,
             ).block()
         }
+    }
 
     /**
      * Launches a new coroutine with a [NetSimScope] receiver, using the [NetSimRootScope] as its parent scope
@@ -228,7 +234,35 @@ internal interface NetSimScope : CoroutineScope {
     fun launchInRoot(
         ctx: CoroutineContext = EmptyCoroutineContext,
         block: suspend NetSimScope.() -> Unit,
-    ): Job = root.launch(coroutineContext + ctx, block)
+    ): Job {
+        assert(root.isActive)
+        return root.launch(ctx, block)
+    }
+
+    /**
+     * TODO
+     */
+    @OptIn(ProtectedUse::class)
+    fun <T> async(
+        ctx: CoroutineContext = EmptyCoroutineContext,
+        block: suspend NetSimScope.() -> T
+    ): Deferred<T> =
+        (this as CoroutineScope).async(ctx) scopeToWrap@ {
+            NetSimSubScope(
+                rootScope = root,
+                wrappedScope = this@scopeToWrap,
+            ).block()
+        }
+
+    /**
+     * TODO
+     */
+    @OptIn(ProtectedUse::class)
+    fun <T> asyncInRoot(
+        ctx: CoroutineContext = EmptyCoroutineContext,
+        block: suspend NetSimScope.() -> T
+    ): Deferred<T> = root.async(ctx, block)
+
 
     /**
      * Replaces the standard [kotlinx.coroutines.coroutineScope] with a variant that wraps the receiver
@@ -262,6 +296,7 @@ internal interface NetSimScope : CoroutineScope {
         private val wrappedScope: CoroutineScope,
     ) : NetSimScope by rootScope, CoroutineScope by wrappedScope {
         override val coroutineContext: CoroutineContext get() = wrappedScope.coroutineContext
+        override val netCoId: NetCoId = coroutineContext[NetCoId]!!
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

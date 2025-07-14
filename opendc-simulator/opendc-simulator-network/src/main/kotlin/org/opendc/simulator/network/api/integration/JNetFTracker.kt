@@ -78,16 +78,16 @@ public class JNetFTracker private constructor(
             }
         }
 
-    public suspend fun tsFor1Compl(): Long = latched(scope) {
+    public fun tsFor1Compl(): Long = latched(scope) {
         tracker.tsFor1Compl().toEpochMsLong()
     }
-    public suspend fun tmRmFor1Compl(): Long = latched(scope) {
+    public fun tmRmFor1Compl(): Long = latched(scope) {
         tracker.tmRmFor1Compl().toMsLong()
     }
-    public suspend fun tsForAllCompl(): Long = latched(scope) {
+    public fun tsForAllCompl(): Long = latched(scope) {
         tracker.tsForAllCompl().toEpochMsLong()
     }
-    public suspend fun tmRmForAllCompl(): Long = latched(scope) {
+    public fun tmRmForAllCompl(): Long = latched(scope) {
         tracker.tmRmForAllCompl().toMsLong()
     }
 
@@ -95,9 +95,9 @@ public class JNetFTracker private constructor(
      * TODO
      * To be called after flows have been msged with the new frag msg.
      */
-    public fun reset(): Unit =
+    public fun newFrag(fragId: Any): Unit =
         latched(scope) {
-            tracker.reset()
+            tracker.newFrag(fragId)
         }
 
     public companion object {

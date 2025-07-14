@@ -22,7 +22,15 @@
 
 package org.opendc.simulator.network.components.msgable
 
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import org.opendc.common.annotations.DebuggingUse
+import org.opendc.common.annotations.ProtectedUse
+import org.opendc.simulator.network.components.invalidatable.InvalidatorChl
+import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.simscope.barrier.NetSimBarrier.Key.getInvalidated
 
 /**
  * TODO
@@ -32,4 +40,20 @@ internal interface Msgable<T : Msgable<T>> {
      * TODO
      */
     val msgChl: SendChannel<Msg<T, *>>
+
+    context(NetSimScope) @OptIn(DelicateCoroutinesApi::class, DebuggingUse::class) @ProtectedUse
+    suspend fun drainMsgChl() {
+        @Suppress("UNCHECKED_CAST")
+        val msgChl = msgChl as InvalidatorChl<Msg<T, *>>
+        // Close the msg channel so that no more [Msg]s can be received.
+        msgChl.close()
+        var nDrained = 0
+
+        // Handled the [Msg]s that are still in [msgChl].
+        while (msgChl.isClosedForReceive.not()) {
+            msgChl.tryReceiveValidate().getOrThrow().markUndelivered()
+            nDrained++
+        }
+        log.debug("{} was cancelled with {} drained msgs", this, nDrained)
+    }
 }

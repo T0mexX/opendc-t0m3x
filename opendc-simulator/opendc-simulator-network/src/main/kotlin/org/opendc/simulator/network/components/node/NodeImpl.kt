@@ -107,33 +107,81 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
     @ProtectedUse
     override var job: Job by SetOnce()
 
-    context(NetSimScope)
-    @ProtectedUse
-    override fun netRun(additionalCtx: CoroutineContext) {
-        job =
-            launchInRoot(additionalCtx) {
-                while (isActive) {
-                    while (true) {
-                        // Accumulate multiple updates if possible
-                        // before telling the ports to process them and propagate results.
-                        _msgChl.tryReceiveValidate().getOrNull()?.handle()
-                            ?: break
-                    }
+//    context(NetSimScope)
+//    @ProtectedUse
+//    override fun netRun(additionalCtx: CoroutineContext) {
+//        job =
+//            launchInRoot(additionalCtx) {
+//                while (isActive) {
+//                    while (true) {
+//                        // Accumulate multiple updates if possible
+//                        // before telling the ports to process them and propagate results.
+//                        _msgChl.tryReceiveValidate().getOrNull()?.handle()
+//                            ?: break
+//                    }
+//
+//                    //
+//                    // Propagate updates to adjacent nodes.
+//                    coroutineScope {
+//                        flowTbl.updtTputs()
+//                        config.routPolicy.onNodeTxAttempt()
+//                        links.forEach { l ->
+//                            launch { l?.attemptTx() }
+//                        }
+//                    }
+//                    // Suspending receive. When node suspends here, its stability is validated.
+//                    _msgChl.receive().handle()
+//                    assert(stabilizer.isValidated.not())
+//                }
+//            }
+//    }
+    /**
+     * The [Msg] that is currently being handled.
+     * This property is used to mark the message as undelivered if coroutine is cancelled while handling it.
+     *
+     * Alternative would be to use `NetSimScope.wthContext(NonCancellable)`
+     * to avoid cancellation during handling, but introducing overhead.
+     */
+    private var currMsg: Msg<Node<*>, *>? = null
 
-                    //
-                    // Propagate updates to adjacent nodes.
-                    coroutineScope {
-                        flowTbl.updtTputs()
-                        config.routPolicy.onNodeTxAttempt()
-                        links.forEach { l ->
-                            launch { l?.attemptTx() }
-                        }
-                    }
-                    // Suspending receive. When node suspends here, its stability is validated.
-                    _msgChl.receive().handle()
-                    assert(stabilizer.isValidated.not())
+    context(NetSimScope) @OptIn(ProtectedUse::class)
+    override suspend fun netRunnableMain() {
+        while (isActive) {
+            while (true) {
+                // Accumulate multiple updates if possible
+                // before telling the ports to process them and propagate results.
+                currMsg = _msgChl.tryReceiveValidate().getOrNull()
+                currMsg?.handle() ?: break
+            }
+
+            //
+            // Propagate updates to adjacent nodes.
+            coroutineScope {
+                flowTbl.updtTputs()
+                config.routPolicy.onNodeTxAttempt()
+                links.forEach { l ->
+                    launch { l?.attemptTx() }
                 }
             }
+
+            //
+            // Suspending receive. When node suspends here, its stability is validated.
+            currMsg = null
+            currMsg = _msgChl.receive()
+            currMsg!!.handle()
+            assert(stabilizer.isValidated.not())
+        }
+    }
+
+    context(NetSimScope) @OptIn(ProtectedUse::class)
+    override suspend fun netRunnableCancellationCleanup() {
+        // If a message was received but not yet handled (coroutine canceled while handling it)
+        // then mark it as undelivered.
+        currMsg?.markUndelivered()
+        // Drain all [Msg]s currently in the [msgChl] marking them as [Msg.State.UNDELIVERED]
+        drainMsgChl()
+        // Validate this [NetFlow] the last time to avoid deadlocks.
+        this.validate()
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,7 +254,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                                 this.deltaRate = ogDmnd
                             }.handle()
 
-                            handled()
+                            markHandled()
                         }
                     }
                 }
@@ -227,7 +275,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                             f.netCancel()
                             this@Node.flowTbl.reset(f)
 
-                            handled()
+                            markHandled()
                         }
                     }
                 }
@@ -244,11 +292,11 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
 
                         context(Node<*>)
                         override suspend fun handle() {
-                            assert(deltaRate.approx(DataRate.zero).not())
+                            assert(deltaRate.approx(DataRate.zero).not() || f.srcId == this@Node.id)
                             // TODO: apply dynamic policy
 
                             flowTbl.rxUpdt(this)
-                            handled()
+                            markHandled()
                         }
                     }
                 }
@@ -303,7 +351,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                                 // the necessary adjustments, the network state is considered unstable.
                             }
 
-                            handled()
+                            markHandled()
                         }
                     }
                 }
@@ -349,7 +397,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                                 // the necessary adjustments, the network state is considered unstable.
                             }
 
-                            handled()
+                            markHandled()
                         }
                     }
                 }
@@ -383,7 +431,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                             // Make ports reapply fairness policy.
                             // TODO: i dont remember
 
-                            handled()
+                            markHandled()
                         }
                     }
                 }
@@ -411,7 +459,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                                 }
                             }
 
-                            handled()
+                            markHandled()
                         }
                     }
                 }
@@ -425,7 +473,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                         context(NodeImpl<*>)
                         override suspend fun handle() {
                             // A previous `ShareRoutVect` has already shared the current version of the routing table.
-                            if (routTbl.shared) return handled()
+                            if (routTbl.shared) return markHandled()
 
                             //
                             // Share the new version of the routing table to all adjacent nodes.
@@ -444,7 +492,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                             // Mark the current version of the routing table as been shared.
                             routTbl.shared = true
 
-                            handled()
+                            markHandled()
                         }
                     }
                 }

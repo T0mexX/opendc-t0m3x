@@ -28,6 +28,7 @@ import kotlinx.serialization.Serializable
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
 import org.opendc.simulator.network.api.snapshots.NetworkSnapshot.Companion.snapshot
+import org.opendc.simulator.network.components.NetCo
 import org.opendc.simulator.network.components.flow.FlowId
 import org.opendc.simulator.network.components.flow.INetFlow
 import org.opendc.simulator.network.components.node.Node
@@ -56,6 +57,8 @@ internal abstract class NetworkImpl<Self : Network<Self>> : Network<Self> {
 
     context(NetSimScope)
     override suspend fun startFlow(f: INetFlow) {
+        assert(netCoId.owner == NetCo.MAIN)
+        assert(f.id !in flowsById)
         val senderN = sendNodesById[f.srcId]!!
         f.senderNode = senderN
 
@@ -68,6 +71,7 @@ internal abstract class NetworkImpl<Self : Network<Self>> : Network<Self> {
 
     context(NetSimScope)
     override suspend fun stopFlow(f: INetFlow) {
+        assert(netCoId.owner == NetCo.MAIN)
         routPolicy.onFlowStop(f)
 
         sendNodesById[f.srcId]!!.msgAsyncStopFlow(f)

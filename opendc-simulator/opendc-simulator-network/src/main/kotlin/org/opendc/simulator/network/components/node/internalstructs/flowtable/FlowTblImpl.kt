@@ -54,13 +54,13 @@ internal class FlowTblImpl private constructor(
      */
     context(NetSimScope, Node<*>)
     override suspend fun rxUpdt(updt: Node.RxUpdt) {
-        assert(updt.deltaRate.approx(DataRate.zero).not())
         val f = updt.f
+        assert(updt.deltaRate.approx(DataRate.zero).not() || f.srcId == this@Node.id)
 
         var new = false
         val e =
             flows.getOrPut(updt.f) {
-                assert(updt.deltaRate > DataRate.zero) { updt.deltaRate }
+                assert(updt.deltaRate >= DataRate.zero)
                 new = true
                 newEntry(updt)
             }
@@ -103,7 +103,6 @@ internal class FlowTblImpl private constructor(
         e: NodeFlowEntry,
         new: Boolean,
     ) {
-        if (e.txlinks.isEmpty()) println("NOT OWRKIG")
         e.txlinks.forEach { (l, perc) ->
             // The data-rate sent to link `l` for this flow.
             val portDemand = e.rx * perc
@@ -146,7 +145,7 @@ internal class FlowTblImpl private constructor(
      */
     context(NetSimScope)
     override suspend fun reset(f: NetFlow) {
-        val e = flows[f] ?: return log.warn("Flow likely stopped twice")
+        val e = flows[f]!! //?: return log.warn("$this likely stopped twice")
         e.rx = DataRate.zero
         e.txlinks.keys.forEach { l ->
             val linkEntryId = e.linkFlowEntryIds[l.linkIdx]

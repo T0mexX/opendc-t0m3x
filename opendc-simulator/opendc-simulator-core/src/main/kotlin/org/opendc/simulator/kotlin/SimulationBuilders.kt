@@ -78,6 +78,7 @@ public fun runSimulation(
             body(scope)
         }
     dispatcher.advanceUntilIdle()
+    println("CANCEEEEELLLLLED SIMMMMMMM")
     simJob.cancel()
 
     // TODO: remove begin

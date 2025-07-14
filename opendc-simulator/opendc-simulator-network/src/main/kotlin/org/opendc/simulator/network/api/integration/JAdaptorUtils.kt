@@ -22,6 +22,8 @@
 
 package org.opendc.simulator.network.api.integration
 
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.isActive
 import org.opendc.simulator.network.simscope.NetSimScope
 import java.util.concurrent.CountDownLatch
 
@@ -29,19 +31,29 @@ import java.util.concurrent.CountDownLatch
  * Used to make calls to suspending methods in [NetController] from non suspending
  * context while waiting for resolution in the most efficient way possible.
  */
+@OptIn(InternalCoroutinesApi::class)
 internal inline fun <T> latched(
     netScope: NetSimScope,
     crossinline block: suspend NetSimScope.() -> T,
 ): T {
+    assert(netScope.isActive)
     val latch = CountDownLatch(1)
     var res: T? = null
+    var err: Throwable? = null
     val t = Thread.currentThread()
+//    println("A")
     netScope.launch coScope@{
+//        println("B")
         assert(Thread.currentThread() !== t)
         res = block(netScope)
+//        println("C")
+    }.invokeOnCompletion { throwable ->
+        err = throwable
         latch.countDown()
     }
+
     latch.await()
+    err?.let { throw it }
 
     return res!!
 }
