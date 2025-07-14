@@ -24,6 +24,7 @@ package org.opendc.common.logger
 
 import mu.KotlinLogging
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * @return a slf4j logger named as the calling class simple name.
@@ -41,6 +42,11 @@ import org.slf4j.Logger
  * }
  * ```
  */
+@Deprecated("" +
+    "Not using the full class name breaks slf4j structured loggers with different levels, " +
+    "and causes the logger to be classified as a default one (usually with 'error' level)",
+    replaceWith = ReplaceWith(expression = "logger()")
+)
 public fun <T : Any> T.logger(name: String? = null): Lazy<Logger> {
     return lazy {
         KotlinLogging.logger(
@@ -51,6 +57,18 @@ public fun <T : Any> T.logger(name: String? = null): Lazy<Logger> {
         )
     }
 }
+
+
+/**
+ * Lazy and concise initialization of a slf4j logger which supports
+ * structured loggers in `slf4j.xml` config file using classpath.
+ */
+public fun <T : Any> T.logger(): Lazy<Logger> {
+    return lazy {
+        KotlinLogging.logger(LoggerFactory.getLogger(this::class.java))
+    }
+}
+
 
 /**
  * Logs [msg] with WARN level and returns null.
