@@ -25,4 +25,18 @@ package org.opendc.simulator.network.utils
 @RequiresOptIn(message = "part of api for implementation reasons, but shouldn't be used externally", level = RequiresOptIn.Level.ERROR)
 @Retention(AnnotationRetention.BINARY)
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.CONSTRUCTOR)
-public annotation class InternalODCNetworkApi
+public annotation class InternalODCNApi
+
+@RequiresOptIn(message = "delicate api, may break things, read documentation")
+@Retention(AnnotationRetention.BINARY)
+@Target(AnnotationTarget.FUNCTION)
+public annotation class DelicateODCNApi(val msg: String)
+
+@RequiresOptIn(
+    message = "This method can suspend, if a custom dispatcher is used and this operation " +
+        "is required to not suspend (e.g. as is the case in `ComputeMetricReader` export job), " +
+        "use the blocking version of this method if available, else wrap into `runBlocking`."
+)
+@Retention(AnnotationRetention.BINARY)
+@Target(AnnotationTarget.FUNCTION)
+public annotation class SuspendingODCNApi

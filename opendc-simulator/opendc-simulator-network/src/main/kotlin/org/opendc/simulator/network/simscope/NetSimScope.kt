@@ -165,7 +165,7 @@ internal interface NetSimScope : CoroutineScope {
     /**
      * The logger associated with this network simulation scope.
      */
-    val log: Logger
+    val log: mu.KLogger
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Commodity Accessors.

@@ -31,7 +31,7 @@ import org.opendc.simulator.network.api.snapshots.FlowSnapshot
 import org.opendc.simulator.network.api.snapshots.FlowSnapshot.Companion.snapshot
 import org.opendc.simulator.network.export.flow.DfltFlowExportColumns
 import org.opendc.simulator.network.repl.cmds.REPLCmd
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 import org.opendc.trace.util.parquet.exporter.ExportColumn
 import org.opendc.trace.util.parquet.exporter.Exporter
 import org.opendc.trace.util.parquet.exporter.columnSerializer
@@ -56,7 +56,7 @@ internal class FlowExportCmd : REPLCmd(CMD_STR) {
             }
     }
 
-    @OptIn(InternalODCNetworkApi::class)
+    @OptIn(InternalODCNApi::class)
     override fun run(): Unit =
         execREPLCmdCatching {
             DfltFlowExportColumns

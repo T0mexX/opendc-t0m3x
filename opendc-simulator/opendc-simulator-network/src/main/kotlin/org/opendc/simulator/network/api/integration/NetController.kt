@@ -25,7 +25,9 @@ package org.opendc.simulator.network.api.integration
 import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.opendc.common.annotations.DebuggingUse
+import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.NetIFace
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
 import org.opendc.simulator.network.components.node.NodeId
@@ -33,8 +35,11 @@ import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.simscope.NetSimRootScope
+import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimScopeSpec
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
+import org.opendc.simulator.network.utils.DelicateODCNApi
+import org.opendc.simulator.network.utils.SuspendingODCNApi
 import org.slf4j.Logger
 import java.lang.Thread.sleep
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -84,7 +89,14 @@ public class NetController internal constructor(
      * TODO
      */
     @JvmSynthetic
-    public suspend fun sync(forceUpdt: Boolean = false): Unit = rootScope.sync(forceUpdt)
+    @SuspendingODCNApi
+    public suspend fun sync(forceUpdt: Boolean = false): Unit = rootScope.launch {
+        sync(forceUpdt)
+    }.join()
+
+    public fun syncBlocking(forceUpdt: Boolean = false): Unit = latched(rootScope) {
+        rootScope.sync(forceUpdt)
+    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Export
@@ -101,27 +113,49 @@ public class NetController internal constructor(
      * aligned with an expected export timestamp as defined in [NetworkExportConfig].
      */
     @JvmSynthetic
-    public suspend fun exportNow(): Unit =
-        with(rootScope) {
-            barrier.awaitStability()
-            exporter?.exportNow(NetSimStabilityMode.ENFORCED)
-        }
+    @SuspendingODCNApi
+    public suspend fun exportNow(): Unit = rootScope.launch {
+            exportNowPrivate()
+    }.join()
+
+    public fun exportNowBlocking(): Unit = latched(rootScope) {
+        exportNowPrivate()
+    }
+
+    context(NetSimScope)
+    private suspend fun exportNowPrivate() {
+        barrier.awaitStability()
+        exporter?.exportNow(NetSimStabilityMode.ENFORCED)
+    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Formatted.
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * TODO
+     */
     public fun fmtExportConfig(): String = rootScope.config.exportConfig?.fmt() ?: "==== No Network Export Config ===="
 
-    public suspend fun fmtNet(): String =
-        with(rootScope) {
-            net.fmt()
-        }
+    /**
+     * TODO
+     */
+    @SuspendingODCNApi
+    public suspend fun fmtNet(stabilityMode: NetSimStabilityMode = NetSimStabilityMode.ASSUMED): String =
+        rootScope.async {
+            net.fmt(stabilityMode)
+        }.await()
 
-    public suspend fun fmtFlows(): String =
-        with(rootScope) {
-            net.fmtFlows()
-        }
+    /**
+     * TODO
+     */
+    @SuspendingODCNApi
+    public suspend fun fmtFlows(
+        stabilityMode: NetSimStabilityMode = NetSimStabilityMode.ASSUMED,
+        ls: Boolean = false
+    ): String = rootScope.async {
+        net.fmtFlows(stabilityMode, ls)
+    }.await()
 
     @DebuggingUse
     public fun fmtCoTree(): String = rootScope.fmtCoTree()
@@ -132,11 +166,11 @@ public class NetController internal constructor(
 
     @OptIn(DebuggingUse::class)
     override fun close() {
-        println("=== before closing(already canceled=${rootScope.isActive.not()}):\n" + rootScope.fmtCoTree())
-        sleep(1000)
+//        println("=== before closing(already canceled=${rootScope.isActive.not()}):\n" + rootScope.fmtCoTree())
+//        sleep(1000)
         rootScope.cancel()
-        sleep(1000)
-        println("=== after closing:\n" + rootScope.fmtCoTree())
+//        sleep(1000)
+//        println("=== after closing:\n" + rootScope.fmtCoTree())
     }
 
     public companion object Key : CoroutineContext.Key<NetController> {
@@ -144,5 +178,22 @@ public class NetController internal constructor(
             ctx: CoroutineContext,
             netScopeSpec: NetSimScopeSpec,
         ): NetController = NetController(NetSimRootScope(ctx = ctx, spec = netScopeSpec))
+
+//        /**
+//         * TODO
+//         * Needed because fucking export coroutine runs while things
+//         * are being updated in the fucking compute moduel, including the fucking simulation time.
+//         * If the export takes too long then everything is fucked.
+//         * TODO
+//         */
+//        @JvmSynthetic
+//        public suspend fun <T> NetController?.whileNetTmSrcFrozen(assertFrozenAt: Timestamp? = null, block: suspend () -> T): T =
+//            this?.let {
+//                with(rootScope) {
+//                    tmSrc.whileFrozen {
+//                        block()
+//                    }
+//                }
+//            } ?: block()
     }
 }

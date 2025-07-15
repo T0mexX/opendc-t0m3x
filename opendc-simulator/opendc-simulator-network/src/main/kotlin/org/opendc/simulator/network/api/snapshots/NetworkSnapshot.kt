@@ -37,7 +37,7 @@ import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 import org.opendc.trace.util.parquet.exporter.Exportable
 import java.time.Instant
 
@@ -212,7 +212,7 @@ public class NetworkSnapshot private constructor(
          * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
          */
         context(NetSimScope)
-        @OptIn(InternalODCNetworkApi::class)
+        @OptIn(InternalODCNApi::class)
         internal suspend fun Network<*>.snapshot(): NetworkSnapshot {
             check(this@NetSimScope.net === this)
 

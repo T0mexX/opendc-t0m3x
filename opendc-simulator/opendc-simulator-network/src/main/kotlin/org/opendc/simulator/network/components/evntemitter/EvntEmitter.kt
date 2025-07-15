@@ -22,7 +22,7 @@
 
 package org.opendc.simulator.network.components.evntemitter
 
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 
 public interface EvntEmitter<Self : EvntEmitter<Self>> {
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,12 +41,12 @@ public interface EvntEmitter<Self : EvntEmitter<Self>> {
     /**
      * TODO
      */
-    @InternalODCNetworkApi
+    @InternalODCNApi
     public val nListeners: Int
 
     /**
      * TODO
      */
-    @InternalODCNetworkApi
+    @InternalODCNApi
     public suspend fun emit(evnt: Evnt<Self, *>)
 }

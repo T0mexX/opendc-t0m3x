@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-@file:OptIn(InternalODCNetworkApi::class)
+@file:OptIn(InternalODCNApi::class)
 
 package org.opendc.simulator.network.components.node
 
@@ -28,7 +28,7 @@ import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.flow.INetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 
 /**
  * TODO

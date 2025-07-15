@@ -106,7 +106,7 @@ internal class NetSimRootScope private constructor(
 
     override suspend fun sync(forceUpdt: Boolean) {
         barrier.awaitStability()
-        barrier.whileStable(NetSimStabilityMode.CHECKED) {
+        barrier.whileStable(NetSimStabilityMode.ASSUMED) { // TODO: change
             enRecorder.sync(forceUpdt)
         }
         net.flowsById.values.forEach { it.sync(forceUpdt) }

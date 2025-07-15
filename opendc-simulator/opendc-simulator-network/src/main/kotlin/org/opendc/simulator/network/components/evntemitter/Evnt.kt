@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-@file:OptIn(InternalODCNetworkApi::class)
+@file:OptIn(InternalODCNApi::class)
 
 package org.opendc.simulator.network.components.evntemitter
 
@@ -30,7 +30,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.opendc.simulator.network.components.invalidatable.Invalidatable
 import org.opendc.simulator.network.simscope.fwpool.IFW
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 import org.opendc.simulator.network.utils.NetCoId
 import kotlin.coroutines.coroutineContext
 

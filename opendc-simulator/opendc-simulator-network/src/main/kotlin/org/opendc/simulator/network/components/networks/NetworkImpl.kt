@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-@file:OptIn(InternalODCNetworkApi::class)
+@file:OptIn(InternalODCNApi::class)
 
 package org.opendc.simulator.network.components.networks
 
@@ -38,7 +38,7 @@ import org.opendc.simulator.network.components.node.switchh.Switch
 import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 import org.opendc.simulator.network.utils.NonSerializable
 
 /**

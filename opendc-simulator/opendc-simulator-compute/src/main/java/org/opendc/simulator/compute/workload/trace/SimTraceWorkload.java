@@ -108,7 +108,7 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
 
     public SimTraceWorkload(FlowSupplier supplier, TraceWorkload workload) {
         super(((FlowNode) supplier).getEngine());
-        bo.add(this); // TODO: delete ln
+//        bo.add(this); // TODO: delete ln
 
         this.snapshot = workload;
         this.checkpointDuration = workload.checkpointDuration();
@@ -164,7 +164,7 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
         long passedTime = getPassedTime(now);
         this.startOfFragment = now;
 
-        assert now == Objects.requireNonNull(netIFace).netSimTmstampLong();
+//        assert now == Objects.requireNonNull(netIFace).netSimTmstampLong();
 
         // The amount of work done since last update
         double finishedWork = this.scalingPolicy.getFinishedWork(this.cpuFreqDemand, this.cpuFreqSupplied, passedTime);
@@ -258,10 +258,8 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
         final double fragmentDurationSec = (double) fragment.duration() / 1000;
         final double requiredTxKb = scalingPolicy.getNetTxCompletionRequired(txDmndKbps * fragmentDurationSec);
         final double requiredRxKb = scalingPolicy.getNetRxCompletionRequired(rxDmndKbps * fragmentDurationSec);
-        if (!noDelay) {
-            netFlowTx.fragInit(requiredTxKb, currentFragment);
-            netFlowRx.fragInit(requiredRxKb, currentFragment);
-        }
+        netFlowTx.fragInit(requiredTxKb, currentFragment);
+        netFlowRx.fragInit(requiredRxKb, currentFragment);
         netFlowTx.setDemand(txDmndKbps, currentFragment);
         netFlowRx.setDemand(rxDmndKbps, currentFragment);
         if (!noDelay) Objects.requireNonNull(netFTracker).newFrag(currentFragment);
@@ -269,10 +267,10 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
 
     @Override
     public void closeNode() {
-        assert bo.remove(this); // TODO: delete ln
+//        assert bo.remove(this); // TODO: delete ln
         System.out.println("CLOSED NODE");
         if (netIFace != null) {
-            Objects.requireNonNull(this.netFTracker).close();
+            if (netFTracker != null) netFTracker.close();
             this.netIFace.stopFlow(Objects.requireNonNull(netFlowTx));
             this.netIFace.stopFlow(Objects.requireNonNull(netFlowRx));
         }

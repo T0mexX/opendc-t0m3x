@@ -20,13 +20,13 @@
  * SOFTWARE.
  */
 
-@file:OptIn(InternalODCNetworkApi::class)
+@file:OptIn(InternalODCNApi::class)
 
 package org.opendc.simulator.network.components.evntemitter
 
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import org.opendc.simulator.network.components.invalidatable.Invalidatable
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 
 /**
  * TODO

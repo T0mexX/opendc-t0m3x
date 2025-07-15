@@ -29,6 +29,9 @@ import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.opendc.common.Dispatcher
 import org.opendc.common.asCoroutineDispatcher
+import org.opendc.common.units.TimeDelta
+import org.opendc.common.units.Timestamp
+import org.opendc.common.units.Timestamp.Companion.toTimestamp
 import org.opendc.compute.simulator.host.SimHost
 import org.opendc.compute.simulator.service.ComputeService
 import org.opendc.compute.simulator.service.ServiceTask
@@ -110,11 +113,17 @@ public class ComputeMetricReader(
         scope.launch {
             val intervalMs = exportInterval.toMillis()
             try {
+                var shouldBe = clock.instant().toTimestamp()
                 while (isActive) {
                     delay(intervalMs)
-
-                    loggState()
-                    netController?.exportNow()
+                    shouldBe += TimeDelta.ofMillis(intervalMs)
+                    assert(shouldBe == Timestamp.ofEpochMs(clock.millis())) {
+                        "shouldBe: $shouldBe, is:${clock.instant().toTimestamp()}"
+                    }
+//                    netController.whileNetTmSrcFrozen(assertFrozenAt = clock.instant().toTimestamp()) {
+                        loggState()
+                        netController?.exportNowBlocking()
+//                    }
                 }
             } finally {
                 if (monitor is AutoCloseable) {

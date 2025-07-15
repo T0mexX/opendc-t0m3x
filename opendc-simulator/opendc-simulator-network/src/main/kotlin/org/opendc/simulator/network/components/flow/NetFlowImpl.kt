@@ -20,16 +20,13 @@
  * SOFTWARE.
  */
 
-@file:OptIn(InternalODCNetworkApi::class)
+@file:OptIn(InternalODCNApi::class)
 
 package org.opendc.simulator.network.components.flow
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -52,17 +49,15 @@ import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimTmSrc
-import org.opendc.simulator.network.simscope.barrier.NetSimBarrier.Key.getInvalidated
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilizer
 import org.opendc.simulator.network.simscope.fwpool.FWDispenser
 import org.opendc.simulator.network.simscope.fwpool.FWId
 import org.opendc.simulator.network.simscope.fwpool.FWPool
 import org.opendc.simulator.network.simscope.fwpool.IFW
 import org.opendc.simulator.network.utils.Idx
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 import org.opendc.simulator.network.utils.NetCoId
 import org.opendc.simulator.network.utils.SetOnce
-import kotlin.coroutines.CoroutineContext
 
 internal class NetFlowImpl private constructor(
     override val srcId: NodeId,
@@ -239,7 +234,7 @@ internal class NetFlowImpl private constructor(
         // Validate this [NetFlow] the last time to avoid deadlocks.
         this.validate()
         log.debug("{} was cancelled", this@NetFlowImpl) // TODO: rmln
-        log.debug("{}", barrier.getInvalidated())
+//        log.debug("{}", barrier.getInvalidated()) // TODO: rmln
     }
 //
 //    context(NetSimScope) @OptIn(DelicateCoroutinesApi::class, DebuggingUse::class)

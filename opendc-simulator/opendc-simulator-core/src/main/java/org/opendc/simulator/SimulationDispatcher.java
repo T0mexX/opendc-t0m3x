@@ -135,6 +135,7 @@ public final class SimulationDispatcher implements Dispatcher {
             }
 
             boolean step = currentTime != deadline; // TODO:remove
+//            System.out.println("time changed");
             currentTime = deadline;
             task.run();
             if (step) pb.step(); // TODO remove

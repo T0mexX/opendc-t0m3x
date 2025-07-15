@@ -237,8 +237,8 @@ public class NetFTracker private constructor(
                 nDrained++
             }
         }
-        log.debug("{} was closed with {} drained evnts", this, nDrained)
-        log.debug("{}", barrier.getInvalidated()) // TODO: rmln
+        log.debug("{} was closed with {} drained evnts", this, nDrained) // TODO: rmln
+//        log.debug("{}", barrier.getInvalidated()) // TODO: rmln
     }
 
     context(NetSimScope)

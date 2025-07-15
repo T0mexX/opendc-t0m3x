@@ -24,6 +24,7 @@ package org.opendc.simulator.network.api
 
 import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.async
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
@@ -131,13 +132,16 @@ public open class NetIFace private constructor(
             net.stopFlow(f as INetFlow)
         }.join()
 
-    override fun close(): Unit =
-        latched(scope) {
-            flowsById.values.forEach { net.stopFlow(it as INetFlow) }
-            flowsById.clear()
-            genFromInternet.values.forEach { net.stopFlow(it as INetFlow) }
-            genFromInternet.clear()
+    override fun close(): Unit {
+        if (scope.isActive) {
+            latched(scope) {
+                flowsById.values.forEach { net.stopFlow(it as INetFlow) }
+                flowsById.clear()
+                genFromInternet.values.forEach { net.stopFlow(it as INetFlow) }
+                genFromInternet.clear()
+            }
         }
+    }
 
     internal companion object {
         context(NetSimScope)

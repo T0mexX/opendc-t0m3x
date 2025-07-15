@@ -22,6 +22,8 @@
 
 package org.opendc.simulator.network.simscope
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
 import org.opendc.common.units.Timestamp.Companion.toTimestamp
@@ -55,10 +57,20 @@ internal sealed class NetSimTmSrc<Self : NetSimTmSrc<Self>> : InstantSource, Abs
     /**
      * TODO
      */
+    context(NetSimScope)
+    abstract suspend fun <T> whileFrozen(assertFrozenAt: Timestamp? = null, block: suspend () -> T): T
+
+    /**
+     * TODO
+     */
     class Internal(override val initialTmStamp: Timestamp = Timestamp.ofEpochMs(0)) : NetSimTmSrc<Internal>() {
         override var tmstamp: Timestamp = initialTmStamp
 
         override fun instant(): Instant = tmstamp.toInstant()
+
+        context(NetSimScope)
+        override suspend fun <T> whileFrozen(assertFrozenAt: Timestamp?, block: suspend () -> T, ): T =
+            TODO("Shouldn't be needed for now")
 
         /**
          * TODO
@@ -79,23 +91,37 @@ internal sealed class NetSimTmSrc<Self : NetSimTmSrc<Self>> : InstantSource, Abs
      */
     class External(private var instantSrc: InstantSource) : NetSimTmSrc<External>() {
         override val initialTmStamp: Timestamp = Timestamp.ofInstant(instantSrc.instant())
+        private val frozenMtx = Mutex()
+        private var frozenTmStamp: Timestamp? = null
+
+        context(NetSimScope)
+        override suspend fun <T> whileFrozen(assertFrozenAt: Timestamp?, block: suspend () -> T): T =
+            barrier.whileStable(netSimStabilityMode = NetSimStabilityMode.ENFORCED) {
+                frozenTmStamp = tmstamp
+                check(assertFrozenAt == null || assertFrozenAt == frozenTmStamp) {
+                    "Network simulation time source frozen too late"
+                }
+                block().also { frozenTmStamp = null }
+            }
+
 
         /**
          * TODO
+         * Different
          */
-        private var lastFetched: Instant = instantSrc.instant()
+        private var lastFetched: Timestamp = instantSrc.instant().toTimestamp()
 
         override val tmstamp: Timestamp get() =
-            instantSrc.instant().let {
-                check(it >= lastFetched)
+            frozenTmStamp ?: instantSrc.instant().toTimestamp().also {
+                check(it >= lastFetched) { "lastFetched=$lastFetched, curr=$it" }
                 lastFetched = it
-                it.toTimestamp()
             }
 
         override fun instant(): Instant =
-            instantSrc.instant().also {
-                check(it >= lastFetched)
-                lastFetched = it
+            frozenTmStamp?.toInstant() ?: instantSrc.instant().also {
+                val asTs = it.toTimestamp()
+                check(asTs >= lastFetched) { "lastFetched=$lastFetched, curr=${asTs}" }
+                lastFetched = asTs
             }
     }
 

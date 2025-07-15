@@ -93,7 +93,7 @@ public fun runSimulation(
             printCoTree(child, "$indent  ")
         }
     }
-    printCoTree(scope.coroutineContext)
+//    printCoTree(scope.coroutineContext)
     // TODO: remove end
 //    deferred.getCompletionExceptionOrNull()?.let {
 //        throw it

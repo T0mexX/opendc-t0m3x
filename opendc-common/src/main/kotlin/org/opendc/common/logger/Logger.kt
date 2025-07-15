@@ -63,7 +63,7 @@ public fun <T : Any> T.logger(name: String? = null): Lazy<Logger> {
  * Lazy and concise initialization of a slf4j logger which supports
  * structured loggers in `slf4j.xml` config file using classpath.
  */
-public fun <T : Any> T.logger(): Lazy<Logger> {
+public fun <T : Any> T.logger(): Lazy<mu.KLogger> {
     return lazy {
         KotlinLogging.logger(LoggerFactory.getLogger(this::class.java))
     }

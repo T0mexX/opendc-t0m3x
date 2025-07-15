@@ -26,6 +26,7 @@ import kotlinx.coroutines.runBlocking
 import org.opendc.common.logger.infoNewLine
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.api.integration.NetController
+import org.opendc.simulator.network.utils.SuspendingODCNApi
 
 /**
  * TODO
@@ -34,6 +35,7 @@ import org.opendc.simulator.network.api.integration.NetController
 public class NetworkProvisioningStep(
     private val netController: NetController?,
 ) : ProvisioningStep {
+    @OptIn(SuspendingODCNApi::class)
     override fun apply(ctx: ProvisioningContext): AutoCloseable =
         netController?.also {
             runBlocking {

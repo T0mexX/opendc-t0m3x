@@ -36,7 +36,7 @@ import org.opendc.simulator.network.components.msgable.Msg
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.simscope.fwpool.FWId
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 
 /**
  * Represents a unidirectional network flow between two [Node]s.
@@ -60,10 +60,10 @@ public interface NetFlow : Invalidatable, EvntEmitter<NetFlow> {
     /**
      * The current demand
      */
-    @InternalODCNetworkApi
+    @InternalODCNApi
     public val demand: DataRate
 
-    @InternalODCNetworkApi
+    @InternalODCNApi
     public val throughput: DataRate
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

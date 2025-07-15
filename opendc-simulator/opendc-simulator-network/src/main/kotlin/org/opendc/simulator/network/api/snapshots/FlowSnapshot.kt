@@ -29,7 +29,7 @@ import org.opendc.simulator.network.components.flow.NetFlow
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 import org.opendc.trace.util.parquet.exporter.Exportable
 import java.time.Instant
 
@@ -134,7 +134,7 @@ public class FlowSnapshot private constructor(
          * TODO
          */
         context(NetSimScope)
-        @InternalODCNetworkApi
+        @InternalODCNApi
         internal suspend fun NetFlow.snapshot(): FlowSnapshot {
             assert(this@NetFlow.id in net.flowsById)
             barrier.awaitStability()

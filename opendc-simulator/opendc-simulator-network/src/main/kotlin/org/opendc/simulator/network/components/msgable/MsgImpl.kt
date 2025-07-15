@@ -83,7 +83,7 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
         try {
             to.msgChl.send(this)
         } catch (e: ClosedSendChannelException) {
-            log.debug("{} undelivered", this)
+            log.debug { "$this undelivered" }
             // If unable to send message because the receiver channel has been closed.
             // If the message was tracked, then emit [Undelivered], else just dispose.
             (this as? Invalidatable)?.validate()

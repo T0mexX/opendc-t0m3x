@@ -31,7 +31,7 @@ import com.github.ajalt.clikt.parameters.types.long
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.flow.FlowId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
-import org.opendc.simulator.network.utils.InternalODCNetworkApi
+import org.opendc.simulator.network.utils.InternalODCNApi
 
 private const val CMD_STR = "updt"
 
@@ -54,7 +54,7 @@ internal class FlowUpdtCmd : REPLCmd(CMD_STR) {
             "update" to listOf(CMD_STR),
         )
 
-    @OptIn(InternalODCNetworkApi::class)
+    @OptIn(InternalODCNApi::class)
     override fun run(): Unit =
         execREPLCmdCatching {
             barrier.awaitStability()

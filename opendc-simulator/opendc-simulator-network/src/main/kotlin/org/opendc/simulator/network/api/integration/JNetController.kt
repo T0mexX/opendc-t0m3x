@@ -32,7 +32,7 @@ import kotlin.coroutines.CoroutineContext
 
 public class JNetController internal constructor(
     private val netController: NetController,
-) : AutoCloseable, AbstractCoroutineContextElement(Key), Logger by netController {
+) : AutoCloseable by netController, AbstractCoroutineContextElement(Key), Logger by netController {
     init {
         // Add this adapter in the network simulation scope so that
         // callbacks can be queued to [callbacksChl] and executed
@@ -76,10 +76,7 @@ public class JNetController internal constructor(
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @JvmOverloads
-    public fun sync(forceUpdt: Boolean = false): Unit =
-        latched(netController.rootScope) {
-            netController.sync(forceUpdt)
-        }
+    public fun sync(forceUpdt: Boolean = false): Unit = netController.syncBlocking(forceUpdt)
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Export
@@ -95,18 +92,7 @@ public class JNetController internal constructor(
      * @throws IllegalStateException If the current simulation time is not
      * aligned with an expected export timestamp as defined in [NetworkExportConfig].
      */
-    public fun exportNow(): Unit =
-        latched(netController.rootScope) {
-            netController.exportNow()
-        }
-
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Autoclosable
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    override fun close() {
-        netController.close()
-    }
+    public fun exportNow(): Unit = netController.exportNowBlocking()
 
     internal companion object Key : CoroutineContext.Key<JNetController>
 }
