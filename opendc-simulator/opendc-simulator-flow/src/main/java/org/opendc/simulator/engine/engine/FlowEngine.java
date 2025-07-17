@@ -36,7 +36,7 @@ import org.opendc.simulator.network.api.integration.JNetController;
  * The engine centralizes the scheduling logic of state updates of flow connections, allowing update propagation
  * to happen more efficiently. and overall, reducing the work necessary to transition into a steady state.
  */
-public final class FlowEngine implements Runnable {
+public class FlowEngine implements Runnable {
     /**
      * The queue of {@link FlowNode} updates that need to be updated in the current cycle.
      */
