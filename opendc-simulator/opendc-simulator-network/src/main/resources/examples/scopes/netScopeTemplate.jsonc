@@ -1,0 +1,288 @@
+{
+    "netPath": "resources/env/networks/ftree/ftree(k:4).json",
+    "config": {
+        /*
+        Possible values:
+        - `checked`: If network stability is invalidated while a `<T> whileStable(mode, block: () -> T)`
+            is executed, then exception is thrown. (e.g., used to test implementation for than replacing it with assumed)
+        - `assumed`: If network stability is invalidated while a `<T> whileStable(mode, block: () -> T)`
+            is executed, then nothing (may lead to crash or incorrect results if implementation is not correct).
+        - `enforced`: Any operation that would invalidate network stability while a `<T> whileStable(mode, block: () -> T)`
+            is being executed, will suspend until execution of the block is over. (e.g., used in export for compute-network)
+
+        The stability mode used to execute a certain code block is overridden for specific operations if needed.
+        If no changes have been made and the implementation is correct,
+        the global stability mode should be `assumed`, as reduces overhead.
+
+        - default: `assumed`
+        */
+        "stabilityMode": "assumed",
+
+        /*
+        The routing/fairness policy used during the network simulation.
+
+        - This can be a global/local as well as static/dynamic policy.
+
+        - default: `ecmp`
+        */
+        "routingPolicy": { "type": "ecmp" },
+
+        /*
+        The seed value for the random number generator used during network simulation.
+
+        - This value can be injected at runtime before initializing the env.
+            (`NetSimScopeSpec.withInjectedSeed`).
+
+        - default: <random>
+        */
+        "seed": 0,
+
+        /*
+        **FOR NETWORK ONLY WORKLOAD**
+
+        Determines if the node ids in the network workload should be mapped
+        randomly to node ids in the constructed network, or if the ids in the
+        constructed network were set manually and correspond to the ids in the wl.
+
+        Default to `true`. Useful to set to `false` when a network trace also provides
+        information about the network topology and a mapping to the terminals in that topology.
+
+        - default: `true`
+        */
+        "wlToNetIdMapping": true,
+
+        /*
+        Contains all export configurations.
+
+        - This value can be injected at runtime before initializing the env.
+            (`NetSimScopeSpec.withInjectedExportConfig`).
+        */
+        "exportConfig": {
+            // The output metrics that will be included in `network.parquet`.
+            "networkExportColumns": [
+                /*
+                Defined in `opendc-simulator/opendc-simulator-network/src/main/kotlin/
+                org/opendc/simulator/network/export/network/DfltNetworkExportColumns.kt`
+
+                e.g., `timestamp_absolute`
+
+                - default: <all>
+                */
+            ],
+            // The output metrics that will be included in `node.parquet`.
+            "nodeExportColumns": [
+                /*
+                Defined in `opendc-simulator/opendc-simulator-network/src/main/kotlin/
+                org/opendc/simulator/network/export/network/DfltNodeExportColumns.kt`
+
+                e.g., `timestamp_absolute`
+
+                - default: <all>
+                */
+            ],
+            /*
+            The output folder where `network.parquet` and `node.parquet` output metrics files will be written to.
+
+            - This value can be injected at runtime before initializing the env.
+                (`NetSimScopeSpec.withInjectedOutputFolder`).
+
+            - default: <None>
+            */
+            "outputFolder": "path/to/file",
+            /*
+            The time period between exports of state to output files.
+
+            - This value can be injected at runtime before initializing the env
+                (`NetSimScopeSpec.withInjectedExportInterval`).
+
+            - This value should be `null` if the export is handled
+                externally (e.g., `NetController.exportNow()` for network-compute simulation).
+
+            - default: `null`
+            */
+            "exportInterval": "5min"
+        },
+
+        // Contains all configurations that regard internal implementation, optimization, debugging, and defaulting.
+        "netSimDevConfig": {
+            // Optimization in the network building process.
+            "netConfig": {
+                /*
+                Determines if switches should be included in the routing tables.
+
+                - Including switches in routing table has overhead, but some routing policy may require it.
+
+                - default: `false`
+                */
+                "includeRoutInfo2Switches": false,
+                /*
+                Determines if nodes in the network should be put in a subnetwork hierarchy (e.g., pods in fat-tree could be a subnet).
+
+                - Largely improve performance, especially for large networks (e.g., ftree(n>30), df(a>10), etc.).
+                - May change how some routing algorithms perform.
+
+                - default: `true`
+                */
+                "subnetOptimization": true
+            },
+
+            // Contains configuration regard `NetSimBarrier`, with optimizations and debugging.
+            // TODO: `NetSimBarrier` will likely be changed a`NetSimBarrierConfig` as well
+            "barrierConfig": {
+                "barrierNodeSize": 500
+            },
+
+            // Contains configuration regarding `NetSimFlyWeightPool`, the pool of (many different) flyweight objects used during network simulation.
+            "flyWeightConfig": {
+                /*
+                Determines, for each fw object type, how many subplots there should be,
+                allowing concurrent acquisition of that fw object type by multiple coroutines.
+
+                - default: 10
+                */
+                "nSubPools": 10,
+
+                /*
+                Determines, for each fw object type, how many objects will be initialized at the start.
+
+                - default: 100
+                */
+                "initialCapacity": 100,
+
+                /*
+                Determines, for each fw object type subpool, the max number of objects allowed to
+                be idle in the pool before they start being freed.
+
+                - default: null
+                */
+                "subPoolMaxIdle": null,
+
+                /*
+                Determines, for each fw object type subpool, the max number of objects (idle or in use)
+                that can be initialized.
+
+                - If max is read:
+                    - if `throwOnMaxReached: true` then an exception is thrown
+                        (usefully for detecting flyweight objects never returned to the pool)
+                    - if `throwOnMaxReached: false` then coroutines will start suspending waiting for an object
+                        to be returned to the subpool, instead of initializing a new one.
+
+                - default: null
+                */
+                "subPoolMaxSize": null,
+
+                /*
+                Same as `subPoolMaxSize` but for the whole pool of each fw object type.
+
+                - default: null
+                */
+                "poolMaxSize": null,
+
+                /**
+                Determines the behavior on `subPoolMaxSize` `poolMaxSize`.
+
+                - default: true
+                - TODO: not currently used (always throw).
+                */
+                "throwOnMaxReached": true
+            },
+
+            // TODO: will probably be removed.
+            "netFlowConfig": {
+                "version": "V1"
+            },
+
+            /*
+            Contains default values for different nodes.
+
+            - The value for a node will be determines as follows:
+                - If the value is defined in `netPath` then use it,
+                - else if the value is specified in the most specific config (for that node) then use it,
+                - else if the value is specified in `nodeConfig` then use it,
+                - else throw exception
+
+            - These default are useful when one wants to change the value
+                for all nodes in a network specification that may be very long (e.g., `CustomNetwork`)
+
+            - All values default to null.
+            */
+            "nodeConfig": {
+                // TODO: To be removed
+                "version": "V1",
+
+                // TODO: To be removed
+                "flowTableVersion": "V1",
+                "defaultPortSpeed": null,
+                "defaultNPorts": null,
+                // TODO: disabled for now
+                "defaultEnergyModel": null,
+                "terminalConfig": {
+                    "defaultPortSpeed": null,
+                    "defaultNPorts": null
+                },
+                "switchConfig": {
+                    "defaultPortSpeed": null,
+                    "defaultNPorts": null
+                }
+            },
+
+            // Contains default values for links.
+            "linkConfig": {
+                /*
+                Determines the number of pre-initialized entries in a link.
+
+                - Each entry will contain information about a specific flow going through the link.
+                - Initializing approx the number of entries used during simulation may improve performance,
+                    reducing the number of times the array containing the entries is resized.
+
+                - default: 10
+                */
+                "initialCapacity": 10
+            },
+
+            /*
+            Determines how to handle floating pont arithmetic imprecision.
+
+            - For each quantity, two types of thresholds can be specified:
+                - `roundOverX`: The maximum allowable deviation beyond a bound. If the deviation exceeds
+                  this threshold, an exception is thrown.
+                - `roundNearX`: The threshold under which a value close to a bound will be clamped to that bound.
+
+                e.g.:
+                If we have a data rate that we know it should be between `0bps` and `1Gbps`,
+                and `roundOverDR = 10Kbps`,
+                and `roundNearDR = 1Kbps`,
+                then if after computation we get:
+                    - (-inf, 0bps - 10Kbps = -10Kbps) -> error
+                    - [-10Kbps, 1Kbps) -> round to 0bps
+                    - [1Kbps, 1Gbps - 1Kbps = 999,999Kbps] -> keep value
+                    - (999,999Kbps, 1Gbps + 10Kbps = 100,010Kbps] -> round to 1Gbps
+                    - (100,010Kbps, +inf) -> error
+
+            - This is usefully to manage the balance between correcting errors that
+                may have been introduced by fpa, and detecting simulation/implementation errors.
+
+            - If the `roundOverX` is `null` then the value is allowed to go over the boundaries.
+            - If the `roundNearX` is `null` then the value is never rounded to the boundary if close to it (and within the boundaries).
+
+            - For now only data-rate is used.
+
+            - default: <the values inserted in this template>
+            */
+            "fpaHandler": {
+                "roundOverDR": "1bps",
+                "roundNearDR": "1bps",
+                "roundOverTS": null,
+                "roundNearTS": null,
+                "roundOverTD": null,
+                "roundNearTD": null,
+                "roundOverPwr": null,
+                "roundNearPwr": null,
+                "roundOverEn": null,
+                "roundNearEn": null,
+                "roundOverDS": null,
+                "roundNearDS": null
+            }
+        }
+    }
+}

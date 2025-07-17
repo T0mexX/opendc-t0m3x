@@ -68,7 +68,7 @@ public final class ScenarioResourceTest {
     }
 
     /**
-     * Test that tries to obtain a scenario with an invalid scope.
+     * Test that tries to obtain a scenario with an invalid env.
      */
     @Test
     @TestSecurity(

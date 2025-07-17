@@ -34,7 +34,7 @@ public class JNetController internal constructor(
     private val netController: NetController,
 ) : AutoCloseable by netController, AbstractCoroutineContextElement(Key), Logger by netController {
     init {
-        // Add this adapter in the network simulation scope so that
+        // Add this adapter in the network simulation env so that
         // callbacks can be queued to [callbacksChl] and executed
         // sequentially from a non-suspending context.
         netController.rootScope.jNetController = this

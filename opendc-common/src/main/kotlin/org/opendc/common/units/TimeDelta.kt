@@ -49,7 +49,7 @@ public value class TimeDelta private constructor(
 ) : Unit<TimeDelta> {
     override fun toString(): String = fmtValue()
 
-    override fun fmtValue(fmt: String): String = Duration.ofMillis(value.toLong()).toString()
+    override fun fmtValue(fmt: String): String = Duration.ofNanos((value * 1e6).toLong()).toString()
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Conversions to Double

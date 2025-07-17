@@ -24,11 +24,13 @@ package org.opendc.simulator.network.api.integration
 
 import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.units.DataRate
+import org.opendc.common.units.DataSize
 import org.opendc.simulator.network.api.NetIFace
 import org.opendc.simulator.network.components.flow.INetFlow
 import org.opendc.simulator.network.components.networks.NetworkImpl.Companion.INTERNET_ID
 import org.opendc.simulator.network.components.node.NodeId
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.utils.SetOnce
 
 /**
  * TODO
@@ -42,7 +44,7 @@ public class JNetIFace internal constructor(
         destIdL: Long = INTERNET_ID.value.toLong(),
         dmndKbps: Double = .0,
     ): JNetFlow =
-        latched(scope) {
+        netBlking(scope) {
             val destId = NodeId(destIdL.toUInt())
             val dmnd = DataRate.ofKbps(dmndKbps)
 
@@ -55,7 +57,7 @@ public class JNetIFace internal constructor(
 
     @JvmOverloads
     public fun startFlowFromInet(dmndKbps: Double = .0): JNetFlow =
-        latched(scope) {
+        netBlking(scope) {
             val dmnd = DataRate.ofKbps(dmndKbps)
 
             val f = iFace.startFlowFromInet(dmnd = dmnd)
@@ -66,9 +68,12 @@ public class JNetIFace internal constructor(
         }
 
     public fun stopFlow(f: JNetFlow): Unit =
-        latched(scope) {
+        netBlking(scope) {
             iFace.stopFlow(f.f)
         }
+
+
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Debugging/Testing

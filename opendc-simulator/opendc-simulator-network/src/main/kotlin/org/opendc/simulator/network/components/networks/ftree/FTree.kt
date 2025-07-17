@@ -157,7 +157,7 @@ internal class FTree private constructor(
             val nodesPerPod: Int = (k.toDouble().pow(2) / 4 + k).toInt()
 
             val subnet =
-                // Create a new subnet in the global scope which contains at least `nodesPerPod` ips.
+                // Create a new subnet in the global env which contains at least `nodesPerPod` ips.
                 if (devConfig.netConfig.subnetOpt) {
                     addrMngr.getNewSubNet(nIps = nodesPerPod)
 

@@ -24,14 +24,13 @@ package org.opendc.simulator.network.repl.cmds
 
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.file
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
 import org.opendc.simulator.network.simscope.NetSimRootScope
 import org.opendc.simulator.network.simscope.NetSimScopeSpec
 import org.opendc.simulator.network.utils.NETWORK_JSON
 import java.io.File
-import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.measureTime
 
 private const val CMD_STR: String = "import"
@@ -43,19 +42,16 @@ internal class ImportCmd : REPLCmd(CMD_STR) {
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run(): Unit =
-        execREPLCmdCatching(EmptyCoroutineContext) {
-            //
-            // Create a new simulation rootScope.
-            val tm =
+        try {
+            val tm = runBlocking {
                 measureTime {
                     val newRootScopeSpec = NETWORK_JSON.decodeFromStream<NetSimScopeSpec>(targetFile.inputStream())
                     val newRootScope = NetSimRootScope(spec = newRootScopeSpec)
-                    env.rootScope = newRootScope
-                    env.network = newRootScope.net
-                    env.rootScope.barrier.awaitStability()
+                    env.scope = newRootScope
                 }
-
+            }
             echo("Network simulation rootScope imported successfully in $tm.")
-            cancel()
+        } catch (e: Exception) {
+            echoCmdErr(e)
         }
 }

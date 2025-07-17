@@ -23,13 +23,9 @@
 package org.opendc.simulator.network.api
 
 import inet.ipaddr.ipv4.IPv4Address
-import kotlinx.coroutines.async
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.api.integration.JNetIFace
-import org.opendc.simulator.network.api.integration.latched
+import org.opendc.simulator.network.api.integration.netBlking
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
 import org.opendc.simulator.network.components.flow.FlowId
@@ -44,7 +40,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
  * TODO
  */
 public open class NetIFace private constructor(
-    private val scope: NetSimScope,
+    internal val scope: NetSimScope,
     private val t: Terminal,
 ) : AutoCloseable {
     /**
@@ -123,6 +119,7 @@ public open class NetIFace private constructor(
         }.await()
 
 
+    @JvmSynthetic
     public suspend fun stopFlow(f: NetFlow): Unit =
         scope.launchInRoot {
             require(
@@ -132,19 +129,21 @@ public open class NetIFace private constructor(
             net.stopFlow(f as INetFlow)
         }.join()
 
-    override fun close(): Unit {
-        if (scope.isActive) {
-            latched(scope) {
-                flowsById.values.forEach { net.stopFlow(it as INetFlow) }
-                flowsById.clear()
-                genFromInternet.values.forEach { net.stopFlow(it as INetFlow) }
-                genFromInternet.clear()
-            }
-        }
+    override fun close(): Unit = netBlking(scope, ignoreCancellationExc = true) {
+        log.debug { "Closing $this..." }
+        flowsById.values.forEach { net.stopFlow(it as INetFlow) }
+        flowsById.clear()
+        genFromInternet.values.forEach { net.stopFlow(it as INetFlow) }
+        genFromInternet.clear()
     }
+
+    override fun toString(): String = "NetIFace($t)"
 
     internal companion object {
         context(NetSimScope)
-        operator fun invoke(t: Terminal): NetIFace = NetIFace(this@NetSimScope, t)
+        operator fun invoke(t: Terminal): NetIFace =
+            NetIFace(this@NetSimScope, t).also {
+                log.debug { "creating $it" }
+            }
     }
 }

@@ -38,15 +38,17 @@ internal class NodeMkCmd : REPLCmd(name = "mk") {
         help = "The id of the new node",
         names = arrayOf("-n", "--nodeid"),
     ).convert { str ->
-        decodeOrNull<IPv4Address>(str)!!
-    }.required().check("node with id already exists") { it.toNId() !in net.nodesById }
+        decodeOrNull<IPv4Address>(str)?.also { ip ->
+            if (ip.toNId() in net) fail("invalid ip (already in network): $ip")
+        } ?: fail("unable to parse ip/id: $str")
+    }.required()
 
     private val portSpeed: DataRate by option(
         help = "Speed of the ports on the node",
         names = arrayOf("-b", "--bw", "--bandwidth"),
     ).convert {
         decodeOrNull<DataRate>(it)
-            ?: fail("Unable to decode data rate '$it' (E_.g. 1Mbps)")
+            ?: fail("unable to decode data rate '$it' (E_.g. 1Mbps)")
     }.required().check("port speed must be positive") { it >= DataRate.zero }
 
     private val nPorts: Int by option(

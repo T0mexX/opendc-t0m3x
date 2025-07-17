@@ -28,40 +28,47 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.options.unique
-import com.github.ajalt.clikt.parameters.types.long
+import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.common.units.DataRate
 import org.opendc.simulator.network.components.node.Node
-import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
-internal class LinkMkCmd : REPLCmd("mk") {
-    private val bw: DataRate by option(
-        help = "The link capacity (E_.g. '1 Gbps')",
+private const val CMD_STR: String = "mk"
+
+internal class LinkMkCmd : REPLCmd(CMD_STR) {
+    private val bw: DataRate? by option(
+        help = "The link capacity (e.g., '1 Gbps')",
         names = arrayOf("-b", "--bw", "--bandwidth"),
     ).convert {
         decodeOrNull<DataRate>(it)
-            ?: fail("Unable to parse data rate '$it' (E_.g. 1Gbps)")
-    }.required().check("bandwidth must be >= 0") { it >= DataRate.zero }
+            ?: fail("unable to parse data rate '$it' (e.g., 1Gbps)")
+    }.check("bandwidth must be >= 0") { it >= DataRate.zero }
 
-    private val nodeIds: Set<Long> by option(
-        help = "The id of the first node",
-        names = arrayOf("-n", "--nodes", "--nodeids"),
-    ).long().multiple().unique().check("nodes must be 2.") { it.size == 2 }
+    private val nodeIps: Set<IPv4Address> by option(
+        help = "The ips or ids of the nodes",
+        names = arrayOf("-n", "--node", ),
+    ).convert { str ->
+        decodeOrNull<IPv4Address>(str)?.also { ip ->
+            if (ip.toNId() !in net) fail("invalid ip (not in network): $ip")
+        } ?: fail("unable to parse ip/id: $str")
+    }.multiple().unique().check("nodes must be 2.") { it.size == 2 }
+
+    override fun aliases(): Map<String, List<String>> =
+        mapOf(
+            "mk" to listOf(CMD_STR),
+        ) + super.aliases()
 
     override fun run(): Unit =
         execREPLCmdCatching {
             barrier.awaitStability()
-            val nodes: List<NodeId> = nodeIds.toList().map { NodeId(it.toUInt()) }
-            val node1: Node<*>? = net.nodesById[nodes[0]]
-            val node2: Node<*>? = net.nodesById[nodes[1]]
+            val node1: Node<*> = net[nodeIps.toList()[0]]!!
+            val node2: Node<*> = net[nodeIps.toList()[1]]!!
 
-            if (node1 == null || node2 == null) {
-                echo("unable to create link, invalid ids", err = true)
-                return@execREPLCmdCatching
-            }
+            if (bw != null) node1.msgSyncConnect(node2, linkBw = bw!!)
+            else node1.msgSyncConnect(node2)
 
-            node1.msgSyncConnect(node2)
             barrier.awaitStability()
-            echo("Successfully connected node $node1 with  node $node2")
+            echo("| Connected nodes $node1, $node2")
         }
 }

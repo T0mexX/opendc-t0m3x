@@ -93,7 +93,7 @@ import kotlin.experimental.ExperimentalTypeInference
  * function(TimeDelta.ofHours(2))
  * ```
  *
- * @param[T] the unit of measure that is represented (e.g. [DataRate])
+ * @param[T] the unit of measure that is represented (e.g., [DataRate])
  */
 public sealed interface Unit<T : Unit<T>> : Comparable<T> {
     /**
@@ -275,7 +275,7 @@ public sealed interface Unit<T : Unit<T>> : Comparable<T> {
     ): T
 
     /**
-     * Returns the formatted string representation of the unit of measure (e.g. "1.2 Gbps")
+     * Returns the formatted string representation of the unit of measure (e.g., "1.2 Gbps")
      * with the formatter [fmt] applied to the value part of the resulting string.
      *
      * ```kotlin

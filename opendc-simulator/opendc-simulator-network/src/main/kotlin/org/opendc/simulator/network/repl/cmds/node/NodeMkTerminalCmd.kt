@@ -29,9 +29,9 @@ import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 
-private const val CMD_STR: String = "host"
+private const val CMD_STR: String = "terminal"
 
-internal class NodeMkHostCmd : REPLCmd(name = CMD_STR) {
+internal class NodeMkTerminalCmd : REPLCmd(name = CMD_STR) {
     private val nodeMkCtx: NodeMkCmd.NodeMkCtx by requireObject<NodeMkCmd.NodeMkCtx>()
     private val ip: IPv4Address by lazy { nodeMkCtx.ip }
     private val speed: DataRate by lazy { nodeMkCtx.portSpeed }
@@ -39,7 +39,7 @@ internal class NodeMkHostCmd : REPLCmd(name = CMD_STR) {
 
     override fun aliases(): Map<String, List<String>> =
         mapOf(
-            "h" to listOf(CMD_STR),
+            "t" to listOf(CMD_STR),
         ) + super.aliases()
 
     override fun run(): Unit =
@@ -48,14 +48,16 @@ internal class NodeMkHostCmd : REPLCmd(name = CMD_STR) {
 
             addrMngr.claimIp(ip)
 
-            val newHost =
+            val newTerminal =
                 Terminal(
                     ip = ip,
                     portSpeed = speed,
                     nPorts = nPorts,
                 )
 
-            (net as CustomNetwork).plus(newHost)
-            echo("| Node added successfully")
+            (net as? CustomNetwork)?.plus(newTerminal)
+                ?.also { barrier.awaitStability() }
+                ?.let { echo("| Added node $newTerminal") }
+                ?: echo("Unable to add node.", err = true)
         }
 }

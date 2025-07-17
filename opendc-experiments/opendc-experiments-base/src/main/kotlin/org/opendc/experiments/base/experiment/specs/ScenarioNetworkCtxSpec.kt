@@ -46,7 +46,7 @@ public class ScenarioNetworkCtxSpec(
     }
 
     /**
-     * Initializes the network simulation scope with all necessary resources.
+     * Initializes the network simulation env with all necessary resources.
      *
      * @return The controller through which the compute simulation can control the network simulation.
      */
@@ -57,7 +57,7 @@ public class ScenarioNetworkCtxSpec(
         seed: Long,
     ): NetController {
         //
-        // Deserialize network simulation scope specs and inject externally handled elements.
+        // Deserialize network simulation env specs and inject externally handled elements.
         val scopeSpec =
             NetSimGlobal.Serialization.JSON.decodeFromStream<NetSimScopeSpec>(file.inputStream())
                 .withInjectedSeed(seed)

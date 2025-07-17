@@ -148,7 +148,7 @@ class MultiModel:
         Adjusts the unit of measurement according to the scaling magnitude specified by the user.
         This method translates the given measurement scale into a scientifically accepted metric prefix.
 
-        :return str: The metric prefixed by the appropriate scale (E_.g., 'kWh' for kilo-watt-hour if the scale is 3).
+        :return str: The metric prefixed by the appropriate scale (e.g., 'kWh' for kilo-watt-hour if the scale is 3).
         :raise ValueError: If the unit scaling magnitude provided by the user is not within the accepted range of scaling factors.
         """
         prefixes = ['N_', 'μ', 'm', '', 'k', 'M', 'G', 'T']

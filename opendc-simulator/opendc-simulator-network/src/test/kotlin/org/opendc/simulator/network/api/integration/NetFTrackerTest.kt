@@ -27,14 +27,13 @@ import io.kotest.core.spec.style.scopes.FunSpecContainerScope
 import io.kotest.core.test.TestScope
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.DataSize
 import org.opendc.common.units.TimeDelta
+import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.NetIFace
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.components.node.switchh.Switch
@@ -48,7 +47,6 @@ class NetFTrackerTest : FunSpec({
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Test Setup (shared by all tests in this test class)
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     lateinit var rootScope: NetSimRootScope
     lateinit var iFace: NetIFace
     lateinit var tmSrc: NetSimTmSrc.Internal
@@ -56,7 +54,7 @@ class NetFTrackerTest : FunSpec({
     // Used instead of `beforeEach` because the test `coroutineContext` is needed,
     // and it is not available in `beforeEach`.
     suspend fun TestScope.setUp() {
-        rootScope = NetSimRootScope(coroutineContext + Job(coroutineContext[Job]!!)) // Add the child job to propagate exceptions.
+        rootScope = NetSimRootScope() // Add the child job to propagate exceptions.
         rootScope.launch {
             //
             // Create [CustomNetwork] with 1 terminal [t], 1 global [switch] s and internet abstract node [inet].
@@ -110,10 +108,10 @@ class NetFTrackerTest : FunSpec({
             tracker.on1FFragCompl = { _, _ -> triggered.emit(triggered.value + 1) }
 
             // Set up flow.
-            f.msgAsyncSetDemand(DataRate.ofGbps(1))
-            f.msgAsyncFragInit(target = DataSize.ofGb(4))
+            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Unit)
+            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Unit)
             barrier.awaitStability()
-            tracker.reset()
+            tracker.newFrag(Unit)
 
             // half of the fragment completed.
             tmSrc.advanceBy(TimeDelta.ofSec(2))
@@ -143,12 +141,12 @@ class NetFTrackerTest : FunSpec({
             tracker.on1FFragCompl = { _, _ -> triggered1++ }
 
             // Set up flows.
-            f1.msgAsyncFragInit(target = DataSize.ofGb(3))
-            f2.msgAsyncFragInit(target = DataSize.ofGb(4))
-            f1.msgAsyncSetDemand(demand = DataRate.ofGbps(1))
-            f2.msgAsyncSetDemand(demand = DataRate.ofGbps(1))
+            f1.msgAsyncFragInit(target = DataSize.ofGb(3), fragId = Unit)
+            f2.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Unit)
+            f1.msgAsyncSetDemand(dmnd = DataRate.ofGbps(1), fragId = Unit)
+            f2.msgAsyncSetDemand(dmnd = DataRate.ofGbps(1), fragId = Unit)
             barrier.awaitStability()
-            tracker.reset()
+            tracker.newFrag(Unit)
 
             // No fragment completed
             tmSrc.advanceBy(TimeDelta.ofSec(2))
@@ -169,51 +167,50 @@ class NetFTrackerTest : FunSpec({
             triggered1 shouldBe 2
         }
         netTest("time remaining decreases") {
-            var newTmRm = TimeDelta.zero
+            var newTs = Timestamp.zero
             val f = iFace.startFlowFromInet()
 
             // Set up tracker.
             val tracker = NetFTracker(f)
-            tracker.onAllComplTsDecreased = { _, new -> newTmRm = new }
+            tracker.onAllComplTsDecreased = { _, new -> newTs = new }
 
             // Set up flows.
-            f.msgAsyncSetDemand(DataRate.ofGbps(1))
-            f.msgAsyncFragInit(target = DataSize.ofGb(4))
-            tracker.reset()
+            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Unit)
+            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Unit)
+            tracker.newFrag(Unit)
             barrier.awaitStability()
 
             // Initial time remaining.
-            tracker.tsFor1Compl() shouldBeEqual TimeDelta.ofSec(4)
+            tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(4)
 
             // Time remaining decrease.
             f.msgAsyncSetDemand(DataRate.ofGbps(2))
-            delay(1000)
             barrier.awaitStability()
-            newTmRm shouldBeEqual TimeDelta.ofSec(2)
-            tracker.tsFor1Compl() shouldBeEqual TimeDelta.ofSec(2)
+            newTs shouldBeEqual Timestamp.ofEpochSec(2)
+            tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(2)
         }
         netTest("time remaining increase") {
-            var newTmRm = TimeDelta.zero
+            var newTs = Timestamp.zero
             val f = iFace.startFlowFromInet()
 
             // Set up tracker.
             val tracker = NetFTracker(f)
-            tracker.onAllComplTsIncreased = { _, new -> newTmRm = new }
+            tracker.onAllComplTsIncreased = { _, new -> newTs = new }
 
             // Set up flows.
-            f.msgAsyncSetDemand(DataRate.ofGbps(1))
-            f.msgAsyncFragInit(target = DataSize.ofGb(4))
-            tracker.reset()
+            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Unit)
+            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Unit)
+            tracker.newFrag(Unit)
             barrier.awaitStability()
 
             // Initial time remaining.
-            tracker.tsFor1Compl() shouldBeEqual TimeDelta.ofSec(4)
+            tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(4)
 
             // Time remaining increase.
             f.msgAsyncSetDemand(DataRate.ofGbps(0.5))
             barrier.awaitStability()
-            newTmRm shouldBeEqual TimeDelta.ofSec(8)
-            tracker.tsFor1Compl() shouldBeEqual TimeDelta.ofSec(8)
+            newTs shouldBeEqual Timestamp.ofEpochSec(8)
+            tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(8)
         }
     }
 })

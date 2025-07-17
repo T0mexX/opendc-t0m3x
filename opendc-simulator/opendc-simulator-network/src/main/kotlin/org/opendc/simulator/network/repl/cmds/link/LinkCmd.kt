@@ -24,11 +24,12 @@ package org.opendc.simulator.network.repl.cmds.link
 
 import org.opendc.simulator.network.repl.cmds.REPLNoOpCmd
 
-internal class LinkCmd : REPLNoOpCmd(name = "link") {
+
+private const val CMD_STR: String = "link"
+
+internal class LinkCmd : REPLNoOpCmd(name = CMD_STR) {
     override fun aliases(): Map<String, List<String>> =
         mapOf(
-            "l" to listOf("link"),
-            "lmk" to listOf("link mk"),
-            "lrm" to listOf("link rm"),
+            "l" to listOf(CMD_STR),
         ) + super.aliases()
 }

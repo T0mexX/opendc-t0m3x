@@ -24,6 +24,7 @@ package org.opendc.simulator.network.repl.cmds.flow
 
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
+import com.github.ajalt.clikt.parameters.arguments.convert
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -36,16 +37,18 @@ import org.opendc.simulator.network.utils.InternalODCNApi
 private const val CMD_STR = "updt"
 
 internal class FlowUpdtCmd : REPLCmd(CMD_STR) {
-    private val id: Long by argument(
+    private val id: FlowId by argument(
         help = "The id of the flow whose demand is to be updated",
-    ).long().check("flow does not exist") { long -> net.flowsById.contains(FlowId(long)) }
+    ).long().convert {
+        FlowId(it)
+    }.check("flow does not exist") { fId -> fId in net }
 
     private val newDemand: DataRate by option(
         help = "new demand",
-        names = arrayOf("-b", "--bw", "--bandwidth"),
+        names = arrayOf("-b", "--bw", "--bandwidth", "--demand", "--dmnd"),
     ).convert {
         decodeOrNull<DataRate>(it)
-            ?: fail("Unable to parse data rate '$it' (E_.g. 1Gbps)")
+            ?: fail("unable to parse data rate '$it' (e.g., '1Gbps')")
     }.required()
 
     override fun aliases(): Map<String, List<String>> =
@@ -58,11 +61,7 @@ internal class FlowUpdtCmd : REPLCmd(CMD_STR) {
     override fun run(): Unit =
         execREPLCmdCatching {
             barrier.awaitStability()
-            val f =
-                net.flowsById[FlowId(id)] ?: let {
-                    echo("invalid flow id", err = true)
-                    return@execREPLCmdCatching
-                }
+            val f = net.flowsById[id]!!
             f.msgAsyncSetDemand(newDemand)
             barrier.awaitStability()
             echo("| Demand updated successfully, new throughput=${f.throughput}") ?: issueMessage("Unable to stop flow")

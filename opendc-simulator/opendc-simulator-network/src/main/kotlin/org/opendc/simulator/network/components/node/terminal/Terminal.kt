@@ -53,7 +53,7 @@ internal class Terminal private constructor(
             nPorts = nPorts,
         )
 
-    override fun toString(): String = "HostNode(ip=$ip)"
+    override fun toString(): String = "Terminal(ip=$ip)"
 
     companion object {
         context(NetSimScope)

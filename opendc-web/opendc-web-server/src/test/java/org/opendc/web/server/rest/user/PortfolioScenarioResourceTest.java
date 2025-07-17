@@ -54,7 +54,7 @@ public final class PortfolioScenarioResourceTest {
     }
 
     /**
-     * Test that tries to obtain a portfolio with an invalid scope.
+     * Test that tries to obtain a portfolio with an invalid env.
      */
     @Test
     @TestSecurity(

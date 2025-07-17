@@ -178,7 +178,7 @@ public final class PortfolioResourceTest {
     }
 
     /**
-     * Test that tries to obtain a portfolio with an invalid scope.
+     * Test that tries to obtain a portfolio with an invalid env.
      */
     @Test
     @TestSecurity(

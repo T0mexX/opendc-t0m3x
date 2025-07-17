@@ -24,6 +24,7 @@
 
 package org.opendc.simulator.network.components.networks
 
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.serialization.Serializable
 import org.opendc.common.units.Unit.Companion.averageOfUnitOrNull
 import org.opendc.common.units.Unit.Companion.sumOfUnit
@@ -33,6 +34,7 @@ import org.opendc.simulator.network.components.flow.FlowId
 import org.opendc.simulator.network.components.flow.INetFlow
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId
+import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.components.node.SenderNode
 import org.opendc.simulator.network.components.node.switchh.Switch
 import org.opendc.simulator.network.components.node.terminal.Terminal
@@ -54,6 +56,10 @@ internal abstract class NetworkImpl<Self : Network<Self>> : Network<Self> {
     override val flowsById: MutableMap<FlowId, INetFlow> = mutableMapOf()
 
     override operator fun get(nId: NodeId): Node<*>? = this.nodesById[nId]
+    override operator fun get(ip: IPv4Address): Node<*>? = get(ip.toNId())
+    override operator fun get(fId: FlowId): INetFlow? = this.flowsById[fId]
+    override operator fun contains(nId: NodeId): Boolean = nId in nodesById
+    override operator fun contains(fId: FlowId): Boolean = fId in flowsById
 
     context(NetSimScope)
     override suspend fun startFlow(f: INetFlow) {

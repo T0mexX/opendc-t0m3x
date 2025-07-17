@@ -1,10 +1,6 @@
 import resources/my/scope.jsonc
-f mk -s 4 -d 5 -b 1Gbps
-f info -l
-f rm 0
-f info -l
-n snap 4
-n snap 5
+f synth bit-complement
+f info
 q
 
 f info

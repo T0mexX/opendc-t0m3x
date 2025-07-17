@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.components.networks
 
+import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.serialization.Serializable
 import org.opendc.simulator.network.components.flow.FlowId
 import org.opendc.simulator.network.components.flow.INetFlow
@@ -65,14 +66,13 @@ internal interface Network<Self : Network<Self>> {
      */
     val specs: NetSpecs<Self>
 
-    /**
-     * TODO
-     */
     operator fun get(nId: NodeId): Node<*>?
+    operator fun get(ip: IPv4Address): Node<*>?
+    operator fun get(fId: FlowId): INetFlow?
+    operator fun contains(nId: NodeId): Boolean
+    operator fun contains(ip: IPv4Address): Boolean
+    operator fun contains(fId: FlowId): Boolean
 
-    /**
-     * TODO
-     */
     context(NetSimScope)
     suspend fun startFlow(f: INetFlow)
 

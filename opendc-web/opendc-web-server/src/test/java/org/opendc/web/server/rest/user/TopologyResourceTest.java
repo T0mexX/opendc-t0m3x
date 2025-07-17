@@ -165,7 +165,7 @@ public final class TopologyResourceTest {
     }
 
     /**
-     * Test that tries to obtain a topology with an invalid scope.
+     * Test that tries to obtain a topology with an invalid env.
      */
     @Test
     @TestSecurity(

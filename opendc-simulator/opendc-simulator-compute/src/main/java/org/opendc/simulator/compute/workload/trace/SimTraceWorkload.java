@@ -44,6 +44,7 @@ import org.opendc.simulator.network.api.NetIFace;
 import org.opendc.simulator.network.api.integration.JNetFTracker;
 import org.opendc.simulator.network.api.integration.JNetFlow;
 import org.opendc.simulator.network.api.integration.JNetIFace;
+import org.opendc.simulator.network.api.integration.JNetStartFragOpt;
 
 public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
     private LinkedList<TraceFragment> remainingFragments;
@@ -73,7 +74,10 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
     // 1 flow for transmission and one for reception.
     private @Nullable JNetFlow netFlowTx; // The transmission network flow.
     private @Nullable JNetFlow netFlowRx; // The reception network flow.
+    // Allows to track flows and set callbacks on events that concern multiple flows.
     private @Nullable JNetFTracker netFTracker;
+    // Allows to start a new network fragment with the least calls to suspending functions from non-suspending context.
+    private @Nullable JNetStartFragOpt netStartFragOpt;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Basic Getters and Setters
@@ -138,10 +142,22 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
         final @NotNull JNetFlow tx = Objects.requireNonNull(this.netFlowTx);
         final @NotNull JNetFlow rx = Objects.requireNonNull(this.netFlowRx);
 
+        //
+        // Set up the [JNetStartFragOpt] optimizer, which allows to invoke multiple suspending
+        // functions with onl one blocking bridge from non suspending context.
+        this.netStartFragOpt = new JNetStartFragOpt(netIFace);
+        this.netStartFragOpt.setJfTx(tx);
+        this.netStartFragOpt.setJfRx(rx);
+        this.netStartFragOpt.setJTracker(this.netFTracker);
+
         // If [NoDelay] scaling is used, no need to set up anything else.
         if (this.scalingPolicy.getNetTxCompletionRequired(10) == .0) return;
 
         this.netFTracker = new JNetFTracker(netIFace, tx, rx);
+
+        //
+        // Set up the tracker.
+
         // When a one fragment flow completes (either rx or tx), reset its demand to zero.
         this.netFTracker.setOn1FFragCompl((f, fragId) -> {
             // If when this set demand is processed, the fragment has been changed
@@ -244,25 +260,27 @@ public class SimTraceWorkload extends SimWorkload implements FlowConsumer {
         double demand = nextFragment.cpuUsage();
         this.remainingWork = this.scalingPolicy.getRemainingWork(demand, nextFragment.duration());
         this.pushOutgoingDemand(this.machineEdge, demand);
-        startNetworkFragment(nextFragment);
+        startNetworkFragment();
     }
 
-    private void startNetworkFragment(TraceFragment fragment) {
+    private void startNetworkFragment() {
+        final TraceFragment frag = this.currentFragment;
         if (netIFace == null) return;
         assert netFlowTx != null;
         assert netFlowRx != null;
-        final boolean noDelay = scalingPolicy instanceof NoDelayScaling;
+        assert netStartFragOpt != null;
 
-        final double txDmndKbps = fragment.netTxKbps();
-        final double rxDmndKbps = fragment.netRxKbps();
-        final double fragmentDurationSec = (double) fragment.duration() / 1000;
-        final double requiredTxKb = scalingPolicy.getNetTxCompletionRequired(txDmndKbps * fragmentDurationSec);
-        final double requiredRxKb = scalingPolicy.getNetRxCompletionRequired(rxDmndKbps * fragmentDurationSec);
-        netFlowTx.fragInit(requiredTxKb, currentFragment);
-        netFlowRx.fragInit(requiredRxKb, currentFragment);
-        netFlowTx.setDemand(txDmndKbps, currentFragment);
-        netFlowRx.setDemand(rxDmndKbps, currentFragment);
-        if (!noDelay) Objects.requireNonNull(netFTracker).newFrag(currentFragment);
+        final double txDmndKbps = frag.netTxKbps();
+        final double rxDmndKbps = frag.netRxKbps();
+        final double fragDurationSec = (double) frag.duration() / 1000;
+        final double txTargetKb = scalingPolicy.getNetTxCompletionRequired(txDmndKbps * fragDurationSec);
+        final double rxTargetKb = scalingPolicy.getNetRxCompletionRequired(rxDmndKbps * fragDurationSec);
+        netStartFragOpt.startNetFrag(frag, txDmndKbps, txTargetKb, rxDmndKbps, rxTargetKb);
+//        netFlowTx.fragInit(requiredTxKb, currentFragment);
+//        netFlowRx.fragInit(requiredRxKb, currentFragment);
+//        netFlowTx.setDemand(txDmndKbps, currentFragment);
+//        netFlowRx.setDemand(rxDmndKbps, currentFragment);
+//        if (!noDelay) Objects.requireNonNull(netFTracker).newFrag(currentFragment);
     }
 
     @Override

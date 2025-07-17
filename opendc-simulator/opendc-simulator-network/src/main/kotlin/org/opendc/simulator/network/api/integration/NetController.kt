@@ -24,10 +24,7 @@ package org.opendc.simulator.network.api.integration
 
 import inet.ipaddr.ipv4.IPv4Address
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import org.opendc.common.annotations.DebuggingUse
-import org.opendc.common.units.Timestamp
 import org.opendc.simulator.network.api.NetIFace
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
 import org.opendc.simulator.network.components.node.NodeId
@@ -38,10 +35,8 @@ import org.opendc.simulator.network.simscope.NetSimRootScope
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimScopeSpec
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
-import org.opendc.simulator.network.utils.DelicateODCNApi
 import org.opendc.simulator.network.utils.SuspendingODCNApi
 import org.slf4j.Logger
-import java.lang.Thread.sleep
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -94,7 +89,7 @@ public class NetController internal constructor(
         sync(forceUpdt)
     }.join()
 
-    public fun syncBlocking(forceUpdt: Boolean = false): Unit = latched(rootScope) {
+    public fun syncBlocking(forceUpdt: Boolean = false): Unit = netBlking(rootScope) {
         rootScope.sync(forceUpdt)
     }
 
@@ -118,7 +113,7 @@ public class NetController internal constructor(
             exportNowPrivate()
     }.join()
 
-    public fun exportNowBlocking(): Unit = latched(rootScope) {
+    public fun exportNowBlocking(): Unit = netBlking(rootScope) {
         exportNowPrivate()
     }
 

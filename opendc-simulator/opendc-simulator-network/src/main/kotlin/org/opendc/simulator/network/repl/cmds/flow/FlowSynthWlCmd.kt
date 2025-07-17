@@ -24,6 +24,7 @@ package org.opendc.simulator.network.repl.cmds.flow
 
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.convert
+import com.github.ajalt.clikt.parameters.arguments.default
 import kotlinx.serialization.json.Json
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Percentage
@@ -61,8 +62,8 @@ internal class FlowSynthWlCmd : REPLCmd(name = CMD_STR) {
             return@convert Json.decodeFromString<Percentage>(str)
         }
 
-        fail("either a data-rate (E_.g. '1Gbps') or a load percentage (E_.g. '100%') should be passed as parameter")
-    }
+        fail("either a data-rate (e.g., '1Gbps') or a load percentage (e.g., '100%') should be passed as parameter")
+    }.default(Percentage.ofPercentage(100))
 
     override fun aliases(): Map<String, List<String>> =
         mapOf(
@@ -72,11 +73,6 @@ internal class FlowSynthWlCmd : REPLCmd(name = CMD_STR) {
 
     override fun run() =
         execREPLCmdCatching {
-//        val pb = ProgressBarBuilder()
-//            // May be changed by the specific wl.
-//            .setStyle(ProgressBarStyle.ASCII)
-//            .setTaskName("Executing Synthetic Workload...")
-//            .build()
             val tm =
                 measureTime {
                     withProgressBar("Executing Synthetic WL...") {
@@ -94,6 +90,6 @@ internal class FlowSynthWlCmd : REPLCmd(name = CMD_STR) {
                     barrier.awaitStability()
                 }
 
-            echo("Synthetic workload executed successfully in $tm")
+            echo("| Synthetic workload executed successfully in $tm")
         }
 }

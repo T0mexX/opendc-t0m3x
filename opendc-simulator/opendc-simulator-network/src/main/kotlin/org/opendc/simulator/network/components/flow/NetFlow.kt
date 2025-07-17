@@ -77,7 +77,7 @@ public interface NetFlow : Invalidatable, EvntEmitter<NetFlow> {
      */
     @NonOwnerMethod(callableBy = [NetCo.EXTERNAL, NetCo.MAIN])
     public suspend fun msgAsyncSetDemand(
-        demand: DataRate,
+        dmnd: DataRate,
         fragId: Any? = null,
     )
 

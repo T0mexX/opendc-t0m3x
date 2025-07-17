@@ -25,15 +25,12 @@ package org.opendc.simulator.network.repl.cmds
 import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.requireObject
 import kotlinx.serialization.json.Json
-import org.opendc.common.logger.logger
-import org.opendc.simulator.network.components.networks.Network
-import org.opendc.simulator.network.repl.REPLEnv
+import org.opendc.simulator.network.repl.NetREPLEnv
 
 internal abstract class REPLNoOpCmd(val name: String) : NoOpCliktCommand(name = name, invokeWithoutSubcommand = false) {
-    protected val log by logger(name)
-
-    protected val env by requireObject<REPLEnv>()
-    protected val net: Network<*> by lazy { env.network }
+    protected val env by requireObject<NetREPLEnv>()
+    protected val scope by lazy { env.scope }
+    protected val net by lazy { scope.net }
 
     override fun aliases(): Map<String, List<String>> =
         registeredSubcommands().flatMap {

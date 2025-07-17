@@ -67,6 +67,6 @@ internal class NodeMkGlobalSwitchCmd : REPLCmd(name = CMD_STR) {
             (net as? CustomNetwork)?.plus(newSwitch)
                 ?.also { barrier.awaitStability() }
                 ?.let { echo("| Added node $newSwitch") }
-                ?: issueMessage("Unable to add node.")
+                ?: echo("Unable to add node.", err = true)
         }
 }

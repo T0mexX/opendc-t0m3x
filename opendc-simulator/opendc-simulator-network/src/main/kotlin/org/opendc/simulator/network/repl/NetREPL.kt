@@ -28,7 +28,7 @@ import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.PrintHelpMessage
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.subcommands
-import org.opendc.simulator.network.components.networks.Network
+import kotlinx.coroutines.delay
 import org.opendc.simulator.network.components.networks.custom.CustomNetwork
 import org.opendc.simulator.network.repl.cmds.AdvTimeCmd
 import org.opendc.simulator.network.repl.cmds.EnRepCmd
@@ -52,79 +52,82 @@ import org.opendc.simulator.network.repl.cmds.network.NetSnapCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkGlobalSwitchCmd
-import org.opendc.simulator.network.repl.cmds.node.NodeMkHostCmd
+import org.opendc.simulator.network.repl.cmds.node.NodeMkTerminalCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeMkSwitchCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeRmCmd
 import org.opendc.simulator.network.repl.cmds.node.NodeSnapCmd
 import org.opendc.simulator.network.simscope.NetSimRootScope
 
 public suspend fun main() {
+    // The REPL is initialized with default configuration.
     val scope = NetSimRootScope()
-    val network: Network<*>
-    scope.launchInRoot {
-        CustomNetwork()
-    }.join()
+    // Build an empty [CustomNetwork] in the initial scope.
+    scope.launch { CustomNetwork() }
+    // The mutable REPL environment that wraps the network scope (allowing the env to be replaced with import command).
+    val env = NetREPLEnv(scope)
 
-    val env: REPLEnv =
-        REPLEnv(
-            network = scope.net,
-            rootScope = scope,
-//                    energyRecorder = energyRecorder,
-//            tmSrc = REPLTmSrc(Instant.now()),
+    // Build the Clikt command structure.
+    val cmd: CliktCommand =
+        MainCmd(env).subcommands(
+            LinkCmd().subcommands(LinkMkCmd(), LinkRmCmd()),
+            NodeCmd().subcommands(
+                NodeRmCmd(),
+                NodeMkCmd().subcommands(NodeMkTerminalCmd(), NodeMkSwitchCmd(), NodeMkGlobalSwitchCmd()),
+                NodeSnapCmd(),
+            ),
+            AdvTimeCmd(),
+            FlowCmd().subcommands(
+                FlowMkCmd(),
+                FlowInfoCmd(),
+                FlowRmCmd(),
+                FlowUpdtCmd(),
+                FlowSynthWlCmd(),
+                FlowExportCmd(),
+            ),
+            EnRepCmd(),
+            ExportCmd(),
+            NetCmd().subcommands(
+                NetSnapCmd(),
+                NetInfoCmd(),
+                NetPrefixTrieCmd(),
+            ),
+            ImportCmd(),
+            QuitCmd(),
         )
 
+    // Let logger log stuff before starting the REPL loop.
+    delay(1000L)
+
+    // REPL loop.
     while (true) {
+        print("> ") // Prompt
         val input: String = readln()
         val inputArr: List<String> = input.trim().split("\\s+".toRegex())
-        val cmd: CliktCommand =
-            MainCmd(env).subcommands(
-                LinkCmd().subcommands(LinkMkCmd(), LinkRmCmd()),
-                NodeCmd().subcommands(
-                    NodeRmCmd(),
-                    NodeMkCmd().subcommands(NodeMkHostCmd(), NodeMkSwitchCmd(), NodeMkGlobalSwitchCmd()),
-                    NodeSnapCmd(),
-                ),
-                AdvTimeCmd(),
-                FlowCmd().subcommands(
-                    FlowMkCmd(),
-                    FlowInfoCmd(),
-                    FlowRmCmd(),
-                    FlowUpdtCmd(),
-                    FlowSynthWlCmd(),
-                    FlowExportCmd(),
-                ),
-                EnRepCmd(),
-                ExportCmd(),
-                NetCmd().subcommands(
-                    NetSnapCmd(),
-                    NetInfoCmd(),
-                    NetPrefixTrieCmd(),
-                ),
-                ImportCmd(),
-                QuitCmd(),
-            )
+
         try {
             cmd.parse(inputArr)
         } catch (e: PrintHelpMessage) {
             println(e.command.getFormattedHelp())
         } catch (e: CliktError) {
-            e.message?.let { println(it) } ?: println("vianofgao")
+            e.message?.let { println(it) }
+        } catch (e: Exception) {
+            println("Unexpected error: ${e.message}")
         }
     }
 }
 
-private class MainCmd(private val env: REPLEnv) : NoOpCliktCommand() {
+private class MainCmd(private val env: NetREPLEnv) : NoOpCliktCommand() {
     override fun run() {
         context {
             allowInterspersedArgs = true
         }
+        // Set the currently active [NetSimRootScope] clikt context.
         currentContext.findOrSetObject { env }
-//        runBlocking {
-//            env.network.launchNetwork()
-//            env.network.awaitStability()
-//        }
     }
 
+    /**
+     * Recursively registers aliases for the command structure.
+     */
     override fun aliases(): Map<String, List<String>> =
         registeredSubcommands().flatMap {
             it.aliases().toList()

@@ -34,7 +34,7 @@ public annotation class DelicateODCNApi(val msg: String)
 
 @RequiresOptIn(
     message = "This method can suspend, if a custom dispatcher is used and this operation " +
-        "is required to not suspend (e.g. as is the case in `ComputeMetricReader` export job), " +
+        "is required to not suspend (e.g., as is the case in `ComputeMetricReader` export job), " +
         "use the blocking version of this method if available, else wrap into `runBlocking`."
 )
 @Retention(AnnotationRetention.BINARY)

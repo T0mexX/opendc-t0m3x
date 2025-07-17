@@ -32,7 +32,7 @@ import kotlinx.serialization.encoding.Encoder
 
 /**
  * A dummy serializer which can be applied to types that are never expected to be serialized,
- * but for which the compiler is trying to generate/retrieve a serializer. E_.g., types used as generic type parameters.
+ * but for which the compiler is trying to generate/retrieve a serializer. e.g., types used as generic type parameters.
  * Applying `@Serializable( with = NotSerializable::class )` to those types ensures compilation succeeds,
  * without having to actually make them serializable.
  */

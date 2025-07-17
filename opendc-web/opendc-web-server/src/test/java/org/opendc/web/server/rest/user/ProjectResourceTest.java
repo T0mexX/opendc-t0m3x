@@ -47,7 +47,7 @@ public final class ProjectResourceTest {
     }
 
     /**
-     * Test that tries to obtain all projects with an invalid scope.
+     * Test that tries to obtain all projects with an invalid env.
      */
     @Test
     @TestSecurity(

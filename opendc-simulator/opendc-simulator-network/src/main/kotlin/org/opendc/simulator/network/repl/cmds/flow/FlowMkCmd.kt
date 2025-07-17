@@ -34,25 +34,29 @@ import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowMkCmd : REPLCmd("mk") {
     private val demand: DataRate by option(
-        help = "The demand of the new flow (E_.g. '1 Gbps')",
+        help = "The demand of the new flow (e.g. '1 Gbps')",
         names = arrayOf("-b", "--bw", "--bandwidth"),
     ).convert {
         decodeOrNull<DataRate>(it)
-            ?: fail("Unable to parse data rate '$it' (E_.g. 1Gbps)")
+            ?: fail("unable to parse data rate '$it' (e.g., 1Gbps)")
     }.required().check("demand must be positive") { it >= DataRate.zero }
 
     private val srcIp: IPv4Address by option(
         help = "The ip of the source node",
         names = arrayOf("-s", "--senderip"),
     ).convert { str ->
-        decodeOrNull<IPv4Address>(str)!!
+        decodeOrNull<IPv4Address>(str)?.also { ip ->
+            if (ip.toNId() !in net) fail("invalid src ip (not in network): $ip")
+        } ?: fail("unable to parse ip/id: $str")
     }.required().check("node does not exist") { it.toNId() in net.nodesById }
 
     private val destIp: IPv4Address by option(
         help = "The ip of the destination node",
         names = arrayOf("-d", "--destip"),
     ).convert { str ->
-        decodeOrNull<IPv4Address>(str)!!
+        decodeOrNull<IPv4Address>(str)?.also { ip ->
+            if (ip.toNId() !in net) fail("invalid dest ip (not in network): $ip")
+        } ?: fail("unable to parse ip/id: $str")
     }.required().check("node does not exist") { it.toNId() in net.nodesById }
 
     override fun run(): Unit =

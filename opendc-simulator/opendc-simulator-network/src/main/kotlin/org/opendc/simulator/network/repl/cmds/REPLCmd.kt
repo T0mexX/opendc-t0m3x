@@ -24,56 +24,48 @@ package org.opendc.simulator.network.repl.cmds
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
-import org.opendc.common.logger.logger
-import org.opendc.simulator.network.api.integration.latched
-import org.opendc.simulator.network.components.networks.Network
-import org.opendc.simulator.network.repl.REPLEnv
+import org.opendc.simulator.network.api.integration.netBlking
+import org.opendc.simulator.network.repl.NetREPLEnv
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NETWORK_JSON
-import kotlin.coroutines.CoroutineContext
 
 internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
-    protected val log by logger(name)
-
-    protected val env by requireObject<REPLEnv>()
-    protected val net: Network<*> by lazy { env.network }
-
-//    protected val enRec: NetEnRecorder by lazy { env.energyRecorder }
-//    protected val tmSrc: REPLTmSrc by lazy { env.tmSrc }
+    protected val env by requireObject<NetREPLEnv>()
+    protected val scope by lazy { env.scope }
+    protected val net by lazy { scope.net }
 
     override fun aliases(): Map<String, List<String>> =
         registeredSubcommands().flatMap {
             it.aliases().toList()
         }.toMap()
 
-    /**
-     * TODO
-     */
     fun execREPLCmdCatching(
-        ctx: CoroutineContext = env.rootScope.coroutineContext,
         block: suspend NetSimScope.() -> Unit,
     ): Unit =
-        latched(env.rootScope) {
-//        runCatching {
-            block()
-//        }.let {
-//            if (it.isFailure) {
-//                echo("unable to execute command ${this@REPLCmd.commandName}.\N_" +
-//                    "reason: ${it.exceptionOrNull()!!.message}\N_" +
-//                    "cause: ${it.exceptionOrNull()!!.cause}",
-//                    err = true,
-//                )
-//            }
-//        }
-        }
-
-    companion object {
-        inline fun <reified T> decodeOrNull(str: String): T? {
-            try {
-                return NETWORK_JSON.decodeFromString<T>(str)
-            } catch (_: Exception) {
-                return null
+        netBlking(env.scope) {
+            runCatching {
+                block()
+            }.let {
+                if (it.isFailure) {
+                    echoCmdErr(it.exceptionOrNull()!!)
+                }
             }
         }
+
+    protected fun echoCmdErr(e: Throwable) {
+        echo("unable to execute command ${this@REPLCmd.commandName}.\n" +
+            "reason: ${e.message}\n" +
+            "cause: ${e.cause}",
+            err = true,
+        )
+    }
+
+    companion object {
+        inline fun <reified T> decodeOrNull(str: String): T? =
+            try {
+                NETWORK_JSON.decodeFromString<T>(str)
+            } catch (_: Exception) {
+                null
+            }
     }
 }

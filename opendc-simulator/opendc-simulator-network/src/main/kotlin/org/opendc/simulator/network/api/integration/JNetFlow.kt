@@ -41,7 +41,7 @@ public class JNetFlow internal constructor(
         demandKbps: Double,
         fragId: Any,
     ): Unit =
-        latched(scope) {
+        netBlking(scope) {
             f.msgAsyncSetDemand(DataRate.ofKbps(demandKbps), fragId)
         }
 
@@ -49,7 +49,7 @@ public class JNetFlow internal constructor(
         targetKb: Double,
         fragId: Any,
     ): Unit =
-        latched(scope) {
+        netBlking(scope) {
             f.msgAsyncFragInit(DataSize.ofKb(targetKb), fragId)
         }
 }

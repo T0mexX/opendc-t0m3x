@@ -261,7 +261,7 @@ public value class Timestamp private constructor(
             ifNumber = {
                 LOG.warn(
                     "deserialization of number with no unit of measure, assuming it is in milliseconds since Epoch." +
-                        "Keep in mind that you can also specify the value with timestamp representation (e.g. '2001-09-09T01:48:19Z')",
+                        "Keep in mind that you can also specify the value with timestamp representation (e.g., '2001-09-09T01:48:19Z')",
                 )
                 ofEpochMs(it.toDouble())
             },

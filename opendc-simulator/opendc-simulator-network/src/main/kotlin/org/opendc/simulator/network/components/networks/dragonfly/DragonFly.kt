@@ -117,7 +117,7 @@ internal class DragonFly private constructor(
                         nConns.entries.find {
                             it.value < specs.h &&
                                 // "From" and "to" indices to be different to avoid circular connection
-                                // (E_.g., group1 to group 3, group 3 to group 1)
+                                // (e.g., group1 to group 3, group 3 to group 1)
                                 it.key != fromSwI &&
                                 // Connection between these 2 switch indexes at group distance `toGDeltaI` has to be missing.
                                 groups[0].switches[fromSwI].isConnectedTo(groups[toGDeltaI].switches[it.key]).not()

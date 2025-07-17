@@ -90,6 +90,7 @@ internal interface NetRunnable {
     context(NetSimScope)
     @ProtectedUse
     fun netRun(additionalCtx: CoroutineContext = EmptyCoroutineContext) {
+        log.debug { "launching $this `NetRunnable` in network simulation scope" }
         job = launchInRoot(additionalCtx) runnableScope@ {
             try {
                 // Run the main [NetRunnable] function.
@@ -108,8 +109,10 @@ internal interface NetRunnable {
      * Cancels the coroutine running this component’s logic.
      * This can be used to stop the component independently of the enclosing context.
      */
+    context(NetSimScope)
     @OptIn(ProtectedUse::class)
     fun netCancel() {
+        log.debug { "canceling $this `NetRunnable` in network simulation scope" }
         job.cancel()
     }
 }

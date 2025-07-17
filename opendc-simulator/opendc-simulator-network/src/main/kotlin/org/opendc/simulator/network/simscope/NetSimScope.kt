@@ -50,21 +50,21 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 /**
- * Represents the scope of a network simulation, encapsulating all resources,
+ * Represents the env of a network simulation, encapsulating all resources,
  * configurations, and state needed for simulation execution.
  *
  * Structured coroutine concurrency is used for network simulation,
- * with the root network simulation coroutine scope being [NetSimRootScope].
+ * with the root network simulation coroutine env being [NetSimRootScope].
  *
- * All network entities operate within this scope or its sub-scopes,
+ * All network entities operate within this env or its sub-scopes,
  * which ensures contextual consistency and resource access.
  *
  * @see NetSimRootScope
  */
 internal interface NetSimScope : CoroutineScope {
     /**
-     * Root scope for the entire simulation.
-     * From any [NetSimScope], one can launch a coroutine as child to the root scope with [launchInRoot].
+     * Root env for the entire simulation.
+     * From any [NetSimScope], one can launch a coroutine as child to the root env with [launchInRoot].
      */
     @ProtectedUse
     val root: NetSimRootScope
@@ -163,7 +163,7 @@ internal interface NetSimScope : CoroutineScope {
     val jNetController: JNetController?
 
     /**
-     * The logger associated with this network simulation scope.
+     * The logger associated with this network simulation env.
      */
     val log: mu.KLogger
 
@@ -181,7 +181,7 @@ internal interface NetSimScope : CoroutineScope {
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Used to one-time register a network in this network simulation scope.
+     * Used to one-time register a network in this network simulation env.
      * Invoked automatically when a [Network] is instantiated in any of the [NetSimRootScope] child scopes / coroutines.
      */
     @OptIn(ProtectedUse::class)
@@ -224,10 +224,10 @@ internal interface NetSimScope : CoroutineScope {
     }
 
     /**
-     * Launches a new coroutine with a [NetSimScope] receiver, using the [NetSimRootScope] as its parent scope
-     * instead of the current scope.
+     * Launches a new coroutine with a [NetSimScope] receiver, using the [NetSimRootScope] as its parent env
+     * instead of the current env.
      *
-     * This is useful when a coroutine must outlive the current scope
+     * This is useful when a coroutine must outlive the current env
      * @see launch
      */
     @OptIn(ProtectedUse::class)
@@ -268,11 +268,11 @@ internal interface NetSimScope : CoroutineScope {
      * Replaces the standard [kotlinx.coroutines.coroutineScope] with a variant that wraps the receiver
      * [CoroutineScope] as a [NetSimScope].
      *
-     * This enables the execution of the given [block] within a structured concurrency scope that
+     * This enables the execution of the given [block] within a structured concurrency env that
      * provides full access to the network simulation context and utilities.
      *
-     * The resulting scope inherits the current coroutine context and starts a new child [Job],
-     * ensuring that any launched coroutines are properly bound to the new structured scope.
+     * The resulting env inherits the current coroutine context and starts a new child [Job],
+     * ensuring that any launched coroutines are properly bound to the new structured env.
      *
      * @param block The suspend function to execute, with a [NetSimScope] receiver.
      * @return The result of the [block] execution.
@@ -304,7 +304,7 @@ internal interface NetSimScope : CoroutineScope {
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Produces a textual representation of the coroutine hierarchy rooted at this scope.
+     * Produces a textual representation of the coroutine hierarchy rooted at this env.
      *
      * This is primarily intended for debugging or testing purposes.
      *

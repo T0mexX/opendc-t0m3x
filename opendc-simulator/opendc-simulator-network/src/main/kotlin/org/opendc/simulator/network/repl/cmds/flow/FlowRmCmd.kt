@@ -30,19 +30,15 @@ import org.opendc.simulator.network.repl.cmds.REPLCmd
 
 internal class FlowRmCmd : REPLCmd("rm") {
     private val id: Long by argument(
-        help = "The id of the flow to be remvoed",
+        help = "The id of the flow to be removed",
     ).long().check("flow does not exist") { long -> net.flowsById.contains(FlowId(long)) }
 
     override fun run(): Unit =
         execREPLCmdCatching {
             barrier.awaitStability()
-            val f =
-                net.flowsById[FlowId(id)] ?: let {
-                    issueMessage("Unable to stop flow")
-                    return@execREPLCmdCatching
-                }
+            val f = net.flowsById[FlowId(id)]!!
             net.stopFlow(f)
 
-            echo("| Stopped flow ${f}") ?: issueMessage("Unable to stop flow")
+            echo("| Stopped flow $f") ?: issueMessage("Unable to stop flow")
         }
 }

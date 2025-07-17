@@ -80,13 +80,13 @@ internal class NetFlowImpl private constructor(
         private set
 
     override suspend fun msgAsyncSetDemand(
-        demand: DataRate,
+        dmnd: DataRate,
         fragId: Any?,
     ) {
-        assert(demand >= DataRate.zero)
+        assert(dmnd >= DataRate.zero)
 
         setDemandDisp.acquire().reset {
-            this.newDemand = demand
+            this.newDemand = dmnd
             this.fragId = fragId
         }.sendTo(this)
     }

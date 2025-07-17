@@ -39,7 +39,9 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
         help = "Id of the node to display info of",
         names = arrayOf("-N_", "--node"),
     ).convert { str ->
-        decodeOrNull<IPv4Address>(str)!!
+        decodeOrNull<IPv4Address>(str)?.also { ip ->
+            if (ip.toNId() !in net) fail("invalid node ip (not in network): $ip")
+        } ?: fail("unable to parse ip/id: $str")
     }.check("node does not exist") { it.toNId() in net.nodesById }
 
     private val ls: Boolean by option(

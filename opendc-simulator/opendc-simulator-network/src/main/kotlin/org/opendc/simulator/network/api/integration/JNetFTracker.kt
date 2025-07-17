@@ -29,7 +29,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 
 @Suppress("SetterBackingFieldAssignment")
 public class JNetFTracker private constructor(
-    private val tracker: NetFTracker,
+    internal val tracker: NetFTracker,
     private val scope: NetSimScope,
 ) : AutoCloseable by tracker {
     public constructor(iFace: JNetIFace, vararg flows: JNetFlow) :
@@ -78,16 +78,16 @@ public class JNetFTracker private constructor(
             }
         }
 
-    public fun tsFor1Compl(): Long = latched(scope) {
+    public fun tsFor1Compl(): Long = netBlking(scope) {
         tracker.tsFor1Compl().toEpochMsLong()
     }
-    public fun tmRmFor1Compl(): Long = latched(scope) {
+    public fun tmRmFor1Compl(): Long = netBlking(scope) {
         tracker.tmRmFor1Compl().toMsLong()
     }
-    public fun tsForAllCompl(): Long = latched(scope) {
+    public fun tsForAllCompl(): Long = netBlking(scope) {
         tracker.tsForAllCompl().toEpochMsLong()
     }
-    public fun tmRmForAllCompl(): Long = latched(scope) {
+    public fun tmRmForAllCompl(): Long = netBlking(scope) {
         tracker.tmRmForAllCompl().toMsLong()
     }
 
@@ -96,7 +96,7 @@ public class JNetFTracker private constructor(
      * To be called after flows have been msged with the new frag msg.
      */
     public fun newFrag(fragId: Any): Unit =
-        latched(scope) {
+        netBlking(scope) {
             tracker.newFrag(fragId)
         }
 
@@ -106,7 +106,7 @@ public class JNetFTracker private constructor(
             iFace: JNetIFace,
             vararg flows: NetFlow,
         ): JNetFTracker =
-            latched(iFace.scope) {
+            netBlking(iFace.scope) {
                 JNetFTracker(
                     tracker = NetFTracker(*flows),
                     scope = iFace.scope,

@@ -29,7 +29,7 @@ import org.opendc.common.annotations.ProtectedUse
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.api.integration.JNetController
 import org.opendc.simulator.network.api.integration.NetSimGlobal
-import org.opendc.simulator.network.api.integration.latched
+import org.opendc.simulator.network.api.integration.netBlking
 import org.opendc.simulator.network.components.NetCo
 import org.opendc.simulator.network.components.networks.NetSpecs
 import org.opendc.simulator.network.components.networks.Network
@@ -90,7 +90,7 @@ internal class NetSimRootScope private constructor(
         }
 
     /**
-     * Initializes fly-weight dispensers for this simulation scope.
+     * Initializes fly-weight dispensers for this simulation env.
      */
     private suspend fun initDispensers() {
         devConfig.nodeConfig.version.initDispensers()
@@ -124,7 +124,7 @@ internal class NetSimRootScope private constructor(
             exporter?.close()
         }
 
-        latched(this) {
+        netBlking(this) {
             initDispensers()
             checkRequirements()
         }
@@ -150,13 +150,13 @@ internal class NetSimRootScope private constructor(
                     // network component the coroutine belongs to.
                     NetCoId.new(owner = NetCo.MAIN) +
 
-                    // The coroutine name of the root scope, so that it can be identified/retrieved/canceled.
+                    // The coroutine name of the root env, so that it can be identified/retrieved/canceled.
                     CoroutineName(NetSimGlobal.NETSIMSCOPE_ROOT_CONAME) +
 
                     // Helps to ensure simulation consistency across concurrently running network components.
                     NetSimBarrier(config) +
 
-                    // Dispenses unique IDs within this network simulation main scope.
+                    // Dispenses unique IDs within this network simulation main env.
                     NetSimIdDispenser() +
 
                     // Provides flyweight instances of common simulation objects (e.g., [Evnt], [Msg], etc.),
@@ -207,7 +207,7 @@ internal class NetSimRootScope private constructor(
             }
 
             return NetSimRootScope(rootCtx).also { rootScope ->
-                latched(rootScope) {
+                netBlking(rootScope) {
                     // If a path to a network topology defined then try to build it.
                     netFile?.let {
                         NetSpecs.fromFile(netFile).build()
