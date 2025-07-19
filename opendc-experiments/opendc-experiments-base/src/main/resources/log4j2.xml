@@ -30,7 +30,16 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="org.opendc.simulator.network" level="debug" additivity="false">
+<!--        <Logger name="org.opendc.simulator.network" level="debug" additivity="false">-->
+<!--            <AppenderRef ref="Console"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.opendc.simulator.compute" level="debug" additivity="false">-->
+<!--            <AppenderRef ref="Console"/>-->
+<!--        </Logger>-->
+<!--        <Logger name="org.opendc.simulator.core" level="debug" additivity="false">-->
+<!--            <AppenderRef ref="Console"/>-->
+<!--        </Logger>-->
+        <Logger name="org.opendc.simulator" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Logger name="org.opendc" level="warn" additivity="false">

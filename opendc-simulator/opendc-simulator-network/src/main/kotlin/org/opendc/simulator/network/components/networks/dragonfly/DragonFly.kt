@@ -32,7 +32,7 @@ import org.opendc.simulator.network.components.node.switchh.Switch
 import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
-import org.opendc.simulator.network.utils.withProgressBar
+import org.opendc.common.withProgressBarSus
 
 /**
  * @see DFSpecs for network parameters.
@@ -78,7 +78,7 @@ internal class DragonFly private constructor(
          */
         context(NetSimScope)
         suspend operator fun invoke(specs: DFSpecs): DragonFly =
-            withProgressBar(task = "Building DragonFly...", max = specs.E_.toLong() + specs.V_) pb@{
+            withProgressBarSus(task = "Building DragonFly...", max = specs.E_.toLong() + specs.V_) pb@{
                 val inet = Internet()
 
                 // Build groups and their internal connections.

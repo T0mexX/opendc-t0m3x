@@ -116,7 +116,7 @@ public class TraceWorkload implements Workload {
 
     @Override
     public SimWorkload startWorkload(FlowSupplier supplier) {
-        return new SimTraceWorkload(supplier, this);
+        return SimTraceWorkload.create(supplier, this);
     }
 
     @Override

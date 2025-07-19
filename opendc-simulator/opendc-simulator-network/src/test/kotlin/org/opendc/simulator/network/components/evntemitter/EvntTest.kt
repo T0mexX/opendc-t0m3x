@@ -151,7 +151,7 @@ class EvntTest : FunSpec({
             val e = listener.receiveCatching().getOrThrow()
             barrier.isStable() shouldBe true
 
-            e.handled()
+            e.markHandled()
             barrier.isStable() shouldBe true
         }
         netTest("check disposed correctly") {
@@ -177,7 +177,7 @@ class EvntTest : FunSpec({
 
             // The event is marked as handled by the only listener;
             // it should be disposed of and return in the flyweight pool.
-            e.handled()
+            e.markHandled()
             barrier.isStable() shouldBe true
             evntPool.getNIdle() shouldBe 1
             evntPool.getNObjs() shouldBe 1
@@ -217,7 +217,7 @@ class EvntTest : FunSpec({
 
             // The event is marked as handled by the only listener;
             // it should be disposed of and return in the flyweight pool.
-            e.handled()
+            e.markHandled()
             barrier.isStable() shouldBe true // [Invalidatable] event has been handled by all registered listeners.
             invEvntPool.getNIdle() shouldBe 1
             invEvntPool.getNObjs() shouldBe 1
@@ -241,7 +241,7 @@ class EvntTest : FunSpec({
                                 barrier.isStable() shouldBe false
                                 delay(Arb.long(0L..1000L).next())
                                 barrier.isStable() shouldBe false
-                                e.handled()
+                                e.markHandled()
                             }
                         }
                     }

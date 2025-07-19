@@ -58,7 +58,7 @@ public class HostsProvisioningStep internal constructor(
         val simHosts = mutableSetOf<SimHost>()
         val simPowerSources = mutableListOf<SimPowerSource>()
 
-        val engine = FlowEngine.create(ctx.dispatcher, netController?.jNetController)
+        val engine = FlowEngine.create(ctx.dispatcher, netController)
 
         for (cluster in clusterSpecs) {
             // Create the Power Source to which hosts are connected

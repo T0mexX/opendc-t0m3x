@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.components.msgable
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -32,6 +33,7 @@ import org.opendc.simulator.network.simscope.fwpool.FWId
 import org.opendc.simulator.network.simscope.fwpool.FWPool
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.NetCoId
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -50,7 +52,7 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
     /**
      * TODO
      */
-    protected var senderCoId: NetCoId? = null
+    protected var senderCoId: CoroutineContext? = null
 
     /**
      * TODO
@@ -59,7 +61,7 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
         state.first {
             // If `state` is `null`, msg was sent with `dispose = true` which means
             // the message flyweight object might have been reused by now.
-            assert(senderCoId === coroutineContext[NetCoId]!!) { "await on recycled msg" }
+            assert(senderCoId === coroutineContext) { "await on recycled msg" }
             it == Msg.State.HANDLED || it == Msg.State.UNDELIVERED
         }
         @Suppress("UNCHECKED_CAST")
@@ -72,11 +74,11 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
     override suspend fun sendTo(
         to: T,
         dispose: Boolean,
-    ): Self {
+    ): Self = try {
         // If dispose is false, `sender` wants to wait for the msg to be handled;
         // hence `state` is going to be tracked, and this `msg` is not going to be disposed by the receiver.
         if (dispose.not()) {
-            senderCoId = coroutineContext[NetCoId]!!
+            senderCoId = coroutineContext
             state.emit(Msg.State.PENDING)
         }
 
@@ -92,7 +94,14 @@ internal abstract class MsgImpl<T, Self : Msg<T, Self>>(
         }
 
         @Suppress("UNCHECKED_CAST")
-        return this as Self
+        this as Self
+
+
+    // Ensure that if coroutine cancelled while sending the [Msg], the [Msg] is marked as undelivered (hence validated).
+    // After the [Msg] has been sent, the responsibility of validating is of the receiver.
+    } catch (e: CancellationException) {
+        this.markUndelivered()
+        throw e
     }
 
     /**

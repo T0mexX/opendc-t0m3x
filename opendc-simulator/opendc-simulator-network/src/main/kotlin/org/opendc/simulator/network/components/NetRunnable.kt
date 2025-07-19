@@ -22,11 +22,13 @@
 
 package org.opendc.simulator.network.components
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import org.opendc.common.annotations.ProtectedUse
+import org.opendc.simulator.network.api.integration.NetFTracker
 import org.opendc.simulator.network.components.evntemitter.Evnt
 import org.opendc.simulator.network.components.evntemitter.EvntEmitter
 import org.opendc.simulator.network.components.invalidatable.Invalidatable
@@ -95,6 +97,10 @@ internal interface NetRunnable {
             try {
                 // Run the main [NetRunnable] function.
                 netRunnableMain()
+            } catch (_: CancellationException) {
+                /* NoOps */
+            } catch (e: Exception) {
+                throw e
             } finally {
                 // On cancellation/completion run a suspending cleanup in the same [NetSimScope].
                 // ([job.invokeOnCompletion] is not a suspend callback).

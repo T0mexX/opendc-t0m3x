@@ -37,6 +37,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")
 
+    api(libs.progressbar)
     api(libs.log4j.core)
     api(libs.log4j.slf4j)
     api(libs.kotlin.logging)

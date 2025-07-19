@@ -31,7 +31,7 @@ import org.opendc.simulator.network.components.networks.dragonfly.DragonFly
 import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.repl.synthetictraffic.SyntheticTraffic
 import org.opendc.simulator.network.simscope.NetSimScope
-import org.opendc.simulator.network.utils.increaseMax
+import org.opendc.common.increaseMax
 
 /**
  * Adversarial synthetic traffic pattern for dragon-fly topology.

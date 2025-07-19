@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 /*
  * Copyright (c) 2021 AtLarge Research
  *
@@ -37,3 +39,5 @@ dependencies {
 
     jmhImplementation(projects.opendcSimulator.opendcSimulatorCore)
 }
+
+

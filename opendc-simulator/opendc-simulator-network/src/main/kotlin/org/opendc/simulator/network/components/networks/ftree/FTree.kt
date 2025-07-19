@@ -36,7 +36,7 @@ import org.opendc.simulator.network.components.node.terminal.TerminalSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
-import org.opendc.simulator.network.utils.withProgressBar
+import org.opendc.common.withProgressBarSus
 import kotlin.math.pow
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
@@ -66,9 +66,15 @@ internal class FTree private constructor(
     companion object {
         context(NetSimScope)
         suspend operator fun invoke(specs: FatTreeSpecs): FTree =
-            withProgressBar(task = "Building FatTree Network...", max = specs.E_.toLong() + specs.V_) pb@{
+            withProgressBarSus(task = "Building FatTree Network...", max = specs.E_.toLong() + specs.V_) pb@{
                 val inet = Internet()
 
+                /**
+                 * Parameter that determines the topology which is defined as
+                 * equal to the minimum number of ports of all switches rounded down to even number.
+                 * Ideally, all switches should have the same number of ports.
+                 * This value has to be even and larger than 2.
+                 */
                 /**
                  * Parameter that determines the topology which is defined as
                  * equal to the minimum number of ports of all switches rounded down to even number.

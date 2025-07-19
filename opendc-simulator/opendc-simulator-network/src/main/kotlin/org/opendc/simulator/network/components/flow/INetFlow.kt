@@ -38,7 +38,7 @@ import org.opendc.simulator.network.simscope.fwpool.FWId
 
 internal interface INetFlow : NetFlow, Msgable<INetFlow>, NetRunnable, IInvalidatable, Synchronizable<INetFlow> {
     var senderNode: SenderNode<*>
-    var jNetFlow: JNetFlow?
+    override var jNetFlow: JNetFlow?
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Msg Convenience Methods

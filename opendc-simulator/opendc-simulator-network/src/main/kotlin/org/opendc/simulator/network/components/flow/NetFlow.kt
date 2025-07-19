@@ -26,6 +26,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.DataSize
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
+import org.opendc.simulator.network.api.integration.JNetFlow
 import org.opendc.simulator.network.api.integration.NetFTracker
 import org.opendc.simulator.network.components.NetCo
 import org.opendc.simulator.network.components.NonOwnerMethod
@@ -42,6 +43,7 @@ import org.opendc.simulator.network.utils.InternalODCNApi
  * Represents a unidirectional network flow between two [Node]s.
  */
 public interface NetFlow : Invalidatable, EvntEmitter<NetFlow> {
+    public val jNetFlow: JNetFlow?
     /**
      * Unique id for this flow.
      */

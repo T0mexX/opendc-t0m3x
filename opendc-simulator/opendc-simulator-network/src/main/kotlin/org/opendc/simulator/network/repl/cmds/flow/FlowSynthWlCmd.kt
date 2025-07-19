@@ -32,7 +32,7 @@ import org.opendc.common.units.Unit
 import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.repl.synthetictraffic.SyntheticTraffic
-import org.opendc.simulator.network.utils.withProgressBar
+import org.opendc.common.withProgressBarSus
 import kotlin.time.measureTime
 
 private const val CMD_STR: String = "synthetic-wl"
@@ -75,7 +75,7 @@ internal class FlowSynthWlCmd : REPLCmd(name = CMD_STR) {
         execREPLCmdCatching {
             val tm =
                 measureTime {
-                    withProgressBar("Executing Synthetic WL...") {
+                    withProgressBarSus("Executing Synthetic WL...") {
                         (demand as? DataRate)?.let { dr ->
                             synthWl.startSyntheticFlows(net) { dr }
                         }

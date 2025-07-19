@@ -35,7 +35,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
 import org.opendc.simulator.network.utils.datastructures.MultiDimGrid
-import org.opendc.simulator.network.utils.withProgressBar
+import org.opendc.common.withProgressBarSus
 
 /**
  * Represents a Flattened Butterfly (FlatFly) network topology.
@@ -92,7 +92,7 @@ internal class FlatFly private constructor(
          */
         context(NetSimScope)
         suspend operator fun invoke(specs: FlatFlySpecs): FlatFly =
-            withProgressBar(task = "Building Flatten Butterfly...", max = specs.E_.toLong() + specs.V_) pb@{
+            withProgressBarSus(task = "Building Flatten Butterfly...", max = specs.E_.toLong() + specs.V_) pb@{
                 // Implemented only using subnets.
                 if (this@NetSimScope.devConfig.netConfig.subnetOpt.not()) {
                     log.warn(
@@ -110,6 +110,10 @@ internal class FlatFly private constructor(
                 // dimension `specs.n + 1` has size `specs.c` for the hosts.
                 val hGrid = MultiDimGrid<Terminal>(MutableList(specs.n + 1) { specs.k }.also { it[it.size - 1] = specs.c })
 
+                /**
+                 * Executed recursively on the [FlatFlySpecs.n] dimensions.
+                 * Builds all nodes.
+                 */
                 /**
                  * Executed recursively on the [FlatFlySpecs.n] dimensions.
                  * Builds all nodes.

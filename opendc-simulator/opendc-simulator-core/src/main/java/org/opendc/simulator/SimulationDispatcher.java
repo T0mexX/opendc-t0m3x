@@ -28,6 +28,10 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import org.opendc.common.Dispatcher;
 import org.opendc.common.DispatcherHandle;
+import org.opendc.common.ProgressBarUtilsKt;
+import org.opendc.common.units.TimeDelta;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link Dispatcher} used by simulations to manage execution of (future) tasks, providing a controllable (virtual)
@@ -42,26 +46,27 @@ import org.opendc.common.DispatcherHandle;
  * <p>
  * This class is not thread-safe and must not be used concurrently by multiple threads.
  */
-public final class SimulationDispatcher implements Dispatcher {
+public class SimulationDispatcher implements Dispatcher {
+    private static final Logger log = LoggerFactory.getLogger(SimulationDispatcher.class);
     /**
      * The {@link TaskQueue} containing the pending tasks.
      */
-    private final TaskQueue queue = new TaskQueue();
+    protected final TaskQueue queue = new TaskQueue();
 
     /**
      * The current time of the scheduler in milliseconds since epoch.
      */
-    private long currentTime;
+    protected long currentTime;
 
     /**
      * A counter to establish total order on the events that happen at the same virtual time.
      */
-    private int count = 0;
+    protected int count = 0;
 
     /**
      * The {@link InstantSource} instance linked to this scheduler.
      */
-    private final SimulationClock timeSource = new SimulationClock(this);
+    protected final SimulationClock timeSource = new SimulationClock(this);
 
     /**
      * Construct a {@link SimulationDispatcher} instance with the specified initial time.
@@ -94,17 +99,17 @@ public final class SimulationDispatcher implements Dispatcher {
      * @return A {@link InstantSource} tracking the virtual time of the dispatcher.
      */
     @Override
-    public InstantSource getTimeSource() {
+    public final InstantSource getTimeSource() {
         return timeSource;
     }
 
     @Override
-    public void schedule(long delayMs, Runnable command) {
+    public final void schedule(long delayMs, Runnable command) {
         internalSchedule(delayMs, command);
     }
 
     @Override
-    public DispatcherHandle scheduleCancellable(long delayMs, Runnable command) {
+    public final DispatcherHandle scheduleCancellable(long delayMs, Runnable command) {
         long target = currentTime + delayMs;
         if (target < 0) {
             target = Long.MAX_VALUE;
@@ -120,27 +125,27 @@ public final class SimulationDispatcher implements Dispatcher {
      * tasks in the queue of this scheduler.
      */
     public void advanceUntilIdle() {
-        final TaskQueue queue = this.queue;
+        ProgressBarUtilsKt.withProgressBar("Simulating...", (ProgressBar pb) -> {
+            long logInterval = 1000 * 60 * 60 * 24; // day
+            long nextLog = currentTime + logInterval;
+            while (true) {
+                long deadline = queue.peekDeadline();
+                Runnable task = queue.poll();
 
-        ProgressBar pb = ProgressBar.builder()
-                .setStyle(ProgressBarStyle.ASCII)
-                .setTaskName("task queue counter")
-                .build(); // TODO: remove
-        while (true) {
-            long deadline = queue.peekDeadline();
-            Runnable task = queue.poll();
+                if (task == null) {
+                    break;
+                }
 
-            if (task == null) {
-                break;
+                boolean step = currentTime != deadline;
+                currentTime = deadline;
+                while (currentTime >= nextLog) {
+                    log.debug("Days simulated: {}", nextLog / 1000 / 60 / 60 / 24); // days
+                    nextLog = nextLog + logInterval;
+                }
+                task.run();
+                if (step) pb.step();
             }
-
-            boolean step = currentTime != deadline; // TODO:remove
-//            System.out.println("time changed");
-            currentTime = deadline;
-            task.run();
-            if (step) pb.step(); // TODO remove
-        }
-        pb.close(); // TODO: remove
+        });
     }
 
     /**

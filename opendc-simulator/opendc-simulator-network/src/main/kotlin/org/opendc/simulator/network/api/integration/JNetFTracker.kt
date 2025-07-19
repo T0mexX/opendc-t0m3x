@@ -29,7 +29,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 
 @Suppress("SetterBackingFieldAssignment")
 public class JNetFTracker private constructor(
-    internal val tracker: NetFTracker,
+    public val tracker: NetFTracker,
     private val scope: NetSimScope,
 ) : AutoCloseable by tracker {
     public constructor(iFace: JNetIFace, vararg flows: JNetFlow) :
@@ -64,11 +64,11 @@ public class JNetFTracker private constructor(
                 jController!!.callbacksChl.send { callback.accept(old.toEpochMsLong(), new.toEpochMsLong()) }
             }
         }
-    public var on1FFragCompl: BiConsumer<JNetFlow, Any?> = BiConsumer { _, _ -> }
+    public var on1FFragCompl: BiConsumer<NetFlow, Any?> = BiConsumer { _, _ -> }
         set(callback) {
             tracker.on1FFragCompl = { f, fragId ->
                 f as INetFlow
-                jController!!.callbacksChl.send { callback.accept(f.jNetFlow!!, fragId) }
+                jController!!.callbacksChl.send { callback.accept(f, fragId) }
             }
         }
     public var onAllFFragCompl: Runnable = Runnable { }

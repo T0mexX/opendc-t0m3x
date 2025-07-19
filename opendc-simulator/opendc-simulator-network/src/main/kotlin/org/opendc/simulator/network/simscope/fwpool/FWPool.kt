@@ -31,6 +31,7 @@ import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.Idx
 import org.opendc.simulator.network.utils.NetCoId
 import kotlin.coroutines.coroutineContext
+import kotlin.random.Random
 
 /**
  * TODO
@@ -120,7 +121,9 @@ internal class FWPool<T : FW<T>, out O : FWId<T>> private constructor(
      * TODO
      */
     override suspend fun acquire(block: (suspend T.() -> Unit)?): T {
-        val poolIdx = coroutineContext[NetCoId]!!.value % nSubPools
+        val poolIdx = coroutineContext[NetCoId]?.let {
+            it.value % nSubPools
+        } ?: Random.nextInt(nSubPools)
 
         return subPools[poolIdx]
             .tryReceive()

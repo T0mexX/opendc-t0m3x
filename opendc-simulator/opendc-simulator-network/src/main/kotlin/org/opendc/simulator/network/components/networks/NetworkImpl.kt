@@ -56,9 +56,10 @@ internal abstract class NetworkImpl<Self : Network<Self>> : Network<Self> {
     override val flowsById: MutableMap<FlowId, INetFlow> = mutableMapOf()
 
     override operator fun get(nId: NodeId): Node<*>? = this.nodesById[nId]
-    override operator fun get(ip: IPv4Address): Node<*>? = get(ip.toNId())
+    override operator fun get(ip: IPv4Address): Node<*>? = this[ip.toNId()]
     override operator fun get(fId: FlowId): INetFlow? = this.flowsById[fId]
     override operator fun contains(nId: NodeId): Boolean = nId in nodesById
+    override operator fun contains(ip: IPv4Address): Boolean = ip.toNId() in this
     override operator fun contains(fId: FlowId): Boolean = fId in flowsById
 
     context(NetSimScope)

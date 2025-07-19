@@ -80,12 +80,12 @@ internal class FlowMkCmd : REPLCmd("mk") {
                 select {
                     listener1.onReceive { evnt ->
                         println(evnt)
-                        evnt.handled()
+                        evnt.markHandled()
                         cnt++
                     }
                     listener2.onReceive { evnt ->
                         println(evnt)
-                        evnt.handled()
+                        evnt.markHandled()
                         cnt++
                     }
                 }

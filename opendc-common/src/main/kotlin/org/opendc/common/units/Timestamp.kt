@@ -34,6 +34,7 @@ import org.opendc.common.utils.approxLargerOrEq
 import org.opendc.common.utils.approxSmaller
 import org.opendc.common.utils.approxSmallerOrEq
 import org.opendc.common.utils.ifNeg0thenPos0
+import java.time.DateTimeException
 import java.time.Duration
 import java.time.Instant
 
@@ -53,7 +54,11 @@ public value class Timestamp private constructor(
      * @return the [Instant] [toString] result of this [Timestamp] value.
      * @param[fmt] no ops.
      */
-    override fun fmtValue(fmt: String): String = toInstant().toString()
+    override fun fmtValue(fmt: String): String = try {
+        toInstant().toString()
+    } catch (w: DateTimeException) {
+        value.toString()
+    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Conversions to Double

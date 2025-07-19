@@ -34,7 +34,7 @@ import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NETWORK_JSON
 import org.opendc.simulator.network.utils.SerialSTraffic
-import org.opendc.simulator.network.utils.increaseMax
+import org.opendc.common.increaseMax
 import kotlin.math.log2
 
 /**

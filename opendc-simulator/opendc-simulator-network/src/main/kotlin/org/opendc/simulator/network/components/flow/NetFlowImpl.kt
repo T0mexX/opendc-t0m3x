@@ -413,7 +413,7 @@ internal class NetFlowImpl private constructor(
                             markHandled()
                         }
 
-                        override fun toString(): String = "SetDemand"
+                        override fun toString(): String = "SetDemand(newDmnd=$newDemand)"
                     }
                 }
 
@@ -456,7 +456,7 @@ internal class NetFlowImpl private constructor(
                             markHandled()
                         }
 
-                        override fun toString(): String = "SetTput"
+                        override fun toString(): String = "SetTput(newTput=$newTput)"
                     }
                 }
 
@@ -487,6 +487,8 @@ internal class NetFlowImpl private constructor(
 
                             markHandled()
                         }
+
+                        override fun toString(): String = "IncreaseTput(amount=$amount)"
                     }
                 }
 
@@ -500,7 +502,7 @@ internal class NetFlowImpl private constructor(
                             respond(f.computeFragComplEstimate())
                         }
 
-                        override fun toString(): String = "ReqFragComplEstimate"
+                        override fun toString(): String = "ReqFragComplEstimate()"
                     }
                 }
 
@@ -527,7 +529,7 @@ internal class NetFlowImpl private constructor(
                             markHandled()
                         }
 
-                        override fun toString(): String = "FragInit"
+                        override fun toString(): String = "FragInit(fragTarget=$fragTarget,fragId=$fragId)"
                     }
                 }
 
@@ -540,6 +542,8 @@ internal class NetFlowImpl private constructor(
                         override lateinit var f: NetFlow
                         override var fragId: Any? = null
                         override val stabilizer: NetSimStabilizer = stab
+
+                        override fun toString(): String = "FragCompl(f=$f,fragId=$fragId)"
                     }
                 }
 
@@ -554,6 +558,8 @@ internal class NetFlowImpl private constructor(
                         override var old: Timestamp = Timestamp.max
                         override var fragId: Any? = null
                         override val stabilizer: NetSimStabilizer = stab
+
+                        override fun toString(): String = "FragComplEstimateChanged(old=$old,new=$new,f=$f,fragId=$fragId)"
                     }
                 }
 
@@ -569,6 +575,8 @@ internal class NetFlowImpl private constructor(
                         override var fragId: Any? = null
                         override lateinit var f: NetFlow
                         override val stabilizer: NetSimStabilizer = stab
+
+                        override fun toString(): String = "TputChanged(old:$old,new:$new,f=$f,fragId=$fragId)"
                     }
                 }
         }

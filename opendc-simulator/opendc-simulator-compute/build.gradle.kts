@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 /*
  * Copyright (c) 2020 AtLarge Research
  *
@@ -33,4 +35,11 @@ dependencies {
     implementation(projects.opendcSimulator.opendcSimulatorNetwork)
 
     testImplementation(libs.slf4j.simple)
+}
+
+
+tasks.withType<KotlinCompile>().configureEach {
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers"
+    }
 }

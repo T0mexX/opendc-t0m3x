@@ -176,7 +176,7 @@ internal class NetSimBarrier internal constructor(
             } catch (e: TimeoutCancellationException) {
                 println(getInvalidated())
                 println(coroutineContext[NetCoId]!!.owner)
-                error("AA")
+                throw e
             } finally {
                 stabilityMtx.unlock()
             }

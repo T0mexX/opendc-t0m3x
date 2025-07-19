@@ -28,7 +28,7 @@ import kotlin.coroutines.CoroutineContext;
 import org.jetbrains.annotations.Nullable;
 import org.opendc.common.Dispatcher;
 import org.opendc.simulator.engine.graph.FlowNode;
-import org.opendc.simulator.network.api.integration.JNetController;
+import org.opendc.simulator.network.api.integration.NetController;
 
 /**
  * A {@link FlowEngine} simulates a generic flow network.
@@ -40,43 +40,37 @@ public class FlowEngine implements Runnable {
     /**
      * The queue of {@link FlowNode} updates that need to be updated in the current cycle.
      */
-    private final FlowCycleQueue cycleQueue = new FlowCycleQueue(256);
+    protected final FlowCycleQueue cycleQueue = new FlowCycleQueue(256);
 
     /**
      * A priority queue containing the {@link FlowNode} updates to be scheduled in the future.
      */
-    private final FlowEventQueue eventQueue = new FlowEventQueue(256);
+    protected final FlowEventQueue eventQueue = new FlowEventQueue(256);
 
     /**
      * The stack of engine invocations to occur in the future.
      */
-    private final InvocationStack futureInvocations = new InvocationStack(256);
+    protected final InvocationStack futureInvocations = new InvocationStack(256);
 
     /**
      * A flag to indicate that the engine is active.
      */
-    private boolean active;
+    protected boolean active;
 
-    private final Dispatcher dispatcher;
-    private final InstantSource clock;
-
-    private final @Nullable JNetController netController;
+    protected final Dispatcher dispatcher;
+    protected final InstantSource clock;
 
     /**
      * Create a new {@link FlowEngine} instance using the specified {@link CoroutineContext} and {@link InstantSource}.
      */
-    public static FlowEngine create(Dispatcher dispatcher, @Nullable JNetController netController) {
-        return new FlowEngine(dispatcher, netController);
+    public static FlowEngine create(Dispatcher dispatcher, @Nullable NetController netController) {
+        if (netController == null) return new FlowEngine(dispatcher);
+        else return new NetAwareFlowEngine(dispatcher, netController);
     }
 
-    public static FlowEngine create(Dispatcher dispatcher) {
-        return new FlowEngine(dispatcher, null);
-    }
-
-    FlowEngine(Dispatcher dispatcher, @Nullable JNetController netController) {
+    FlowEngine(Dispatcher dispatcher) {
         this.dispatcher = dispatcher;
         this.clock = dispatcher.getTimeSource();
-        this.netController = netController;
     }
 
     /**
@@ -155,11 +149,6 @@ public class FlowEngine implements Runnable {
             // Mark the engine as active to prevent concurrent calls to this method
             active = true;
 
-            // Sync network with simulation virtual time.
-//            System.out.print("C"); // TODO: delete ln
-            if (netController != null) netController.sync();
-//            System.out.print("D\n"); // TODO: delete ln
-
             // Execute all scheduled updates at current timestamp
             while (true) {
                 final FlowNode ctx = eventQueue.poll(now);
@@ -174,20 +163,10 @@ public class FlowEngine implements Runnable {
             while (true) {
                 final FlowNode ctx = cycleQueue.poll();
                 if (ctx == null) {
-                    if (netController != null) {
-//                                                System.out.print("A");
-                        netController.sync(); // Wait until the network is stable.
-//                                                System.out.print("B\n");
-                        // Execute observers' handlers sequentially, since node invalidation must be sequential.
-                        int callbacksExecuted = netController.execCallbacks();
-                        // If at least one callback has been executed, there may be an invalidated node.
-                        if (callbacksExecuted > 0) continue;
-                    }
                     break;
                 }
 
                 ctx.update(now);
-                //                System.out.print("|");
             }
         } finally {
             active = false;
@@ -212,7 +191,7 @@ public class FlowEngine implements Runnable {
      * @param now The current virtual timestamp.
      * @param target The virtual timestamp at which the engine invocation should happen.
      */
-    private void trySchedule(InvocationStack scheduled, long now, long target) {
+    protected void trySchedule(InvocationStack scheduled, long now, long target) {
         // Only schedule a new scheduler invocation in case the target is earlier than all other pending
         // scheduler invocations
         if (scheduled.tryAdd(target)) {

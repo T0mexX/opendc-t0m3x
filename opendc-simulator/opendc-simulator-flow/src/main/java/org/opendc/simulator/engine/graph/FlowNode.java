@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * A {@link FlowNode} represents a node in the {@link FlowEngine}.
  */
 public abstract class FlowNode {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FlowNode.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(FlowNode.class);
 
     protected enum NodeState {
         PENDING, // Stage is active, but is not running any updates
@@ -153,7 +153,7 @@ public abstract class FlowNode {
     /**
      * Update the state of the stage.
      */
-    public void update(long now) {
+    public final void update(long now) {
         if (this.nodeState == NodeState.CLOSED) {
             this.deadline = Long.MAX_VALUE;
             return;
@@ -193,7 +193,7 @@ public abstract class FlowNode {
      * @param now The virtual timestamp in milliseconds after epoch at which the update is occurring.
      * @return The next deadline for the stage.
      */
-    public abstract long onUpdate(long now);
+    protected abstract long onUpdate(long now);
 
     /**
      * This method is invoked when an uncaught exception is caught by the engine. When this happens, the

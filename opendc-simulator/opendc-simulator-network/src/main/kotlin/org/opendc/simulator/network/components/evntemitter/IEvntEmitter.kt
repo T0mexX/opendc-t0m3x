@@ -63,7 +63,7 @@ internal open class IEvntEmitter<Self : EvntEmitter<Self>> : EvntEmitter<Self> {
      * Emits [evnt] to all [EvntListener]s that are listening to this [EvntEmitter].
      * @param evnt The event to be emitted.
      */
-    override suspend fun emit(evnt: Evnt<Self, *>) {
+    override suspend fun emit(evnt: Evnt<Self, *>)  {
         // `nListeners` collectors will need to call `handled` on this event.
         evnt.nCollectors = nListeners
         // If the fact that the event has not been handled yet invalidates
@@ -76,7 +76,7 @@ internal open class IEvntEmitter<Self : EvntEmitter<Self>> : EvntEmitter<Self> {
             try {
                 c.sendChl.send(evnt)
             } catch (e: ClosedSendChannelException) {
-                evnt.handled()
+                evnt.markHandled()
             }
         }
     }

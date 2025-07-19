@@ -24,6 +24,7 @@
 
 package org.opendc.simulator.network.components.evntemitter
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -65,7 +66,7 @@ public abstract class Evnt<T : EvntEmitter<T>, Self : Evnt<T, Self>> : IFW<Self>
     /**
      * TODO
      */
-    public suspend fun handled() {
+    public suspend fun markHandled() {
         nHandledMtx.withLock {
             assert(nHandled < nCollectors)
             if (++nHandled == nCollectors) {
@@ -125,20 +126,27 @@ public abstract class Evnt<T : EvntEmitter<T>, Self : Evnt<T, Self>> : IFW<Self>
     /**
      * TODO
      */
+    @Suppress("UNCHECKED_CAST")
     internal suspend fun emit(
         from: T,
         dispose: Boolean = true,
-    ): Self {
+    ): Self = try {
         // If dispose is false, `emitter` wants to wait for the evnt to be handled;
         // hence `state` is going to be tracked, and this `msg` is not going to be disposed by the receiver.
         if (dispose.not()) {
             emitter = coroutineContext[NetCoId]!!
-            state.emit(State.PENDING)
+            state.value = State.PENDING
         }
 
         from.emit(this)
 
-        @Suppress("UNCHECKED_CAST")
-        return this as Self
+        this as Self
+
+    // Ensure that if coroutine cancelled while emitting the [Evnt], the event is marked as handled (hence validated).
+    // After the [Evnt] has been emitted, the responsibility of validating is of the listeners.
+    } catch (e : CancellationException) {
+        this.nCollectors = 1
+        this.markHandled()
+        throw e
     }
 }

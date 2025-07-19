@@ -27,7 +27,9 @@ import io.kotest.core.spec.style.scopes.FunSpecContainerScope
 import io.kotest.core.test.TestScope
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.units.DataRate
@@ -54,7 +56,7 @@ class NetFTrackerTest : FunSpec({
     // Used instead of `beforeEach` because the test `coroutineContext` is needed,
     // and it is not available in `beforeEach`.
     suspend fun TestScope.setUp() {
-        rootScope = NetSimRootScope() // Add the child job to propagate exceptions.
+        rootScope = NetSimRootScope(coroutineContext[Job]!!) // Add the child job to propagate exceptions.
         rootScope.launch {
             //
             // Create [CustomNetwork] with 1 terminal [t], 1 global [switch] s and internet abstract node [inet].
@@ -83,6 +85,8 @@ class NetFTrackerTest : FunSpec({
         setUp()
         rootScope.launch { block() }.join()
         rootScope.cancel()
+        delay(1000L)
+        println(rootScope.fmtCoTree())
     }
 
     fun FunSpec.netTest(
@@ -108,10 +112,10 @@ class NetFTrackerTest : FunSpec({
             tracker.on1FFragCompl = { _, _ -> triggered.emit(triggered.value + 1) }
 
             // Set up flow.
-            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Unit)
-            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Unit)
+            tracker.newFrag(Frag1)
+            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Frag1)
+            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Frag1)
             barrier.awaitStability()
-            tracker.newFrag(Unit)
 
             // half of the fragment completed.
             tmSrc.advanceBy(TimeDelta.ofSec(2))
@@ -127,7 +131,6 @@ class NetFTrackerTest : FunSpec({
             tmSrc.advanceBy(TimeDelta.ofSec(2))
             sync()
             triggered.value shouldBe 1
-            println(fmtCoTree())
         }
         netTest("all fragments completed") {
             var triggeredAll = false
@@ -141,12 +144,12 @@ class NetFTrackerTest : FunSpec({
             tracker.on1FFragCompl = { _, _ -> triggered1++ }
 
             // Set up flows.
-            f1.msgAsyncFragInit(target = DataSize.ofGb(3), fragId = Unit)
-            f2.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Unit)
-            f1.msgAsyncSetDemand(dmnd = DataRate.ofGbps(1), fragId = Unit)
-            f2.msgAsyncSetDemand(dmnd = DataRate.ofGbps(1), fragId = Unit)
+            tracker.newFrag(Frag1)
+            f1.msgAsyncFragInit(target = DataSize.ofGb(3), fragId = Frag1)
+            f2.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Frag1)
+            f1.msgAsyncSetDemand(dmnd = DataRate.ofGbps(1), fragId = Frag1)
+            f2.msgAsyncSetDemand(dmnd = DataRate.ofGbps(1), fragId = Frag1)
             barrier.awaitStability()
-            tracker.newFrag(Unit)
 
             // No fragment completed
             tmSrc.advanceBy(TimeDelta.ofSec(2))
@@ -166,30 +169,30 @@ class NetFTrackerTest : FunSpec({
             triggeredAll shouldBe true
             triggered1 shouldBe 2
         }
-        netTest("time remaining decreases") {
+        netTest("time remaining decreases (1 flow)") {
             var newTs = Timestamp.zero
             val f = iFace.startFlowFromInet()
 
             // Set up tracker.
             val tracker = NetFTracker(f)
-            tracker.onAllComplTsDecreased = { _, new -> newTs = new }
+            tracker.on1ComplTsDecreased = { _, new -> newTs = new }
 
             // Set up flows.
-            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Unit)
-            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Unit)
-            tracker.newFrag(Unit)
+            tracker.newFrag(Frag1)
+            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Frag1)
+            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Frag1)
             barrier.awaitStability()
 
             // Initial time remaining.
             tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(4)
 
             // Time remaining decrease.
-            f.msgAsyncSetDemand(DataRate.ofGbps(2))
+            f.msgAsyncSetDemand(DataRate.ofGbps(2), fragId = Frag1)
             barrier.awaitStability()
             newTs shouldBeEqual Timestamp.ofEpochSec(2)
             tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(2)
         }
-        netTest("time remaining increase") {
+        netTest("time remaining increase (1 flow)") {
             var newTs = Timestamp.zero
             val f = iFace.startFlowFromInet()
 
@@ -198,19 +201,63 @@ class NetFTrackerTest : FunSpec({
             tracker.onAllComplTsIncreased = { _, new -> newTs = new }
 
             // Set up flows.
-            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Unit)
-            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Unit)
-            tracker.newFrag(Unit)
+            tracker.newFrag(Frag1)
+            f.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Frag1)
+            f.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Frag1)
             barrier.awaitStability()
 
             // Initial time remaining.
             tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(4)
 
             // Time remaining increase.
-            f.msgAsyncSetDemand(DataRate.ofGbps(0.5))
+            f.msgAsyncSetDemand(DataRate.ofGbps(0.5), Frag1)
             barrier.awaitStability()
+
             newTs shouldBeEqual Timestamp.ofEpochSec(8)
             tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(8)
         }
+        netTest("time remaining decreases (2 flows)") {
+            var firstTs = Timestamp.zero
+            var allTs = Timestamp.zero
+            val f1 = iFace.startFlowFromInet()
+            val f2 = iFace.startFlowFromInet()
+
+            // Set up tracker.
+            val tracker = NetFTracker(f1, f2)
+            tracker.on1ComplTsDecreased = { _, new -> firstTs = new }
+            tracker.onAllComplTsDecreased = { _, new -> allTs = new }
+
+            // Set up flows.
+            tracker.newFrag(Frag1)
+            f1.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Frag1)
+            f1.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Frag1)
+            f2.msgAsyncFragInit(target = DataSize.ofGb(4), fragId = Frag1)
+            f2.msgAsyncSetDemand(DataRate.ofGbps(1), fragId = Frag1)
+
+            barrier.awaitStability()
+
+            // Initial time remaining.
+            tracker.tsFor1Compl() shouldBe Timestamp.ofEpochSec(4)
+            firstTs = tracker.tsFor1Compl()
+            tracker.tsForAllCompl() shouldBeEqual Timestamp.ofEpochSec(4)
+            allTs = tracker.tsForAllCompl()
+
+            // Test 1
+            f1.msgAsyncSetDemand(DataRate.ofGbps(2), Frag1)
+            barrier.awaitStability()
+            firstTs shouldBeEqual Timestamp.ofEpochSec(2)
+            allTs shouldBeEqual Timestamp.ofEpochSec(4)
+
+            tracker.tsFor1Compl() shouldBeEqual Timestamp.ofEpochSec(2)
+            tracker.tsForAllCompl() shouldBeEqual Timestamp.ofEpochSec(4)
+
+//            // Test 2
+//            f1.msgAsyncSetDemand(DataRate.ofGbps(1))
+        }
     }
-})
+}) {
+    object Frag1
+    object Frag2
+    object Frag3
+    object Frag4
+}
