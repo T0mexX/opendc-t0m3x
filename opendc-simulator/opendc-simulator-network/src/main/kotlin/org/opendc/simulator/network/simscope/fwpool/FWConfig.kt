@@ -36,5 +36,5 @@ internal data class FWConfig(
     val subPoolMaxSize: Int? = null,
     val subPoolMaxIdle: Int? = null,
     // TODO: not used yet (always throw)
-//    val throwOnMaxSizeExceeded: Boolean = false,
+    val throwOnMaxExceeded: Boolean = false,
 )

@@ -36,17 +36,16 @@ import org.opendc.simulator.network.simscope.NetSimScope
 internal class MIN : RoutPolicy() {
     override val internetRoutPolicy: RoutPolicy = ECMP()
 
-    context(Node<*>)
+    context(NetSimScope, Node<*>)
     override suspend fun onNodeNewFReceived(nodeFEntry: NodeFlowEntry): Boolean {
         val f = nodeFEntry.f
-        assert(nodeFEntry.txlinks.isEmpty())
+        nodeFEntry.txlinks.clear()
 
         this@Node.routTbl.getPossiblePathsTo(f.destId)
             .onlyMinimal()
             .takeIf { it.isNotEmpty() }
             ?.first()
             ?.let { path ->
-                nodeFEntry.txlinks.clear()
                 nodeFEntry.txlinks[path.associatedLink()] = Percentage.ofPercentage(100)
             }
 

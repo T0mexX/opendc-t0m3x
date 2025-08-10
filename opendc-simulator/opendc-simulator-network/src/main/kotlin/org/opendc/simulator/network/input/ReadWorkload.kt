@@ -67,7 +67,7 @@ internal val TIMESTAMP_FIELD =
 internal val TRANSMITTER_ID_FIELD =
     Types
         .optional(INT64)
-        .named("transmitter_id")
+        .named("src_id")
 
 /**
  * The absence of destination for [NET_TX_FIELD] (transmission) is interpreted
@@ -84,7 +84,7 @@ internal val DEST_ID_FIELD =
 internal val NET_TX_FIELD =
     Types
         .required(DOUBLE)
-        .named("net_tx")
+        .named("tx_Kbps")
 
 /**
  * The absence of this field means only 1 flow between 2 nodes can be active at the same time,
@@ -103,7 +103,7 @@ internal val FLOW_ID_FIELD =
 internal val DURATION_FIELD =
     Types
         .optional(INT64)
-        .named("duration")
+        .named("duration_ms")
 
 /**
  * Columns that need to be in the file schema (it does not

@@ -41,13 +41,13 @@ public fun main(args: Array<String>): Unit = NetExpCmd().main(args)
 /**
  * Represents the command for the Scenario experiments.
  */
-internal class NetExpCmd : CliktCommand(name = "scenario") {
+internal class NetExpCmd : CliktCommand(name = "netexp") {
     /**
      * The path to the environment directory.
      */
-    private val expPath by option("--scenario-path", help = "path to scenario file")
+    private val expPath by option("--exp-path", help = "path to scenario file")
         .file(canBeDir = false, canBeFile = true)
-        .defaultLazy { File("resources/example-exp/net-exp.json") }
+        .defaultLazy { File("./resources/ignored/exp.json") }
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun run() {

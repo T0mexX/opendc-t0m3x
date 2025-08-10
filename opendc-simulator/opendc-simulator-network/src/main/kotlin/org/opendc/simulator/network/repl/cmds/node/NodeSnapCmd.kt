@@ -27,6 +27,7 @@ import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.arguments.convert
 import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.simulator.network.api.snapshots.NodeSnapshot.Companion.snapshot
+import org.opendc.simulator.network.components.networks.NetworkImpl
 import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
@@ -37,7 +38,11 @@ internal class NodeSnapCmd : REPLCmd(name = CMD_STR) {
     private val ip: IPv4Address by argument(
         help = "The id of the node whose snapshot is to be displayed",
     ).convert { str ->
-        decodeOrNull<IPv4Address>(str)!!
+        decodeOrNull<IPv4Address>(str)
+            ?: let {
+                if (str == "inet") NetworkImpl.INTERNET_ID.toIp()
+                else null
+            }!!
     }.check("node does not exist") {
         println(it.toNId())
         it.toNId() in net.nodesById

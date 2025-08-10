@@ -22,6 +22,7 @@
 
 package org.opendc.common
 
+import me.tongfei.progressbar.DelegatingProgressBarConsumer
 import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
@@ -68,14 +69,11 @@ import java.util.function.Consumer
 public suspend fun <T> withProgressBarSus(
     task: String = "In Progress...",
     max: Long = -1, // Default: unknown total
+    tty: Boolean = true,
     block: suspend ProgressBar.() -> T,
 ): T {
     // Set up the progress bar.
-    val pb = ProgressBarBuilder()
-        .setInitialMax(max) // Unknown total.
-        .setStyle(ProgressBarStyle.ASCII)
-        .setTaskName(task)
-        .build()
+    val pb = pb(max, task, tty)
 
     // Ensure that the progress bar is closed after [block] executed.
     return pb.use { pb ->
@@ -92,14 +90,11 @@ public suspend fun <T> withProgressBarSus(
 public fun <T> withProgressBar(
     task: String = "In Progress...",
     max: Long = -1, // Default: unknown total
+    tty: Boolean = true,
     block: ProgressBar.() -> T,
 ): T {
     // Set up the progress bar.
-    val pb = ProgressBarBuilder()
-        .setInitialMax(max) // Unknown total.
-        .setStyle(ProgressBarStyle.ASCII)
-        .setTaskName(task)
-        .build()
+    val pb = pb(max, task, tty)
 
     // Ensure that the progress bar is closed after [block] executed.
     return pb.use { pb ->
@@ -115,13 +110,10 @@ public fun <T> withProgressBar(
 public fun withProgressBar(
     task: String = "In Progress...",
     max: Long = -1,
+    tty: Boolean = true,
     block: Consumer<ProgressBar>,
 ) {
-    val pb = ProgressBarBuilder()
-        .setInitialMax(max)
-        .setStyle(ProgressBarStyle.ASCII)
-        .setTaskName(task)
-        .build()
+    val pb = pb(max, task, tty)
 
     pb.use { block.accept(it) }
 }
@@ -129,3 +121,18 @@ public fun withProgressBar(
 public fun ProgressBar.increaseMax(by: Long) {
     this.maxHint(this.max + by)
 }
+
+private fun pb(max: Long, task: String, tty: Boolean): ProgressBar {
+    return ProgressBarBuilder()
+        .setInitialMax(max)
+        .setStyle(ProgressBarStyle.ASCII)
+        .setTaskName(task)
+        .also {
+            if (!tty) {
+                it.setConsumer(DelegatingProgressBarConsumer { str -> println(str) })
+            }
+        }
+        .build()
+}
+
+

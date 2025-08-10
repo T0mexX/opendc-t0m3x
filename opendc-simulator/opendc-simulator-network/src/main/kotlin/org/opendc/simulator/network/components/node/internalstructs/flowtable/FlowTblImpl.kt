@@ -72,6 +72,7 @@ internal class FlowTblImpl private constructor(
         // If this is the destination node, update end-to-end throughput.
         if (f.destId == this@Node.id) {
             tputChanged.add(e)
+            return
 
         // Else, set new tentative tx on the ports, considering the new updt received.
         } else {
@@ -116,10 +117,11 @@ internal class FlowTblImpl private constructor(
         }
     }
 
-    context(NetSimScope)
+    context(NetSimScope, Node<*>)
     override suspend fun updtTputs() {
-        tputChanged.forEach { entry ->
-            entry.f.msgAsyncSetTput(entry.rx)
+        tputChanged.forEach { e ->
+            e.f.msgAsyncSetTput(e.rx)
+            if (e.f.srcId != this@Node.id && e.rx approx DataRate.zero) rmEntry(e)
         }
         tputChanged.clear()
     }

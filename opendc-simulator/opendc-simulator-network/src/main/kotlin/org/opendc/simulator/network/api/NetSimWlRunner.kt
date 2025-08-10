@@ -27,9 +27,13 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import me.tongfei.progressbar.ProgressBarBuilder
 import me.tongfei.progressbar.ProgressBarStyle
+import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.logger.infoNewLine
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
+import org.opendc.common.units.Timestamp.Companion.toTimestamp
+import org.opendc.common.withProgressBar
+import org.opendc.common.withProgressBarSus
 import org.opendc.simulator.network.api.workload.NetWorkload
 import org.opendc.simulator.network.api.workload.NetworkEvent
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
@@ -39,6 +43,8 @@ import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimRootScope
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimTmSrc
+import kotlin.math.max
+import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 
 /**
@@ -48,18 +54,8 @@ import kotlin.system.measureTimeMillis
 public class NetSimWlRunner internal constructor(
     internal val rootScope: NetSimRootScope,
     wl: NetWorkload,
+    private val tty: Boolean,
 ) : AutoCloseable {
-    /**
-     * TODO
-     */
-    private val pb by lazy {
-        ProgressBarBuilder()
-            .setInitialMax(wl.numRemainingEvents.toLong())
-            .setStyle(ProgressBarStyle.ASCII)
-            .setTaskName("Simulating network...")
-            .build()
-    }
-
     private val wl: NetWorkload
 
     init {
@@ -69,31 +65,33 @@ public class NetSimWlRunner internal constructor(
     /**
      * TODO
      */
+    @OptIn(DebuggingUse::class)
     public suspend fun run(): Unit =
         rootScope.launch {
             preRun()
+            withProgressBarSus(max = wl.numRemainingEvents.toLong(), task = "Simulating Network...", tty = tty) pb@ {
+                val simTime: TimeDelta =
+                    TimeDelta.ofMillis(
+                        measureTimeMillis {
+                            while (wl.hasNext()) {
+                                val nextDeadline = nextDeadline()
 
-            val simTime: TimeDelta =
-                TimeDelta.ofMillis(
-                    measureTimeMillis {
-                        while (wl.hasNext()) {
-                            val nextDeadline = nextDeadline()
+                                // Execute all network events up until `nextDeadline` timestamp.
+                                this@pb.stepBy(execUntil(nextDeadline))
+                                rootScope.sync()
 
-                            // Execute all network events up until `nextDeadline` timestamp.
-                            pb.stepBy(execUntil(nextDeadline))
-                            rootScope.sync()
-
-                            // If export is needed at the reached timestamp then do.
-                            exporter?.let { exp ->
-                                if (tmSrc.tmstamp == exp.nextExportDeadline()) {
-                                    exp.exportNow()
+                                // If export is needed at the reached timestamp then do.
+                                exporter?.let { exp ->
+                                    if (tmSrc.tmstamp == exp.nextExportDeadline()) {
+                                        exp.exportNow()
+                                    }
                                 }
                             }
-                        }
-                    },
-                )
+                        },
+                    )
 
-            postRun(simTime)
+                postRun(simTime)
+            }
         }.join()
 
     context(NetSimScope)
@@ -173,9 +171,6 @@ public class NetSimWlRunner internal constructor(
         // Close exporter, necessary for file to be readable.
         exporter?.close()
 
-        // Update progress bar for the last time.
-        pb.close()
-
         // Log total simulation time.
         log.infoNewLine("| Simulation time: $simTm")
 
@@ -186,7 +181,6 @@ public class NetSimWlRunner internal constructor(
 
     override fun close() {
         runBlocking {
-            pb.close()
             rootScope.cancel()
             rootScope.coroutineContext.job.join()
         }

@@ -41,7 +41,7 @@ internal interface FlowTable : Tracker<NodeFlowEntry> {
     /**
      * TODO
      */
-    context(NetSimScope)
+    context(NetSimScope, Node<*>)
     suspend fun updtTputs()
 
     /**

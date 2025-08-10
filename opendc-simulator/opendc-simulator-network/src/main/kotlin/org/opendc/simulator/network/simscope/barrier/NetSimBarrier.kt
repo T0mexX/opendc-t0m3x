@@ -170,7 +170,7 @@ internal class NetSimBarrier internal constructor(
      */
     @OptIn(DebuggingUse::class) // TODO: delete ln
     internal suspend fun awaitStability() {
-        withTimeout(10000L) {
+        withTimeout(100000L) {
             try {
                 stabilityMtx.lock()
             } catch (e: TimeoutCancellationException) {

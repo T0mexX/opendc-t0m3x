@@ -23,6 +23,7 @@
 package org.opendc.simulator.network.components.link
 
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.launchIn
@@ -80,7 +81,7 @@ internal class LinkImpl private constructor(
             f.onEach { e ->
                 if (e.used.not()) return@onEach
                 var delta = ((maxBw * (e.demand / totTentativeTx)) min e.demand) - e.tput
-                delta = delta.roundDR(max = DataRate.zero)
+//                delta = delta.roundDR(max = DataRate.zero)
                 if (delta >= DataRate.zero) return@onEach
                 usedBw = (usedBw + delta).roundDR(min = DataRate.zero)
                 e.tput = (e.tput + delta).roundDR(max = e.demand)

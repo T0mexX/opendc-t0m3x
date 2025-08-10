@@ -1,6 +1,5 @@
 import resources/my/scope.jsonc
-f synth bit-complement
-f info
+net info
 q
 
 f info

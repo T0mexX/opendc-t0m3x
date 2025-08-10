@@ -27,3 +27,17 @@ plugins {
 
 group = "org.opendc"
 version = "3.0-SNAPSHOT"
+
+
+allprojects {
+    configurations.all {
+        resolutionStrategy {
+            // Force to one version, replacing any coordinate
+            eachDependency {
+                if (requested.name == "clikt") {
+                    useTarget("com.github.ajalt.clikt:clikt:3.5.2")
+                }
+            }
+        }
+    }
+}

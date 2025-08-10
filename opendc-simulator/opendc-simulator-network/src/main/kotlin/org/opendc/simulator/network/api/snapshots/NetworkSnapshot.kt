@@ -248,7 +248,9 @@ public class NetworkSnapshot private constructor(
                 currPwrUse = enRecorder.getCurrPwrDraw(),
                 avrgPwrUseOverTime = enRecorder.getAvrgPwrDraw(),
                 totEnConsumed = enRecorder.getTotEnCons(),
-            ).also { lastSnapshot = it }
+            ).also {
+                lastSnapshot = it
+            }
         }
     }
 }

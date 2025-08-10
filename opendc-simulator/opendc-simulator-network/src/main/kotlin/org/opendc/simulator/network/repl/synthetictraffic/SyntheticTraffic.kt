@@ -292,7 +292,7 @@ internal class STrafficUniform : SyntheticTraffic<Network<*>>() {
                     devConfig.netFlowConfig.version(
                         srcId = src.id,
                         destId = dest.id,
-                        dmnd = demandMapping(src) / (hosts.size - 1),
+                        dmnd = demandMapping(src) / (hosts.size - 1), // Not (hosts.size - 1) because other simulators don't
                     )
 
                 net.startFlow(newF)

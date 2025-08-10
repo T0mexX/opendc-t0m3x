@@ -43,6 +43,7 @@ public data class NetSimExp internal constructor(
     internal val rootScope: NetSimRootScope,
     internal val wl: NetWorkload,
     internal val virtualMapping: Boolean,
+    internal val tty: Boolean,
 ) {
     /**
      * TODO
@@ -50,7 +51,7 @@ public data class NetSimExp internal constructor(
     public fun runner(): NetSimWlRunner {
         // TODO Use `virtualMapping`
 
-        return NetSimWlRunner(rootScope, wl)
+        return NetSimWlRunner(rootScope, wl, tty)
     }
 
     /**
@@ -63,6 +64,7 @@ public data class NetSimExp internal constructor(
             val seed: Long? = null,
             val ctxSpec: NetSimScopeSpec,
             val virtualMapping: Boolean = true,
+            val tty: Boolean = true,
         )
 
         private val surrogateSerial: KSerializer<NetSimExpSurrogate> = kotlinx.serialization.serializer()
@@ -96,6 +98,7 @@ public data class NetSimExp internal constructor(
                 wl = readNetworkWl(surr.wlPath),
                 rootScope = rootScope,
                 virtualMapping = surr.virtualMapping,
+                tty = surr.tty,
             )
         }
 

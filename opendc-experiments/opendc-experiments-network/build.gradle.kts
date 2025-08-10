@@ -28,12 +28,33 @@ plugins {
     `jacoco-conventions`
     distribution
     kotlin("plugin.serialization") version "1.9.22"
+    application
 }
 
 private val kotlinxVersion = "1.6.0"
 dependencies {
     implementation(projects.opendcCommon)
-    implementation(libs.clikt)
     implementation(projects.opendcSimulator.opendcSimulatorNetwork)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxVersion")
+
+    implementation(project(":opendc-simulator:opendc-simulator-network")) {
+        exclude(group = "com.github.ajalt", module = "clikt") // excludes 2.8.0
+    }
+    implementation(libs.clikt)
+}
+
+application {
+    mainClass.set("org.opendc.experiments.network.runner.NetworkExpCliKt")
+}
+
+
+configurations.all {
+    resolutionStrategy {
+        force("com.github.ajalt.clikt:clikt:3.5.2")
+    }
+}
+
+
+tasks.named<JavaExec>("run") {
+    workingDir = file("$projectDir/src/main")
 }
