@@ -78,16 +78,16 @@ internal class LinkImpl private constructor(
     context(NetSimScope)
     private suspend fun applyReductions(f: Flow<LinkEntry>) =
         coroutineScope {
-            f.onEach { e ->
-                if (e.used.not()) return@onEach
-                var delta = ((maxBw * (e.demand / totTentativeTx)) min e.demand) - e.tput
+            f.collect { e ->
+                if (e.used.not()) return@collect
+                val delta = ((maxBw * (e.demand / totTentativeTx)) min e.demand) - e.tput
 //                delta = delta.roundDR(max = DataRate.zero)
-                if (delta >= DataRate.zero) return@onEach
+                if (delta >= DataRate.zero) return@collect
                 usedBw = (usedBw + delta).roundDR(min = DataRate.zero)
                 e.tput = (e.tput + delta).roundDR(max = e.demand)
                 receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.f)
                 if (e.demand approx DataRate.zero) rmEntry(e.idx)
-            }.launchIn(this@coroutineScope).join()
+            }
         }
 
     /**
@@ -96,15 +96,15 @@ internal class LinkImpl private constructor(
     context(NetSimScope)
     private suspend fun applyIncreases(f: Flow<LinkEntry>) =
         coroutineScope {
-            f.onEach { e ->
-                if (e.used.not()) return@onEach
+            f.collect { e ->
+                if (e.used.not()) return@collect
                 val delta = ((maxBw * (e.demand / totTentativeTx)) min e.demand) - e.tput
-                if (delta <= DataRate.zero && e.demand == DataRate.zero) return@onEach rmEntry(e.idx)
-                if (delta approxSmallerOrEq DataRate.zero) return@onEach
+                if (delta <= DataRate.zero && e.demand == DataRate.zero) return@collect rmEntry(e.idx)
+                if (delta approxSmallerOrEq DataRate.zero) return@collect
                 usedBw = (usedBw + delta).roundDR(max = maxBw)
                 e.tput = (e.tput + delta).roundDR(max = e.demand)
                 receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.f)
-            }.launchIn(this@coroutineScope).join()
+            }
         }
 
     override suspend fun setTentativeTx(
