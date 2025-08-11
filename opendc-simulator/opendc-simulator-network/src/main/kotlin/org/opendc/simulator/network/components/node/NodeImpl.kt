@@ -23,6 +23,7 @@
 package org.opendc.simulator.network.components.node
 
 import inet.ipaddr.ipv4.IPv4Address
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.asFlow
@@ -478,15 +479,15 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                             //
                             // Share the new version of the routing table to all adjacent nodes.
                             coroutineScope {
-                                links.asFlow().onEach { l ->
-                                    if (l == null) return@onEach
+                                links.asFlow().collect { l ->
+                                    if (l == null) return@collect
                                     // Adjacent node to share the routing vector with.
                                     val adjN = l.receiverN
                                     routTblUpdtDisp.acquire().reset {
                                         from = this@NodeImpl
                                         routVect = this@NodeImpl.routTbl.routVect
                                     }.sendTo(adjN)
-                                }.launchIn(this@coroutineScope)
+                                }
                             }
 
                             // Mark the current version of the routing table as been shared.

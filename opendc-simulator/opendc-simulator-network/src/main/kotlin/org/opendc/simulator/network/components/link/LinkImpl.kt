@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.components.link
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

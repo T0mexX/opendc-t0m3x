@@ -22,7 +22,9 @@
 
 package org.opendc.simulator.network.api
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import me.tongfei.progressbar.ProgressBarBuilder
@@ -43,6 +45,8 @@ import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimRootScope
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.NetSimTmSrc
+import java.io.File
+import java.io.PrintStream
 import kotlin.math.max
 import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
@@ -65,7 +69,7 @@ public class NetSimWlRunner internal constructor(
     /**
      * TODO
      */
-    @OptIn(DebuggingUse::class)
+    @OptIn(DebuggingUse::class, ExperimentalCoroutinesApi::class)
     public suspend fun run(): Unit =
         rootScope.launch {
             preRun()
@@ -86,6 +90,16 @@ public class NetSimWlRunner internal constructor(
                                         exp.exportNow()
                                     }
                                 }
+//
+//                                if (nextDeadline timeDelta wl.startInstant.toTimestamp() >= TimeDelta.ofHours(48)) {
+//                                    File("output/ignored/last_codump.txt").outputStream().use { out ->
+//                                        PrintStream(out).use { ps ->
+//                                            ps.println("nCoroutines: ${DebugProbes.dumpCoroutinesInfo().size}\n")
+////                                            DebugProbes.dumpCoroutines(ps)
+//                                        }
+//                                    }
+//                                    exitProcess(0)
+//                                }
                             }
                         },
                     )

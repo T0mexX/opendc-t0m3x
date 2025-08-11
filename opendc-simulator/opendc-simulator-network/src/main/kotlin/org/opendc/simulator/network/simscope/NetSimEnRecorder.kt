@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.simscope
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.asFlow

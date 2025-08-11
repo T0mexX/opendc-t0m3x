@@ -26,6 +26,8 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.defaultLazy
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.file
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
@@ -49,9 +51,10 @@ internal class NetExpCmd : CliktCommand(name = "netexp") {
         .file(canBeDir = false, canBeFile = true)
         .defaultLazy { File("./resources/ignored/exp.json") }
 
-    @OptIn(ExperimentalSerializationApi::class)
+    @OptIn(ExperimentalSerializationApi::class, ExperimentalCoroutinesApi::class)
     override fun run() {
         NetSimGlobal.WITH_COMPUTE = false
+//        DebugProbes.install()
         val exp: NetSimExp = NetSimGlobal.Serialization.JSON.decodeFromStream(expPath.inputStream())
 
         runBlocking {

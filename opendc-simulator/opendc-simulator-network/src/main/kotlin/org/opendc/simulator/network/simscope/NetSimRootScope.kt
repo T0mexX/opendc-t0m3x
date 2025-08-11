@@ -75,7 +75,10 @@ internal class NetSimRootScope private constructor(
         block: suspend NetSimScope.() -> Unit,
     ): Job = super<NetSimScope>.launch(ctx, block)
 
-    override suspend fun <T> coroutineScope(block: suspend NetSimScope.() -> T): T = super<NetSimScope>.coroutineScope(block)
+    override suspend fun <T> coroutineScope(
+        additionalCtx: CoroutineContext,
+        block: suspend NetSimScope.() -> T
+    ): T = super<NetSimScope>.coroutineScope(additionalCtx, block)
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NetSimRootScope Methods

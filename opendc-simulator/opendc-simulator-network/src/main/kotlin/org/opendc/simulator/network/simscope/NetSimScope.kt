@@ -33,7 +33,6 @@ import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.annotations.ProtectedUse
 import org.opendc.simulator.network.api.integration.JNetController
 import org.opendc.simulator.network.api.integration.JNetFTracker
-import org.opendc.simulator.network.components.NetCo
 import org.opendc.simulator.network.components.evntemitter.Evnt
 import org.opendc.simulator.network.components.invalidatable.Invalidatable
 import org.opendc.simulator.network.components.msgable.Msg
@@ -45,7 +44,6 @@ import org.opendc.simulator.network.simscope.fwpool.FWPool
 import org.opendc.simulator.network.simscope.fwpool.NetSimFWPool
 import org.opendc.simulator.network.simscope.ip.NetSimAddressManager
 import org.opendc.simulator.network.utils.NetCoId
-import org.slf4j.Logger
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -232,11 +230,11 @@ internal interface NetSimScope : CoroutineScope {
      */
     @OptIn(ProtectedUse::class)
     fun launchInRoot(
-        ctx: CoroutineContext = EmptyCoroutineContext,
+        additionalCtx: CoroutineContext = EmptyCoroutineContext,
         block: suspend NetSimScope.() -> Unit,
     ): Job {
         assert(root.isActive)
-        return root.launch(ctx, block)
+        return root.launch(additionalCtx, block)
     }
 
     /**
@@ -244,10 +242,10 @@ internal interface NetSimScope : CoroutineScope {
      */
     @OptIn(ProtectedUse::class)
     fun <T> async(
-        ctx: CoroutineContext = EmptyCoroutineContext,
+        additionalCtx: CoroutineContext = EmptyCoroutineContext,
         block: suspend NetSimScope.() -> T
     ): Deferred<T> =
-        (this as CoroutineScope).async(ctx) scopeToWrap@ {
+        (this as CoroutineScope).async(additionalCtx) scopeToWrap@ {
             NetSimSubScope(
                 rootScope = root,
                 wrappedScope = this@scopeToWrap,
@@ -278,10 +276,10 @@ internal interface NetSimScope : CoroutineScope {
      * @return The result of the [block] execution.
      */
     @OptIn(ProtectedUse::class)
-    suspend fun <T> coroutineScope(block: suspend NetSimScope.() -> T): T =
+    suspend fun <T> coroutineScope(additionalCtx: CoroutineContext = EmptyCoroutineContext, block: suspend NetSimScope.() -> T): T =
         NetSimSubScope(
             rootScope = root,
-            wrappedScope = CoroutineScope(coroutineContext + Job(coroutineContext[Job])),
+            wrappedScope = CoroutineScope(coroutineContext + additionalCtx + Job(coroutineContext[Job])),
         ).block()
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

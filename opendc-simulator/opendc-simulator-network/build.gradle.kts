@@ -48,6 +48,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
     implementation("io.github.microutils:kotlin-logging-jvm:$kLoggingVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$slf4j2Version")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.9.0")
     implementation(libs.clikt)
     implementation(projects.opendcTrace.opendcTraceParquet)
     api("com.github.seancfoley:ipaddress:$ipAddressVersion")

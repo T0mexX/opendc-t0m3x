@@ -36,6 +36,7 @@ dependencies {
     implementation(projects.opendcCommon)
     implementation(projects.opendcSimulator.opendcSimulatorNetwork)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.9.0")
 
     implementation(project(":opendc-simulator:opendc-simulator-network")) {
         exclude(group = "com.github.ajalt", module = "clikt") // excludes 2.8.0
