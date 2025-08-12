@@ -69,7 +69,7 @@ public object DfltNodeExportColumns {
      */
     public val FLOWS_IN: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("incoming_flows"),
+            field = Types.required(INT32).named("num_incoming_flows"),
         ) { it.numIncomingFlows }
 
     /**
@@ -77,7 +77,7 @@ public object DfltNodeExportColumns {
      */
     public val FLOWS_OUT: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("outgoing_flows"),
+            field = Types.required(INT32).named("num_outgoing_flows"),
         ) { it.numOutgoingFlows }
 
     /**
@@ -85,7 +85,7 @@ public object DfltNodeExportColumns {
      */
     public val GEN_FLOWS: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("flows_being_generated"),
+            field = Types.required(INT32).named("num_flows_being_generated"),
         ) { it.numGeneratingFlows }
 
     /**
@@ -93,7 +93,7 @@ public object DfltNodeExportColumns {
      */
     public val CONS_FLOWS: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("flows_being_consumed"),
+            field = Types.required(INT32).named("num_flows_being_consumed"),
         ) { it.numConsumedFlows }
 
     /**

@@ -63,7 +63,7 @@ public object DfltNetworkExportColumns {
      */
     public val NUM_FLOWS: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("n_flows"),
+            field = Types.required(INT32).named("num_flows"),
         ) { it.numActiveFlows }
 
     /**
@@ -71,7 +71,7 @@ public object DfltNetworkExportColumns {
      */
     public val NUM_NODES: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("nodes"),
+            field = Types.required(INT32).named("num_nodes"),
         ) { it.numNodes }
 
     /**
@@ -87,7 +87,7 @@ public object DfltNetworkExportColumns {
      */
     public val NUM_ACTIVE_HOST_NODES: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("active_hosts"),
+            field = Types.required(INT32).named("num_active_hosts"),
         ) { it.claimedHostNodes }
 
     /**
