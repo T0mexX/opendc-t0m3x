@@ -101,7 +101,7 @@ public object DfltNodeExportColumns {
      */
     public val MIN_F_TPUT: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.optional(DOUBLE).named("min_flow_throughput_ratio"),
+            field = Types.optional(DOUBLE).named("min_flow_tput_ratio"),
         ) { it.currMinFlowTputPerc?.toRatio() }
 
     /**
@@ -109,7 +109,7 @@ public object DfltNodeExportColumns {
      */
     public val MAX_F_TPUT: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.optional(DOUBLE).named("max_flow_throughput_ratio"),
+            field = Types.optional(DOUBLE).named("max_flow_tput_ratio"),
         ) { it.currMaxFlowTputPerc?.toRatio() }
 
     /**
@@ -117,7 +117,7 @@ public object DfltNodeExportColumns {
      */
     public val AVRG_F_TPUT: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.optional(DOUBLE).named("avg_flow_throughput_ratio"),
+            field = Types.optional(DOUBLE).named("avg_flow_tput_ratio"),
         ) { it.currAvrgFlowTputPerc?.toRatio() }
 
     /**
@@ -125,7 +125,7 @@ public object DfltNodeExportColumns {
      */
     public val TPUT: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.required(DOUBLE).named("node_throughput_mbps"),
+            field = Types.required(DOUBLE).named("node_tput_mbps"),
         ) { it.currNodeTputAllFlows.toMbps() }
 
     /**
@@ -133,7 +133,7 @@ public object DfltNodeExportColumns {
      */
     public val TPUT_PERC: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.optional(DOUBLE).named("node_throughput_ratio"),
+            field = Types.optional(DOUBLE).named("node_tput_ratio"),
         ) { it.currNodeTputPercAllFlows?.toRatio() }
 
     /**
@@ -141,7 +141,7 @@ public object DfltNodeExportColumns {
      */
     public val CURR_PWR_USE: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.required(DOUBLE).named("power_draw_watts"),
+            field = Types.required(DOUBLE).named("pwr_draw_watts"),
         ) { it.currPwrUse.toWatts() }
 
     /**
@@ -149,6 +149,6 @@ public object DfltNodeExportColumns {
      */
     public val EN_CONSUMPT: ExportColumn<NodeSnapshot> =
         ExportColumn(
-            field = Types.required(DOUBLE).named("energy_consumed_joule"),
+            field = Types.required(DOUBLE).named("en_consumed_joule"),
         ) { it.totEnConsumed.toJoule() }
 }

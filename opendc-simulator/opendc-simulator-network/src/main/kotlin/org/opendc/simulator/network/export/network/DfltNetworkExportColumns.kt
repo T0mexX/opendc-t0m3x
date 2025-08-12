@@ -63,7 +63,7 @@ public object DfltNetworkExportColumns {
      */
     public val NUM_FLOWS: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("flowsById"),
+            field = Types.required(INT32).named("n_flows"),
         ) { it.numActiveFlows }
 
     /**
@@ -79,7 +79,7 @@ public object DfltNetworkExportColumns {
      */
     public val NUM_HOST_NODES: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("host_nodes"),
+            field = Types.required(INT32).named("n_hosts"),
         ) { it.numHostNodes }
 
     /**
@@ -87,7 +87,7 @@ public object DfltNetworkExportColumns {
      */
     public val NUM_ACTIVE_HOST_NODES: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(INT32).named("active_host_nodes"),
+            field = Types.required(INT32).named("active_hosts"),
         ) { it.claimedHostNodes }
 
     /**
@@ -95,7 +95,7 @@ public object DfltNetworkExportColumns {
      */
     public val AVRG_TPUT_PERC: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.optional(DOUBLE).named("avg_throughput_ratio"),
+            field = Types.optional(DOUBLE).named("avg_tput_ratio"),
         ) { it.avrgTputPerc?.toRatio() }
 
     /**
@@ -114,7 +114,7 @@ public object DfltNetworkExportColumns {
 
     public val WORST_TPUT_PERC: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.optional(DOUBLE).named("worst_tput_ratio"),
+            field = Types.optional(DOUBLE).named("min_tput_ratio"),
         ) { it.worstTputPerc?.toRatio() }
 
     /**
@@ -122,7 +122,7 @@ public object DfltNetworkExportColumns {
      */
     public val CURR_PWR_DRAW: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(DOUBLE).named("power_draw_watt"),
+            field = Types.required(DOUBLE).named("pwr_draw_watt"),
         ) { it.currPwrUse.toWatts() }
 
     /**
@@ -130,6 +130,6 @@ public object DfltNetworkExportColumns {
      */
     public val EN_CONSUMED: ExportColumn<NetworkSnapshot> =
         ExportColumn(
-            field = Types.required(DOUBLE).named("energy_consumed_joule"),
+            field = Types.required(DOUBLE).named("en_consumed_joule"),
         ) { it.totEnConsumed.toJoule() }
 }
