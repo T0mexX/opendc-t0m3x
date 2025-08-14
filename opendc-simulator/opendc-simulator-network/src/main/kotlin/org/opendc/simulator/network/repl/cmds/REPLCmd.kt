@@ -43,13 +43,13 @@ internal abstract class REPLCmd(val name: String) : CliktCommand(name = name) {
         block: suspend NetSimScope.() -> Unit,
     ): Unit =
         netBlking(env.scope) {
-            runCatching {
+//            runCatching {
                 block()
-            }.let {
-                if (it.isFailure) {
-                    echoCmdErr(it.exceptionOrNull()!!)
-                }
-            }
+//            }.let {
+//                if (it.isFailure) {
+//                    echoCmdErr(it.exceptionOrNull()!!)
+//                }
+//            }
         }
 
     protected fun echoCmdErr(e: Throwable) {

@@ -68,8 +68,7 @@ public abstract class Evnt<T : EvntEmitter<T>, Self : Evnt<T, Self>> : IFW<Self>
      */
     public suspend fun markHandled() {
         nHandledMtx.withLock {
-            assert(nHandled < nCollectors)
-            if (++nHandled == nCollectors) {
+            if (++nHandled >= nCollectors) {
                 // If the fact that this event is not yet handled by all collectors invalidates the network
                 // (hence the evnt is invalidatable), then validate it once it is handled.
                 (this as? Invalidatable)?.validate()

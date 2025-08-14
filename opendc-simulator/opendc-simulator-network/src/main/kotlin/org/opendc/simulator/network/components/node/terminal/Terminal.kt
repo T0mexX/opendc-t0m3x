@@ -99,14 +99,14 @@ internal class Terminal private constructor(
                         ?: nodeConfig.defaultEnModel,
                 flowTbl = nodeConfig.flowTableVersion(),
                 stabilizer = barrier.stabilizer(Terminal::class),
-            ).also { h ->
-                h.invalidate()
+            ).also { t ->
+                t.invalidate()
 
                 //
                 // Start the coroutine that runs the terminal.
                 val coId = NetCoId.new(NetCo.NODE)
                 val coName = CoroutineName("NetTerminal(id:${coId.value})")
-                h.netRun(coId + coName)
+                t.netRun(coId + coName)
             }
         }
     }

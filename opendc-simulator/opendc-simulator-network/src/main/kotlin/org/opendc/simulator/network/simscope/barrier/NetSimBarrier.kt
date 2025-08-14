@@ -34,6 +34,7 @@ import org.opendc.simulator.network.utils.NetCoId
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
+import kotlin.system.exitProcess
 
 /**
  * TODO
@@ -46,6 +47,7 @@ internal class NetSimBarrier internal constructor(
      * - locked => network unstable
      * - unlocked => network stable
      */
+    private val stabMtxTkn = object { }
     private val stabilityMtx = Mutex()
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,15 +116,12 @@ internal class NetSimBarrier internal constructor(
     private suspend fun <T> whileStabilityChecked(block: suspend () -> T): T {
         return try {
             // If the network is not currently stable, then throw.
-            if (stabilityMtx.tryLock().not()) throw NetSimStabilityException()
+            if (isStable().not()) throw NetSimStabilityException()
 
             shouldBeStableMtx.withLock {
                 // If this is the first stability checker, then set `shouldBeStable` to `true`.
                 if (++shouldBeStableCounter == 1) shouldBeStable = true
             }
-
-            // Unlock `stabilityMtx` so that other checkers can successfully invoke this method.
-            stabilityMtx.unlock()
 
             block()
 
@@ -172,13 +171,14 @@ internal class NetSimBarrier internal constructor(
     internal suspend fun awaitStability() {
         withTimeout(100000L) {
             try {
-                stabilityMtx.lock()
+                stabilityMtx.lock(coroutineContext)
             } catch (e: TimeoutCancellationException) {
                 println(getInvalidated())
                 println(coroutineContext[NetCoId]!!.owner)
+                exitProcess(0)
                 throw e
             } finally {
-                stabilityMtx.unlock()
+                stabilityMtx.unlock(coroutineContext)
             }
         }
     }
@@ -218,9 +218,9 @@ internal class NetSimBarrier internal constructor(
         override val isValidated: Boolean
             get() = stabilityMtx.isLocked
 
-        override suspend fun invalidate(): Unit = stabilityMtx.lock()
+        override suspend fun invalidate(): Unit = stabilityMtx.lock(stabMtxTkn)
 
-        override suspend fun validate(): Unit = stabilityMtx.unlock()
+        override suspend fun validate(): Unit = stabilityMtx.unlock(stabMtxTkn)
 
         override suspend fun <T> whileNetStable(
             netSimStabilityMode: NetSimStabilityMode,
@@ -288,7 +288,11 @@ internal class NetSimBarrier internal constructor(
             override var isValidated: Boolean = true
                 private set
 
+            @OptIn(DebuggingUse::class)
             override suspend fun invalidate() {
+                if (stableState.value) {
+                    throw RuntimeException()
+                }
                 // If there is a `NetStabilityMode.CHECK` protected block that is being executed.
                 if (shouldBeStable) throw NetSimStabilityException()
 
@@ -340,6 +344,8 @@ internal class NetSimBarrier internal constructor(
         // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Debugging
         // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // TODO: remove
+        val stableState = MutableStateFlow(false)
 
         @DebuggingUse
         internal fun NetSimBarrier.getInvalidated(): List<Pair<KClass<*>?, Any?>> = this.childBarrier.getInvalidated()

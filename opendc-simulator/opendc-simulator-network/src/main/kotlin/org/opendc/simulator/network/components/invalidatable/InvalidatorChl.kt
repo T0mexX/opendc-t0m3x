@@ -26,6 +26,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
 import kotlinx.coroutines.channels.ClosedSendChannelException
+import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -92,7 +93,6 @@ internal open class InvalidatorChl<T> private constructor(
             // If channel is already closed, skip invalidation of the receiver.
             if (delegatedChl.isClosedForSend) throw ClosedSendChannelException(null)
 
-
             receiver?.let { receiver ->
                 pendingMtx.withLock {
                     if (++pending == 1) receiver.invalidate()
@@ -101,6 +101,7 @@ internal open class InvalidatorChl<T> private constructor(
 
             delegatedChl.send(element)
         } catch (e: ClosedSendChannelException) {
+            throw RuntimeException()
             pendingMtx.withLock {
                 if (--pending <= 0) receiver?.validate()
             }

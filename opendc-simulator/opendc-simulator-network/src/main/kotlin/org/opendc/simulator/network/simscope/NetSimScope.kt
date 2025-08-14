@@ -25,6 +25,7 @@ package org.opendc.simulator.network.simscope
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.isActive
@@ -205,12 +206,12 @@ internal interface NetSimScope : CoroutineScope {
      * @param block The suspend function to execute, with a [NetSimScope] receiver.
      * @return The [Job] representing the launched coroutine.
      */
-    @OptIn(ProtectedUse::class)
+    @OptIn(ProtectedUse::class, InternalCoroutinesApi::class)
     fun launch(
         ctx: CoroutineContext = EmptyCoroutineContext,
         block: suspend NetSimScope.() -> Unit,
     ): Job {
-        assert(this.isActive)
+        assert(this.isActive) { this.coroutineContext[Job]!!.getCancellationException() }
         // Cast to call extension function [CoroutineScope.launch] instead of this.
         return (this as CoroutineScope).launch(ctx) scopeToWrap@ {
             // Wrapp the newly created child [CoroutineScope] with [NetSimScope].
@@ -275,12 +276,15 @@ internal interface NetSimScope : CoroutineScope {
      * @param block The suspend function to execute, with a [NetSimScope] receiver.
      * @return The result of the [block] execution.
      */
+    // TODO: `coroutineScope { launch {} }` does not await if either this or NetSimScope.launch are used, os this is useless basically.
     @OptIn(ProtectedUse::class)
     suspend fun <T> coroutineScope(additionalCtx: CoroutineContext = EmptyCoroutineContext, block: suspend NetSimScope.() -> T): T =
-        NetSimSubScope(
-            rootScope = root,
-            wrappedScope = CoroutineScope(coroutineContext + additionalCtx + Job(coroutineContext[Job])),
-        ).block()
+        kotlinx.coroutines.coroutineScope scopeToWrap@ {
+            NetSimSubScope(
+                rootScope = root,
+                wrappedScope = this@scopeToWrap,
+            ).block()
+        }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // NetSimSubScope

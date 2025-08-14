@@ -110,8 +110,8 @@ public suspend fun main() {
             println(e.command.getFormattedHelp())
         } catch (e: CliktError) {
             e.message?.let { println(it) }
-        } catch (e: Exception) {
-            println("Unexpected error: ${e.message}")
+//        } catch (e: Exception) {
+//            println("Unexpected error: ${e.message}")
         }
     }
 }

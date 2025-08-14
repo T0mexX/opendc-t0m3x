@@ -36,6 +36,8 @@ import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 import org.opendc.simulator.network.utils.NonSerializable
 import org.opendc.simulator.network.utils.datastructures.MultiDimGrid
 import org.opendc.common.withProgressBarSus
+import kotlin.math.floor
+import kotlin.time.times
 
 /**
  * Represents a Flattened Butterfly (FlatFly) network topology.
@@ -104,6 +106,13 @@ internal class FlatFly private constructor(
 
                 val inet = Internet()
 
+
+                //
+                // Logic for selecting gateway nodes.
+                val nGWNodes = floor((specs.gwPerc * specs.N_.toDouble()).toRatio()).toInt()
+                val gwHosts: List<Int> = (0..<specs.N_).shuffled().take(nGWNodes)
+                var hCounter = 0
+
                 // Grid with `specs.n` dimensions each of size `specs.k`.
                 val swGrid = MultiDimGrid<Switch>(List(specs.n) { specs.k })
                 // Grid with `specs.n + 1` dimensions. Dimensions `1..specs.n` have size `specs.k`,
@@ -141,7 +150,11 @@ internal class FlatFly private constructor(
 
                             // Build `specs.c` hosts (terminals) connected to the newly built switch.
                             (0..<specs.c).map {
-                                Terminal(subnet = outerSubNet, nPorts = 1)
+                                if (hCounter++ in gwHosts) {
+                                    val t = Terminal(subnet = outerSubNet, nPorts = 2)
+                                    t.msgSyncConnect(inet)
+                                    t
+                                } else Terminal(subnet = outerSubNet, nPorts = 1)
                             }.forEachIndexed { hIdx, newH ->
                                 hostIndices[hostIndices.size - 2] = sIdx
                                 hostIndices[hostIndices.size - 1] = hIdx

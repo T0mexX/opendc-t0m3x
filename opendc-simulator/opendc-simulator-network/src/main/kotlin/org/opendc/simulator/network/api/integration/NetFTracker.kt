@@ -118,7 +118,7 @@ public class NetFTracker private constructor(
      */
     context(NetSimScope)
     public suspend fun newFrag(fragId: Any): Unit = mtx.withLock {
-        log.debug { "New frag" }
+//        log.debug { "New frag" }
         remaining = flows.size
         this.fragId = fragId
         latestTsIdx = 0
@@ -126,7 +126,7 @@ public class NetFTracker private constructor(
         estimateComplTs.indices.forEach { i ->
             val f = flows[i]
             estimateComplTs[i] = f.msgSyncReqFragComplEstimate()
-            log.debug { "response estimate for $f is ${estimateComplTs[i]}" }
+//            log.debug { "response estimate for $f is ${estimateComplTs[i]}" }
             if (estimateComplTs[i] > estimateComplTs[latestTsIdx]) latestTsIdx = i
             if (estimateComplTs[i] < estimateComplTs[earliestTsIdx] && estimateComplTs[i] > tmSrc.tmstamp)
                 earliestTsIdx = i
@@ -168,7 +168,7 @@ public class NetFTracker private constructor(
     private suspend fun handle1(): Unit = select {
         listeners.onEachIndexed { idx, l ->
             l.onReceive { e ->
-                log.debug { "received event $e" }
+//                log.debug { "received event $e" }
                 currEvnt = e
                 mtx.withLock {
                     when (e) {

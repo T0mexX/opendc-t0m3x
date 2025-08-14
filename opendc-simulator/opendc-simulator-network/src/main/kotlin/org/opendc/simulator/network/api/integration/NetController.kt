@@ -39,6 +39,7 @@ import org.opendc.simulator.network.utils.SuspendingODCNApi
 import org.slf4j.Logger
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
+import kotlin.system.exitProcess
 
 public class NetController internal constructor(
     internal val rootScope: NetSimRootScope,

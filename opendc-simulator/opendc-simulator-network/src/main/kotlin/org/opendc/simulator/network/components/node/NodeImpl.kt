@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.opendc.common.annotations.ProtectedUse
@@ -152,25 +154,28 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                 // Accumulate multiple updates if possible
                 // before telling the ports to process them and propagate results.
                 currMsg = _msgChl.tryReceiveValidate().getOrNull()
+                assert(stabilizer.isValidated.not())
                 currMsg?.handle() ?: break
             }
-
+            assert(stabilizer.isValidated.not())
             //
             // Propagate updates to adjacent nodes.
-            coroutineScope {
+//            coroutineScope {
                 flowTbl.updtTputs()
                 config.routPolicy.onNodeTxAttempt()
+                assert(stabilizer.isValidated.not())
                 links.forEach { l ->
-                    launch { l?.attemptTx() }
+                    l?.attemptTx()
                 }
-            }
+//            }
+            assert(links.all { it == null || it.stabilizer.isValidated })
 
             //
             // Suspending receive. When node suspends here, its stability is validated.
             currMsg = null
             currMsg = _msgChl.receive()
-            currMsg!!.handle()
             assert(stabilizer.isValidated.not())
+            currMsg!!.handle()
         }
     }
 

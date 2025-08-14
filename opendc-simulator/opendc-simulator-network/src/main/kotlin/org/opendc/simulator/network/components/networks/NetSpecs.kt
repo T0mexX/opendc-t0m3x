@@ -26,6 +26,7 @@ package org.opendc.simulator.network.components.networks
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
+import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.utils.NETWORK_JSON
 import org.opendc.simulator.network.utils.SerialNetSpecs

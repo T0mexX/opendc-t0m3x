@@ -33,6 +33,7 @@ import org.opendc.simulator.network.components.networks.Network
 import org.opendc.simulator.network.repl.cmds.REPLCmd
 import org.opendc.simulator.network.repl.synthetictraffic.SyntheticTraffic
 import org.opendc.common.withProgressBarSus
+import org.opendc.simulator.network.simscope.barrier.NetSimBarrier
 import kotlin.time.measureTime
 
 private const val CMD_STR: String = "synthetic-wl"
@@ -88,6 +89,8 @@ internal class FlowSynthWlCmd : REPLCmd(name = CMD_STR) {
                     }
 
                     barrier.awaitStability()
+                    // TODO: remove
+                    NetSimBarrier.stableState.emit(true)
                 }
 
             echo("| Synthetic workload executed successfully in $tm")

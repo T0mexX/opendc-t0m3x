@@ -69,7 +69,7 @@ internal class LinkImpl private constructor(
             applyReductions(f)
             applyIncreases(f)
 
-            stabilizer.validate()
+            this@LinkImpl.stabilizer.validate()
             assert(usedBw <= maxBw)
         }
 
@@ -83,7 +83,7 @@ internal class LinkImpl private constructor(
                 if (e.used.not()) return@collect
                 val delta = ((maxBw * (e.demand / totTentativeTx)) min e.demand) - e.tput
 //                delta = delta.roundDR(max = DataRate.zero)
-                if (delta >= DataRate.zero) return@collect
+                if (delta approxLargerOrEq DataRate.zero) return@collect
                 usedBw = (usedBw + delta).roundDR(min = DataRate.zero)
                 e.tput = (e.tput + delta).roundDR(max = e.demand)
                 receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.f)
@@ -118,7 +118,7 @@ internal class LinkImpl private constructor(
 
             // Invalidate the port until `attemptTx`
             // is called and updates are propagated to `receiverN`.
-            stabilizer.invalidate()
+            this@LinkImpl.stabilizer.invalidate()
 
             @Suppress("NAME_SHADOWING")
             var entryId = entryId ?: newEntry(f)

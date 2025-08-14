@@ -22,6 +22,7 @@
 
 package org.opendc.simulator.network.api.snapshots
 
+import org.opendc.common.annotations.DebuggingUse
 import org.opendc.common.units.DataRate
 import org.opendc.common.units.Energy
 import org.opendc.common.units.Percentage
@@ -35,6 +36,7 @@ import org.opendc.simulator.network.components.networks.Network.Companion.getNod
 import org.opendc.simulator.network.components.node.switchh.Switch
 import org.opendc.simulator.network.components.node.terminal.Terminal
 import org.opendc.simulator.network.simscope.NetSimScope
+import org.opendc.simulator.network.simscope.barrier.NetSimBarrier.Key.getInvalidated
 import org.opendc.simulator.network.utils.Flag
 import org.opendc.simulator.network.utils.Flags
 import org.opendc.simulator.network.utils.InternalODCNApi
@@ -212,7 +214,7 @@ public class NetworkSnapshot private constructor(
          * be avoided when the timestamp of the snapshot is the same but events have been processed at this instant.
          */
         context(NetSimScope)
-        @OptIn(InternalODCNApi::class)
+        @OptIn(InternalODCNApi::class, DebuggingUse::class)
         internal suspend fun Network<*>.snapshot(): NetworkSnapshot {
             check(this@NetSimScope.net === this)
 
@@ -225,7 +227,7 @@ public class NetworkSnapshot private constructor(
 
             assert(
                 flows.forEach {
-                    assert(barrier.isStable())
+                    assert(barrier.isStable()) { barrier.getInvalidated() }
                     check(it.demand approxLargerOrEq it.throughput) { "${it.demand} ${it.throughput} ${it.id}  $it" }
 //                    if (it.senderId == NetworkImpl.INTERNET_ID && it.demand > DataRate.zero) exitProcess(1)
                 }.let { true },

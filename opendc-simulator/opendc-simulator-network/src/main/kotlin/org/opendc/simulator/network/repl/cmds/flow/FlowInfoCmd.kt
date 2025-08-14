@@ -31,6 +31,7 @@ import inet.ipaddr.ipv4.IPv4Address
 import org.opendc.simulator.network.components.node.Node
 import org.opendc.simulator.network.components.node.NodeId.Companion.toNId
 import org.opendc.simulator.network.repl.cmds.REPLCmd
+import org.opendc.simulator.network.simscope.barrier.NetSimStabilityMode
 
 private const val CMD_STR: String = "info"
 
@@ -56,12 +57,13 @@ internal class FlowInfoCmd : REPLCmd(name = CMD_STR) {
     override fun run(): Unit =
         execREPLCmdCatching {
             barrier.awaitStability()
-
-            ip?.let {
-                // NodeId2 specified.
-                val node: Node<*>? = net[ip!!.toNId()]
-                checkNotNull(node)
+//            barrier.whileStable(netSimStabilityMode = NetSimStabilityMode.ENFORCED) {
+                ip?.let {
+                    // NodeId specified.
+                    val node: Node<*>? = net[ip!!.toNId()]
+                    checkNotNull(node)
 //                echo(node.fmtFlows())
-            } ?: echo(net.fmtFlows(ls = ls))
+                } ?: echo(net.fmtFlows(ls = ls))
+//            }
         }
 }

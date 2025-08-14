@@ -26,6 +26,7 @@ package org.opendc.simulator.network.components.networks.flatfly
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.opendc.common.units.Percentage
 import org.opendc.simulator.network.components.networks.NetSpecs
 import org.opendc.simulator.network.simscope.NetSimScope
 import kotlin.math.pow
@@ -44,6 +45,8 @@ internal data class FlatFlySpecs(
     val n: Int,
     val k: Int,
     val c: Int = k,
+    val gwPerc: Percentage,
+    // TODO: change how gateway nodes are selected
 ) : NetSpecs<FlatFly> {
     /**
      * Total radix of a switch (number of ports).
