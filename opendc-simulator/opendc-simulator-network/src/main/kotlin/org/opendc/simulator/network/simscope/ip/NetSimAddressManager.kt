@@ -33,6 +33,7 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.ceil
 import kotlin.math.log2
+import kotlin.math.pow
 
 private typealias TNode = IPv4TrieNode
 
@@ -87,11 +88,9 @@ internal class NetSimAddressManager : AbstractCoroutineContextElement(Key) {
                     println(of)
                     println(ofN)
                 }
-
                 return newBlk
             }
-
-            error("Unable to allocate subnet")
+            error("unable to allocate subnet")
         }
 
     // TODO: maybe change to used a counter for improved performance.

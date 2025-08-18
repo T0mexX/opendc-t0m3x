@@ -37,6 +37,7 @@ import org.opendc.simulator.network.utils.NonSerializable
 import org.opendc.simulator.network.utils.datastructures.MultiDimGrid
 import org.opendc.common.withProgressBarSus
 import kotlin.math.floor
+import kotlin.system.exitProcess
 import kotlin.time.times
 
 /**
@@ -119,6 +120,11 @@ internal class FlatFly private constructor(
                 // dimension `specs.n + 1` has size `specs.c` for the hosts.
                 val hGrid = MultiDimGrid<Terminal>(MutableList(specs.n + 1) { specs.k }.also { it[it.size - 1] = specs.c })
 
+                val subnetSzs = (0..<specs.n).reversed().runningFold(0) { acc, _ ->
+                    // Round up to the nearest power of 2.
+                    Integer.highestOneBit(acc * specs.k + specs.k * specs.c + specs.k) shl 1
+                }.reversed().dropLast(1).drop(1)
+
                 /**
                  * Executed recursively on the [FlatFlySpecs.n] dimensions.
                  * Builds all nodes.
@@ -169,8 +175,9 @@ internal class FlatFly private constructor(
                         // If this is not the last dimension, then create subnet
                         // for each idx in this dimension and keep recursion.
                     } else {
-                        val nextSubNetNSwitches = swGrid.subGridSize(*nextIndices)
-                        val nextSubNetSz = nextSubNetNSwitches * specs.c + nextSubNetNSwitches
+//                        val nextSubNetNSwitches = swGrid.subGridSize(*nextIndices)
+//                        val nextSubNetSz = nextSubNetNSwitches * specs.c + nextSubNetNSwitches
+                        val nextSubNetSz = subnetSzs[indices.size]
                         (0..<specs.k).forEach { idx ->
                             val nextSubNet = addrMngr.getNewSubNet(of = outerSubNet, nIps = nextSubNetSz)
                             nextIndices[nextIndices.size - 1] = idx

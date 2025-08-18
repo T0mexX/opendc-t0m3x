@@ -7,7 +7,7 @@
         "portSpeed": "1Gbps"
     },
     "hostSpecs": {
-        "nPorts": 4,
+        "nPorts": 1,
         "portSpeed": "1Gbps"
     }
 }
