@@ -24,7 +24,10 @@ package org.opendc.simulator.network.simscope
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.newSingleThreadContext
 import org.opendc.common.annotations.ProtectedUse
 import org.opendc.common.logger.logger
 import org.opendc.simulator.network.api.integration.JNetController
@@ -146,12 +149,18 @@ internal class NetSimRootScope private constructor(
             // If [rootScope] contains a Job, this creates a child Job of it; otherwise, creates a standalone Job.
             val mainJob = Job(ctx[Job])
 
+            val dispatcher = config.parallelism?.let {
+                Dispatchers.Default.limitedParallelism(it)
+            } ?: Dispatchers.Default
+
             var newCtx =
                 ctx + mainJob + config + tmSrc +
                     // Assigns a unique [NetCoId] to each coroutine launched within the [NetSimScope].
                     // This is used for concurrency assertions, logic validation, and identifying which independently executing
                     // network component the coroutine belongs to.
                     NetCoId.new(owner = NetCo.MAIN) +
+
+                    dispatcher +
 
                     // The coroutine name of the root env, so that it can be identified/retrieved/canceled.
                     CoroutineName(NetSimGlobal.NETSIMSCOPE_ROOT_CONAME) +

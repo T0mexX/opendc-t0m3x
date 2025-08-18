@@ -59,7 +59,9 @@ internal data class FlatFlySpecs(
 
     override val V_: Int = R_ + N_
 
-    override val E_: Int = (((k - 1) * n * R_).also { assert(it % 2 == 0) } / 2) + (c * R_)
+    override val E_: Int = (((k - 1) * n * R_).also {
+        assert(it % 2 == 0)
+    } / 2) + (c * R_)
 
     context(NetSimScope)
     override suspend fun build(): FlatFly = FlatFly(this)

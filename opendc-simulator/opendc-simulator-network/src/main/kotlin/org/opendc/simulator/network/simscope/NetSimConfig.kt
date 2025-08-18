@@ -52,6 +52,7 @@ NetSimConfig internal constructor(
     internal val routPolicy: RoutPolicy = ECMP(),
     internal val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
     val random: Random = Random(Random.nextInt()),
+    val parallelism: Int? = 1,
     val wlToNetIdMapping: Boolean = true,
 ) : AbstractCoroutineContextElement(Key) {
     public companion object Key : CoroutineContext.Key<NetSimConfig>
@@ -67,6 +68,7 @@ NetSimConfig internal constructor(
             val netSimExportConfig: NetworkExportConfig? = null,
             val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
             val wlToNetIdMapping: Boolean = true,
+            val parallelism: Int? = 1,
             val seed: Int? = null,
             @Polymorphic val routingPolicy: RoutPolicy = ECMP(),
         )
@@ -84,6 +86,7 @@ NetSimConfig internal constructor(
                 netSimDevConfig = surr.netSimDevConfig,
                 wlToNetIdMapping = surr.wlToNetIdMapping,
                 routPolicy = surr.routingPolicy,
+                parallelism = surr.parallelism,
                 random = surr.seed?.let { Random(it) } ?: Random(Random.nextLong()),
             )
         }

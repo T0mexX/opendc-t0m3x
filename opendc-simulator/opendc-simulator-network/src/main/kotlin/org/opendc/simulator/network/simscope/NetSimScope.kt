@@ -45,6 +45,7 @@ import org.opendc.simulator.network.simscope.fwpool.FWPool
 import org.opendc.simulator.network.simscope.fwpool.NetSimFWPool
 import org.opendc.simulator.network.simscope.ip.NetSimAddressManager
 import org.opendc.simulator.network.utils.NetCoId
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
