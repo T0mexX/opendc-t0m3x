@@ -166,7 +166,9 @@ public abstract class FlowNode {
         try {
             newDeadline = this.onUpdate(now);
         } catch (Exception e) {
-            doFail(e);
+            // TODO: uncomment (idk why tho, it cathes everything)
+//            doFail(e);
+            throw e;
         }
 
         if (this.nodeState == NodeState.CLOSING) {

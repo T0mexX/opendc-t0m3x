@@ -44,6 +44,7 @@ import org.opendc.simulator.network.components.msgable.Msg
 import org.opendc.simulator.network.components.msgable.MsgImpl
 import org.opendc.simulator.network.components.networks.TopNodeMeta
 import org.opendc.simulator.network.components.node.internalstructs.routtbl.RoutTblImpl
+import org.opendc.simulator.network.policies.routing.RoutNodeMeta
 import org.opendc.simulator.network.simscope.NetSimScope
 import org.opendc.simulator.network.simscope.fwpool.FWDispenser
 import org.opendc.simulator.network.simscope.fwpool.FWId
@@ -59,6 +60,7 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override var topNodeMeta: TopNodeMeta<*>? = null
+    override var routNodeMeta: RoutNodeMeta<*>? = null
 
     override val links: MutableList<Link?> =
         ArrayList<Link?>(nPorts).also { l ->
@@ -300,10 +302,13 @@ internal abstract class NodeImpl<Self : Node<Self>> protected constructor(
                         override suspend fun handle() {
                             assert(deltaRate.approx(DataRate.zero).not() || f.srcId == this@Node.id)
                             // TODO: apply dynamic policy
+//                            log.debug { "node ${this@Node.id} received $this" }
 
                             flowTbl.rxUpdt(this)
                             markHandled()
                         }
+
+                        override fun toString(): String = "Node.RxUpdt(f=$f, deltaRate=$deltaRate)"
                     }
                 }
 

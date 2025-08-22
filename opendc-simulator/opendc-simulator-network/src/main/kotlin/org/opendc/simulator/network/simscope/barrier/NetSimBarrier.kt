@@ -33,6 +33,7 @@ import org.opendc.simulator.network.simscope.NetSimConfig
 import org.opendc.simulator.network.utils.NetCoId
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
 
@@ -169,18 +170,16 @@ internal class NetSimBarrier internal constructor(
      */
     @OptIn(DebuggingUse::class) // TODO: delete ln
     internal suspend fun awaitStability() {
-        withTimeout(100000L) {
+//        withTimeout(100000L) {
             try {
                 stabilityMtx.lock(coroutineContext)
             } catch (e: TimeoutCancellationException) {
-                println(getInvalidated())
-                println(coroutineContext[NetCoId]!!.owner)
                 exitProcess(0)
                 throw e
             } finally {
                 stabilityMtx.unlock(coroutineContext)
             }
-        }
+//        }
     }
 
     /**

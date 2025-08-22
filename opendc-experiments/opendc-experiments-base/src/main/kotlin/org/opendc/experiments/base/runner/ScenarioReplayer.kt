@@ -91,6 +91,11 @@ public suspend fun ComputeService.replay(
 ) {
     val client = newClient()
 
+    // TODO: rm begin
+    var waiting: Int = 0
+    var waited: Int = 0
+    // TODO: rm end
+
     // Create a failure model based on the failureModelSpec, if not null, otherwise set failureModel to null
     val failureModel: FailureModel? =
         failureModelSpec?.let {
@@ -150,8 +155,11 @@ public suspend fun ComputeService.replay(
                     taskWatcher.lock()
                     task.watch(taskWatcher)
 
+
                     // Wait until the task is terminated
+                    println("waiting: ${++waiting}")
                     taskWatcher.wait()
+                    println("waited ${++waited}")
                 }
             }
         }

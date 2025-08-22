@@ -23,7 +23,11 @@
 package org.opendc.simulator.network.api.integration
 
 import inet.ipaddr.ipv4.IPv4Address
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.job
+import kotlinx.coroutines.runBlocking
 import org.opendc.common.annotations.DebuggingUse
 import org.opendc.simulator.network.api.NetIFace
 import org.opendc.simulator.network.components.networks.Network.Companion.getNodesById
@@ -142,6 +146,9 @@ public class NetController internal constructor(
             net.fmt(stabilityMode)
         }.await()
 
+
+    public fun fmtConfig(): String = rootScope.config.fmt()
+
     /**
      * TODO
      */
@@ -164,7 +171,7 @@ public class NetController internal constructor(
     override fun close() {
 //        println("=== before closing(already canceled=${rootScope.isActive.not()}):\n" + rootScope.fmtCoTree())
 //        sleep(1000)
-        rootScope.cancel()
+        runBlocking { rootScope.coroutineContext.job.cancelAndJoin() }
 //        sleep(1000)
 //        println("=== after closing:\n" + rootScope.fmtCoTree())
     }

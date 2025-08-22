@@ -66,7 +66,7 @@ public data class NetSimScopeSpec internal constructor(
         return this.copy(
             config =
                 config.copy(
-                    random = Random(seed),
+                    seed = seed,
                 ),
         )
     }

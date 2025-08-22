@@ -226,6 +226,8 @@ internal class NetFlowImpl private constructor(
 
     context(NetSimScope) @OptIn(ProtectedUse::class, DebuggingUse::class)
     override suspend fun netRunnableCancellationCleanup() {
+        // If this flow was not stopped before being cancelled.
+        if (demand > DataRate.zero) senderNode.msgAsyncStopFlow(this)
         // If a message was received but not yet handled (coroutine canceled while handling it)
         // then mark it as undelivered.
         currMsg?.markUndelivered()
@@ -233,27 +235,7 @@ internal class NetFlowImpl private constructor(
         drainMsgChl()
         // Validate this [NetFlow] the last time to avoid deadlocks.
         this.validate()
-        log.debug("{} was cancelled", this@NetFlowImpl) // TODO: rmln
-//        log.debug("{}", barrier.getInvalidated()) // TODO: rmln
     }
-//
-//    context(NetSimScope) @OptIn(DelicateCoroutinesApi::class, DebuggingUse::class)
-//    private suspend fun drainMsgChl() {
-//        // Close the msg channel so that no more [Msg]s can be received.
-//        _msgChl.close()
-//        var nDrained = 0
-//
-//        // Handled the [Msg]s that are still in [msgChl].
-//        while (_msgChl.isClosedForReceive.not()) {
-//            _msgChl.tryReceiveValidate().getOrThrow().markUndelivered()
-//            nDrained++
-//        }
-//        log.debug("{} was cancelled with {} drained msgs", this, nDrained)
-//        log.debug("{}", barrier.getInvalidated()) // TODO: rmln
-//
-//        // Validate this [NetFlow] the last time to avoid deadlocks.
-//        this.validate()
-//    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // EventEmitter
@@ -392,6 +374,7 @@ internal class NetFlowImpl private constructor(
             _setDemandDisp =
                 poolAggr.getOrAdd(INetFlow.SetDemand as FWId<INetFlow.SetDemand>) { pool, idx ->
                     val stab = barrier.stabilizer(INetFlow.SetDemand::class)
+                    // TODO: remove invalidatable
                     object : INetFlow.SetDemand, IInvalidatable, MsgImpl<INetFlow, INetFlow.SetDemand>(pool, idx) {
                         override val stabilizer: NetSimStabilizer = stab
                         override var newDemand: DataRate = DataRate.zero
@@ -439,6 +422,7 @@ internal class NetFlowImpl private constructor(
                         context(NetFlow)
                         override suspend fun handle() {
                             val f = this@NetFlow as NetFlowImpl
+//                            log.debug { "tput changed. old=${f.throughput}, new=$newTput" }
                             if (newTput approx f.throughput) return markHandled()
 
                             val oldTput: DataRate = throughput
@@ -520,11 +504,7 @@ internal class NetFlowImpl private constructor(
                             f.fragId = fragId
                             f.fragTarget = fragTarget
                             f.fragComplEstimate = f.computeFragComplEstimate()
-                            if (fragTarget == DataSize.zero) {
-                                f.evntFragCompleted()
-                            } else {
-                                f.complEvntEmitted = false
-                            }
+                            f.complEvntEmitted = fragTarget == DataSize.zero
 
                             markHandled()
                         }

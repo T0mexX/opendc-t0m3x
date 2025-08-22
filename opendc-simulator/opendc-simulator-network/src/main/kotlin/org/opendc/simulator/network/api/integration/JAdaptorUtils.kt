@@ -25,6 +25,7 @@ package org.opendc.simulator.network.api.integration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.opendc.common.units.DataRate
@@ -41,6 +42,7 @@ internal inline fun <reified T> netBlking(
     ignoreCancellationExc: Boolean = false,
     crossinline block: suspend NetSimScope.() -> T,
 ): T = try {
+    if (netScope.coroutineContext[Job]!!.isCancelled) throw CancellationException()
     runBlocking(netScope.coroutineContext) {
         with(netScope) {
             block()

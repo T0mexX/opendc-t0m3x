@@ -1,10 +1,10 @@
 {
     "type": "ftree",
-    "k": 4,
+    "k": 20,
+    "switchSpecs": {
+        "nPorts": 20
+    },
     "hostSpecs": {
         "nPorts": 1
-    },
-    "switchSpecs": {
-        "nPorts": 4
     }
 }

@@ -59,7 +59,7 @@ internal class FTree private constructor(
             super.fmt(mode) +
                 """
                 ${'\u200B'}
-                 | k (pods): ${specs.k}
+                | k (pods): ${specs.k}
                 """.trimIndent()
         }
 

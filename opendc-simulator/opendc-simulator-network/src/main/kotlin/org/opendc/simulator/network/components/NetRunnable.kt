@@ -118,6 +118,7 @@ internal interface NetRunnable {
     context(NetSimScope)
     @OptIn(ProtectedUse::class)
     fun netCancel() {
+        if (job.isActive.not()) return
         log.debug { "canceling $this `NetRunnable` in network simulation scope" }
         job.cancel()
     }

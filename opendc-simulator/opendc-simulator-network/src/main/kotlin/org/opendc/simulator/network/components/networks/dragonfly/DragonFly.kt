@@ -60,10 +60,10 @@ internal class DragonFly private constructor(
             super.fmt(mode) +
                 """
                 ${'\u200B'}
-                 | g (groups): ${specs.g}
-                 | a (routers per group): ${specs.a}
-                 | p (terminal per router): ${specs.p}
-                 | h (inter-group edges per router): ${specs.h}
+                | g (groups): ${specs.g}
+                | a (routers per group): ${specs.a}
+                | p (terminal per router): ${specs.p}
+                | h (inter-group edges per router): ${specs.h}
                 """.trimIndent()
         }
 

@@ -77,10 +77,10 @@ internal class FlatFly private constructor(
         return super.fmt(mode) +
             """
             ${'\u200B'}
-             | n (# dimensions): ${specs.n}
-             | k (dimensions size): ${specs.k}
-             | c (terminals per router): ${specs.c}
-             | r (switch total radix): ${specs.r}
+            | n (# dimensions): ${specs.n}
+            | k (dimensions size): ${specs.k}
+            | c (terminals per router): ${specs.c}
+            | r (switch total radix): ${specs.r}
             """.trimIndent()
     }
 

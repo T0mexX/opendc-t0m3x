@@ -67,14 +67,20 @@ public data class NetworkExportConfig(
     /**
      * @return formatted string representing the export config.
      */
-    public fun fmt(): String =
-        """
+    public fun fmt(): String {
+        val naExportIntervalString = "N/A" + (
+            NetSimGlobal.WITH_COMPUTE.takeIf { it }
+                ?.let { " (compute controlled)" }
+                ?: ""
+        )
+        return """
         | === NETWORK EXPORT CONFIG ===
         | Network columns  : ${networkExportColumns.map { it.name }.toString().trim('[', ']')}
         | Node columns     : ${nodeExportColumns.map { it.name }.toString().trim('[', ']')}
-        | Export interval  : ${exportInterval ?: "N/A"}
+        | Export interval  : ${exportInterval ?: naExportIntervalString}
         | Output folder    : ${outputFolder?.absolutePath ?: "N/A"}}
         """.trimIndent()
+    }
 
     /**
      * A runtime [KSerializer] is needed for reasons explained in [columnSerializer] docs.

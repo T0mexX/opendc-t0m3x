@@ -101,12 +101,12 @@ internal interface Network<Self : Network<Self>> {
     suspend fun fmt(mode: NetSimStabilityMode = config.stabilityMode): String =
         barrier.whileStable(mode) {
             """
-            === Network (${this::class.simpleName}) ===
-             | V (nodes/vertices): ${specs.V_}
-             | N (hosts): ${specs.N_}
-             | R (switches/routers): ${specs.R_}
-             | E (links/edges): ${specs.E_}
-             | global switches: ${nodesById.values.count { it is Switch && it.global }}
+            | === Network (${this::class.simpleName}) ===
+            | V (nodes/vertices)    : ${specs.V_}
+            | N (hosts)             : ${specs.N_}
+            | R (switches/routers)  : ${specs.R_}
+            | E (links/edges)       : ${specs.E_}
+            | global switches       : ${nodesById.values.count { it is Switch && it.global }}
             """.trimIndent()
         }
 

@@ -1,8 +1,8 @@
 {
-    "type": "ftree",
-    "k": 32,
+    "type": "dragonfly",
+    "a": 2,
     "switchSpecs": {
-        "nPorts": 32
+        "nPorts": 3
     },
     "hostSpecs": {
         "nPorts": 1

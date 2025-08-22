@@ -7,6 +7,7 @@ import org.opendc.common.units.DataRate
 import org.opendc.common.units.DataSize
 import org.opendc.common.units.TimeDelta
 import org.opendc.common.units.Timestamp
+import org.opendc.common.utils.approxLargerOrEq
 import org.opendc.simulator.compute.workload.trace.SimTraceWorkload
 import org.opendc.simulator.compute.workload.trace.TraceWorkload
 import org.opendc.simulator.engine.graph.FlowNode
@@ -14,7 +15,6 @@ import org.opendc.simulator.engine.graph.FlowSupplier
 import org.opendc.simulator.engine.graph.SusUpdatableFlowNode
 import org.opendc.simulator.network.api.NetIFace
 import org.opendc.simulator.network.api.integration.JNetFTracker
-import org.opendc.simulator.network.api.integration.JNetFlow
 import org.opendc.simulator.network.api.integration.NetFTracker
 import org.opendc.simulator.network.components.flow.NetFlow
 import org.opendc.simulator.network.utils.SetOnce
@@ -67,6 +67,8 @@ public class NetAwareSimTraceWorkload(
      */
     private var jTracker: JNetFTracker by SetOnce()
 
+    // TODO: rm
+    private var fragIdx = -1
 
     init {
         runBlocking {
@@ -104,75 +106,54 @@ public class NetAwareSimTraceWorkload(
 
     public override suspend fun onUpdateSus(now: Long): Long {
         val nowTs: Timestamp = Timestamp.ofEpochMs(now)
-        val passedTime = getPassedTime(now)
+        val passedTime = this.getPassedTime(now)
+        // Not really the start of fragment but the timestamp of the last update call.
         this.startOfFragment = now
-
-
-        // The amount of work done since last update
-        val finishedWork =
-            scalingPolicy.getFinishedWork(this.cpuFreqDemand, this.cpuFreqSupplied, passedTime)
-
-        this.remainingWork -= finishedWork
-
 
         // If this.remainingWork <= 0, the fragment compute part has been completed
         // Expected completion [Timestamp] for the compute portion of the fragment.
-        val complComp: Timestamp = onUpdateSusWaitingCompute(now)
-        val remComp = complComp timeDelta nowTs
-        assert(remComp >= TimeDelta.zero)
-        // Expected completion [Timestamp] for the network portion of the fragment.
-        val complNet: Timestamp = tracker!!.tsForAllCompl()
-        val remNet = complNet timeDelta nowTs
-        assert(remNet >= TimeDelta.zero)
+        val compDeadline: Timestamp = onUpdateSusWaitingCompute(now, passedTime)
+        assert(compDeadline >= nowTs)
 
-        val netDeadline: Timestamp = tracker!!.tsFor1Compl()
-        val remNetDeadline = netDeadline timeDelta nowTs
-        assert(remNetDeadline >= TimeDelta.zero)
-
-        this.cpuFreqSupplied = this.newCpuFreqSupplied
+        val netDeadline: Timestamp = onUpdateSusWaitingNetwork(now)
+        assert(netDeadline >= nowTs)
 
         //
         // Note that when a network flow fragment completes, its demand is set to 0 automatically by the tracker.
 
         return when {
             // Both compute and network fragments are completed.
-            complComp == nowTs && complNet == nowTs -> {
+            compDeadline == nowTs && netDeadline == nowTs -> {
                 startNextFragmentSus()
                 invalidate()
                 Long.MAX_VALUE
             }
 
             // Compute fragment completed but network not yet.
-            complComp == nowTs -> {
-//                // TODO: delete begin
-//                startNextFragmentSus()
-//                invalidate()
-//                return Long.MAX_VALUE
-//                // TODO: delete end
-
+            compDeadline == nowTs -> {
                 // Set compute demand to 0 while waiting for network.
                 if (cpuFreqSupplied != .0) pushOutgoingDemand(this.machineEdge, .0)
-
-                if ((complNet timeDelta nowTs) > TimeDelta.ofHours(1000)) {
-                    println()
-                }
-                // TODO: rm begin
-                remNet.hashCode()
-                remComp.hashCode()
-                remNetDeadline.hashCode()
-                // TODO: rm end
                 netDeadline.toEpochMsLong()
             }
 
             // Network fragment completed but compute not yet.
-            complNet == nowTs -> complComp.toEpochMsLong()
+            netDeadline == nowTs -> compDeadline.toEpochMsLong()
 
             // Neither compute nor network are completed.
-            else -> (complComp min netDeadline).toEpochMsLong()
+            else -> (compDeadline min netDeadline).toEpochMsLong()
         }
     }
-    private fun onUpdateSusWaitingCompute(now: Long): Timestamp {
-        this.cpuFreqSupplied = this.newCpuFreqSupplied
+    private fun onUpdateSusWaitingCompute(now: Long, passedTime: Long): Timestamp {
+        assert(this.cpuFreqSupplied.approxLargerOrEq(.0, epsilon = 1e-3))
+        // Sometimes it is negative and fucks__ up everything.
+        this.cpuFreqSupplied = max(cpuFreqSupplied, .0)
+
+        // The amount of work done since last update
+        val finishedWork =
+            scalingPolicy.getFinishedWork(this.cpuFreqDemand, this.cpuFreqSupplied, passedTime)
+        this.remainingWork -= finishedWork
+
+        this.cpuFreqSupplied = max(this.newCpuFreqSupplied, .0)
 
         // The amount of time required to finish the fragment at this speed
         // [max] added since [cpuFreqSupplied] can have very small negative values at times (not rounded to 0).
@@ -180,7 +161,7 @@ public class NetAwareSimTraceWorkload(
         // add additional assertions that would otherwise fail on these random negative values.
         val remainingDuration = max(
             scalingPolicy.getRemainingDuration(
-                this.cpuFreqDemand, this.newCpuFreqSupplied, this.remainingWork
+                this.cpuFreqDemand, this.cpuFreqSupplied, this.remainingWork
             ),
             0L
         )
@@ -192,25 +173,40 @@ public class NetAwareSimTraceWorkload(
 
         return try {
             Timestamp.ofEpochMs(Math.addExact(now, remainingDuration))
-        } catch (e: ArithmeticException) {
-            Timestamp.max
+        } catch (_: ArithmeticException) {
+            return Timestamp.max
         }
     }
-//    private suspend fun onUpdateSusWaitingNetwork(now: Timestamp): Timestamp {
-//         // TODO: rmln
-//        assert(netAllCompl >= now) // TODO: rmln
-//        return netAllCompl
-//    }
+
+    private suspend fun onUpdateSusWaitingNetwork(now: Long): Timestamp {
+        val nowTs: Timestamp = Timestamp.ofEpochMs(now)
+        // Expected completion [Timestamp] for the network portion of the fragment.
+        assert(
+            let {
+                val complNet: Timestamp = tracker!!.tsForAllCompl() ?: nowTs
+                val remNet = complNet timeDelta nowTs
+                remNet >= TimeDelta.zero
+            }
+        )
+
+        val netDeadline: Timestamp = tracker!!.tsFor1Compl() ?: nowTs
+        val remNetDeadline = netDeadline timeDelta nowTs
+        assert(remNetDeadline >= TimeDelta.zero)
+
+        return  Timestamp.ofEpochMs(
+            scalingPolicy.getScaledNetworkDeadline(now, netDeadline.toEpochMsLong())
+        )
+    }
 
     /**
      * Needed for [SimTraceWorkload.makeSnapshot].
      */
     override fun startNextFragment() {
-        super.startNextFragment()
         log.warn { "Starting network fragment from non-suspending context. This results in reduced performance." }
         runBlocking { startNextFragmentSus() }
     }
     private suspend fun startNextFragmentSus() {
+        fragIdx++
         super.startNextFragment()
         val frag = this.currentFragment
         frag ?: return
@@ -221,13 +217,13 @@ public class NetAwareSimTraceWorkload(
         val txDmnd = DataRate.ofKbps(frag.netTxKbps)
         val rxDmnd = DataRate.ofKbps(frag.netRxKbps)
         val fragDuration = TimeDelta.ofMillis(frag.duration)
-        val txTarget = DataSize.ofKb(scalingPolicy.getNetTxCompletionRequired((txDmnd * fragDuration).toKb()))
-        val rxTarget = DataSize.ofKb(scalingPolicy.getNetRxCompletionRequired((rxDmnd * fragDuration).toKb()))
-        tracker!!.newFrag(frag)
-        tx!!.msgAsyncFragInit(txTarget, frag);
-        rx!!.msgAsyncFragInit(rxTarget, frag);
+        val txTarget = DataSize.ofKb((txDmnd * fragDuration).toKb())
+        val rxTarget = DataSize.ofKb((rxDmnd * fragDuration).toKb())
+        tx!!.msgAsyncFragInit(txTarget, frag)
+        rx!!.msgAsyncFragInit(rxTarget, frag)
         tx!!.msgAsyncSetDemand(txDmnd, frag)
         rx!!.msgAsyncSetDemand(rxDmnd, frag)
+        tracker!!.newFrag(frag)
     }
 
     override fun closeNode() {

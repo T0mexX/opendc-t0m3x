@@ -65,6 +65,7 @@ internal data class DFSpecs(
             val intraGroupH2Sw = a * p * g
             val interGroup = R_ * h / 2
 
+
             intraGroupH2Sw + intraGroupsSw2Sw + interGroup
         }
 

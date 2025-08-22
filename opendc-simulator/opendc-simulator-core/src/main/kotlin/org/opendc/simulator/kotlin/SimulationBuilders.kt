@@ -27,6 +27,7 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
@@ -77,8 +78,10 @@ public fun runSimulation(
         scope.launch {
             body(scope)
         }
+    Thread.sleep(1000)
+
     dispatcher.advanceUntilIdle()
-    println("CANCEEEEELLLLLED SIMMMMMMM")
+
     simJob.cancel()
 
     // TODO: remove begin

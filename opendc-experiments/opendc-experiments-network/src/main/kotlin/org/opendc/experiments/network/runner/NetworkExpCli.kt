@@ -49,7 +49,7 @@ internal class NetExpCmd : CliktCommand(name = "netexp") {
      */
     private val expPath by option("--exp-path", help = "path to scenario file")
         .file(canBeDir = false, canBeFile = true)
-        .defaultLazy { File("./resources/ignored/exp.json") }
+        .defaultLazy { File("./resources/ignored/examples/scopes/expScope.jsonc") }
 
     @OptIn(ExperimentalSerializationApi::class, ExperimentalCoroutinesApi::class)
     override fun run() {

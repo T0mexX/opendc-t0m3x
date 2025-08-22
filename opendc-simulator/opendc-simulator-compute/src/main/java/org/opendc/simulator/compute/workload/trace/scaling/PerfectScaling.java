@@ -46,12 +46,7 @@ public class PerfectScaling implements ScalingPolicy {
     }
 
     @Override
-    public double getNetRxCompletionRequired(double fragmentNetRxKb) {
-        return fragmentNetRxKb;
-    }
-
-    @Override
-    public double getNetTxCompletionRequired(double fragmentNetTxKb) {
-        return fragmentNetTxKb;
+    public long getScaledNetworkDeadline(long now, long netDeadline) {
+        return netDeadline;
     }
 }

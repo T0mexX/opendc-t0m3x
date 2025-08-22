@@ -40,6 +40,7 @@ import org.opendc.simulator.network.components.networks.TopNodeMeta
 import org.opendc.simulator.network.components.node.internalstructs.flowtable.FlowTable
 import org.opendc.simulator.network.components.node.internalstructs.routtbl.RoutTblImpl
 import org.opendc.simulator.network.energy.EnConsumer
+import org.opendc.simulator.network.policies.routing.RoutNodeMeta
 import org.opendc.simulator.network.policies.routing.RoutPolicy
 import org.opendc.simulator.network.simscope.fwpool.FW
 import org.opendc.simulator.network.simscope.fwpool.FWId
@@ -82,6 +83,11 @@ internal interface Node<Self : Node<Self>> : IInvalidatable, Msgable<Node<*>>, N
      */
     @NonOwnerProperty(readableBy = [NetCo.MAIN])
     var topNodeMeta: TopNodeMeta<*>?
+
+    /**
+     * @see TopNodeMeta
+     */
+    var routNodeMeta: RoutNodeMeta<*>?
 
     /**
      * Contains network information about the routs

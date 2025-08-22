@@ -39,18 +39,33 @@ internal class MIN : RoutPolicy() {
     context(NetSimScope, Node<*>)
     override suspend fun onNodeNewFReceived(nodeFEntry: NodeFlowEntry): Boolean {
         val f = nodeFEntry.f
+        val n = this@Node
+        val meta = (n.routNodeMeta as MinRoutNodeMeta?) ?: attachMeta(n)
         nodeFEntry.txlinks.clear()
 
-        this@Node.routTbl.getPossiblePathsTo(f.destId)
+        n.routTbl.getPossiblePathsTo(f.destId)
             .onlyMinimal()
-            .takeIf { it.isNotEmpty() }
-            ?.first()
-            ?.let { path ->
+            .let { paths ->
+                paths.elementAtOrNull(meta.rndmIdx % paths.size)
+            }?.let { path ->
                 nodeFEntry.txlinks[path.associatedLink()] = Percentage.ofPercentage(100)
             }
 
         return true
     }
+
+    context(NetSimScope)
+    private fun attachMeta(n: Node<*>): MinRoutNodeMeta {
+        n.routNodeMeta = MinRoutNodeMeta(config.random.nextInt(from = 0, until = Int.MAX_VALUE))
+        return n.routNodeMeta as MinRoutNodeMeta
+    }
+
+    /**
+     * TODO: change docs
+     * So that each node selects always the same path among those min available,
+     * but that path does not depend on internal rout table implementation (e.g., with `first()`).
+     */
+    private inner class MinRoutNodeMeta(val rndmIdx: Int): RoutNodeMeta<MIN>
 
     companion object {
         context(NetSimScope, Node<*>)
@@ -61,40 +76,3 @@ internal class MIN : RoutPolicy() {
                 .associatedLink()
     }
 }
-
-// /**
-// * TODO
-// */
-// @Serializable
-// @SerialName("ospf")
-// internal data object OSPF: RoutPolicy {
-//    context(NetSimScope, Node<*>)
-//    override suspend fun selectPorts(nodeFlowEntry: NodeFlowEntry) {
-//        val f = nodeFlowEntry.netFlow
-//        this@Node.routTbl.getPossiblePathsTo(f.destId)
-//            .onlyMinimal()
-//            .firstOrNull()
-//            ?.let { path ->
-//                nodeFlowEntry.txlinks.clear()
-//                nodeFlowEntry.txlinks += path.associatedPort()
-//            }
-//    }
-//
-//    context(NetSimScope, Node<*>)
-//    suspend fun selectPorts(f: NetFlow): Set<Port> =
-//        setOf(
-//            this@Node.routTbl.getPossiblePathsTo(f.destId)
-//                .onlyMinimal()
-//                .random()
-//                .associatedPort()
-//        )
-//
-//    context(NetSimScope, Node<*>)
-//    suspend fun selectPorts(to: Node<*>): Set<Port> =
-//        setOf(
-//            this@Node.routTbl.getPossiblePathsTo(to.id)
-//                .onlyMinimal()
-//                .random()
-//                .associatedPort()
-//        )
-// }

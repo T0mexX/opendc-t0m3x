@@ -29,6 +29,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.serialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.opendc.simulator.network.api.integration.NetSimGlobal
 import org.opendc.simulator.network.export.NetworkExportConfig
 import org.opendc.simulator.network.policies.routing.ECMP
 import org.opendc.simulator.network.policies.routing.RoutPolicy
@@ -51,10 +52,22 @@ NetSimConfig internal constructor(
     val exportConfig: NetworkExportConfig? = null,
     internal val routPolicy: RoutPolicy = ECMP(),
     internal val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
-    val random: Random = Random(Random.nextInt()),
+    val seed: Long = Random.nextLong(from = 0, until = Long.MAX_VALUE),
     val parallelism: Int? = 1,
-    val wlToNetIdMapping: Boolean = true,
 ) : AbstractCoroutineContextElement(Key) {
+    val random: Random = Random(seed)
+
+    internal fun fmt(): String =
+        """
+            | === Network Simulation Config ===
+            | Stability mode  : $stabilityMode
+            | Routing Policy  : $routPolicy
+            | Seed            : $seed
+            | Parallelism     : $parallelism
+            | With Compute    : ${NetSimGlobal.WITH_COMPUTE}
+            """.trimIndent()
+
+
     public companion object Key : CoroutineContext.Key<NetSimConfig>
 
     /**
@@ -69,7 +82,7 @@ NetSimConfig internal constructor(
             val netSimDevConfig: NetSimDevConfig = NetSimDevConfig(),
             val wlToNetIdMapping: Boolean = true,
             val parallelism: Int? = 1,
-            val seed: Int? = null,
+            val seed: Long? = null,
             @Polymorphic val routingPolicy: RoutPolicy = ECMP(),
         )
 
@@ -84,10 +97,9 @@ NetSimConfig internal constructor(
                 stabilityMode = surr.stabilityMode,
                 exportConfig = surr.netSimExportConfig,
                 netSimDevConfig = surr.netSimDevConfig,
-                wlToNetIdMapping = surr.wlToNetIdMapping,
                 routPolicy = surr.routingPolicy,
                 parallelism = surr.parallelism,
-                random = surr.seed?.let { Random(it) } ?: Random(Random.nextLong()),
+                seed = surr.seed ?: Random.nextLong(from = 0, until = Long.MAX_VALUE),
             )
         }
 

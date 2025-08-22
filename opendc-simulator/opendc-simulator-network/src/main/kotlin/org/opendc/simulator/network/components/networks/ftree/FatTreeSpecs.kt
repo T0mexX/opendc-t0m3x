@@ -58,7 +58,7 @@ internal data class FatTreeSpecs(
     override val R_: Int = (5 * k.toDouble().pow(2.0) / 4).toInt()
     override val N_: Int = (k.toDouble().pow(3.0) / 4).toInt()
     override val V_: Int = R_ + N_
-    override val E_: Int = N_ + nEdgeSw * (k / 2) + nAggrSw * (k / 2)
+    override val E_: Int = N_ * 3
 
     /**
      * Returns a [FTree] if the specs are valid, throws error otherwise.

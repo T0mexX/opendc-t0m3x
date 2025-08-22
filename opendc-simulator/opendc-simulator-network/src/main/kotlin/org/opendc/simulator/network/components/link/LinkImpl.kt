@@ -105,6 +105,7 @@ internal class LinkImpl private constructor(
                 usedBw = (usedBw + delta).roundDR(max = maxBw)
                 e.tput = (e.tput + delta).roundDR(max = e.demand)
                 receiverN.msgAsyncRxUpdt(deltaRate = delta, f = e.f)
+//                log.debug { "RxUpdt sent to $receiverN with deltarate=$delta" }
             }
         }
 

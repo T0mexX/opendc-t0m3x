@@ -83,7 +83,6 @@ public fun runScenario(
     runSimulation {
         val serviceDomain = "compute.opendc.org"
         Provisioner(dispatcher, seed).use { provisioner ->
-
             val checkpointInterval = scenario.checkpointModelSpec?.checkpointInterval ?: 0L
             val checkpointDuration = scenario.checkpointModelSpec?.checkpointDuration ?: 0L
             val checkpointIntervalScaling = scenario.checkpointModelSpec?.checkpointIntervalScaling ?: 1.0
@@ -167,6 +166,7 @@ public fun runScenario(
                 }
             }
 
+            println("n Taks: ${workload.size}")
             service.replay(
                 timeSource,
                 workload,

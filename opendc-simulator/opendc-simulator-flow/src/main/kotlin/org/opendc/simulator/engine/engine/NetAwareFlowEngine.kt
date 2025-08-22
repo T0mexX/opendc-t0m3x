@@ -37,7 +37,7 @@ public class NetAwareFlowEngine(
 
             // Execute all immediate updates
             while (true) {
-                var ctx = cycleQueue.poll()
+                val ctx = cycleQueue.poll()
                 if (ctx == null) {
                     netController.sync() // Wait until the network is stable.
 

@@ -40,10 +40,13 @@ public class NetworkProvisioningStep(
         netController?.also {
             runBlocking {
                 // Setup network exporting according to netExportConfig.
-                netController.infoNewLine(netController.fmtExportConfig())
-                netController.infoNewLine(netController.fmtNet())
+                log.infoNewLine(netController.fmtConfig())
+                log.infoNewLine(netController.fmtExportConfig())
+                log.infoNewLine(netController.fmtNet())
             }
         } ?: AutoCloseable { }
 
-
+    private companion object {
+        val log by logger()
+    }
 }

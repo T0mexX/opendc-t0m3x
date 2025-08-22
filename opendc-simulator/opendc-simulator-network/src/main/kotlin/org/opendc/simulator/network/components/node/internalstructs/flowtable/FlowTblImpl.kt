@@ -147,7 +147,7 @@ internal class FlowTblImpl private constructor(
      */
     context(NetSimScope)
     override suspend fun reset(f: NetFlow) {
-        val e = flows[f]!! //?: return log.warn("$this likely stopped twice")
+        val e = flows[f] ?: return
         e.rx = DataRate.zero
         e.txlinks.keys.forEach { l ->
             val linkEntryId = e.linkFlowEntryIds[l.linkIdx]

@@ -78,18 +78,18 @@ public class JNetFTracker private constructor(
             }
         }
 
-    public fun tsFor1Compl(): Long = netBlking(scope) {
-        tracker.tsFor1Compl().toEpochMsLong()
-    }
-    public fun tmRmFor1Compl(): Long = netBlking(scope) {
-        tracker.tmRmFor1Compl().toMsLong()
-    }
-    public fun tsForAllCompl(): Long = netBlking(scope) {
-        tracker.tsForAllCompl().toEpochMsLong()
-    }
-    public fun tmRmForAllCompl(): Long = netBlking(scope) {
-        tracker.tmRmForAllCompl().toMsLong()
-    }
+//    public fun tsFor1Compl(): Long = netBlking(scope) {
+//        tracker.tsFor1Compl()?.toEpochMsLong() ?: Long.
+//    }
+//    public fun tmRmFor1Compl(): Long = netBlking(scope) {
+//        tracker.tmRmFor1Compl().toMsLong()
+//    }
+//    public fun tsForAllCompl(): Long = netBlking(scope) {
+//        tracker.tsForAllCompl().toEpochMsLong()
+//    }
+//    public fun tmRmForAllCompl(): Long = netBlking(scope) {
+//        tracker.tmRmForAllCompl().toMsLong()
+//    }
 
     /**
      * TODO

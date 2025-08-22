@@ -46,12 +46,7 @@ public class NoDelayScaling implements ScalingPolicy {
     }
 
     @Override
-    public double getNetRxCompletionRequired(double fragmentNetRxKb) {
-        return 0;
-    }
-
-    @Override
-    public double getNetTxCompletionRequired(double fragmentNetTxKb) {
-        return 0;
+    public long getScaledNetworkDeadline(long now, long netDeadline) {
+        return now;
     }
 }

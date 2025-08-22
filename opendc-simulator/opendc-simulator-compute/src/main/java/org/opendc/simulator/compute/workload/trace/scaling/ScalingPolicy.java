@@ -57,7 +57,6 @@ public interface ScalingPolicy {
      */
     double getRemainingWork(double cpuFreqDemand, long duration);
 
-    double getNetRxCompletionRequired(double fragmentNetRxKb);
-
-    double getNetTxCompletionRequired(double fragmentNetTxKb);
+    // TODO: Change to consider fragment completion percentage.
+    long getScaledNetworkDeadline(long now, long netDeadline);
 }
